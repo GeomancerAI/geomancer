@@ -1,0 +1,1 @@
+Create a 160mm UV sphere with a 90mm circular face opening and 3mm shell thickness.

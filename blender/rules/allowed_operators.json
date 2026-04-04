@@ -1,0 +1,21 @@
+{
+  "allowed_operators": [
+    "bpy.ops.mesh.primitive_uv_sphere_add",
+    "bpy.ops.mesh.primitive_cylinder_add",
+    "bpy.ops.mesh.primitive_cube_add",
+    "bpy.ops.object.select_all",
+    "bpy.ops.object.delete",
+    "bpy.ops.object.modifier_apply"
+  ],
+  "allowed_modifier_types": [
+    "BOOLEAN",
+    "SOLIDIFY"
+  ],
+  "allowed_modifier_properties": [
+    "BooleanModifier.operation",
+    "BooleanModifier.object",
+    "SolidifyModifier.thickness",
+    "SolidifyModifier.offset",
+    "SolidifyModifier.use_quality_normals"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "banned_patterns": [
+    "bpy.ops.primitive_uv_sphere_add",
+    "bpy.ops.primitive_cylinder_add",
+    "bpy.ops.primitive_cube_add",
+    ".edge_crease",
+    "primitive_circle_add",
+    ".crease_outer",
+    ".crease_inner",
+    ".bevel_convex"
+  ]
+}

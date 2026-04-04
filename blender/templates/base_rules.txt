@@ -1,0 +1,6 @@
+Use metric units.
+Use millimeters for dimensions.
+Create simple hard-surface blockout geometry first.
+Prefer stable primitive-based modeling and stable booleans.
+Do not include commentary or explanations.
+Output valid Blender Python only.

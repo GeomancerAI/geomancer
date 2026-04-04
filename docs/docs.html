@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="description"
+    content="Beginner-friendly Geomancer documentation covering installation, your first prompt, export as STL, and core concepts."
+  >
+  <title>Geomancer Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="docs">
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="container">
+        <nav class="nav" aria-label="Primary">
+          <a class="brand" href="index.html" aria-label="Geomancer home">
+            <img class="brand-icon" src="assets/images/logo-icon.png" alt="" aria-hidden="true">
+            <span class="brand-text">Geomancer</span>
+          </a>
+          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-line"></span>
+            <span class="nav-toggle-line"></span>
+            <span class="nav-toggle-line"></span>
+            <span class="sr-only">Toggle navigation</span>
+          </button>
+          <div class="nav-links" id="nav-links">
+            <a href="index.html">Home</a>
+            <a href="download.html">Download</a>
+            <a href="docs.html" aria-current="page">Docs</a>
+            <a href="early-access.html">Early Access</a>
+            <!-- TODO: replace with Discord invite link -->
+            <a href="#">Discord</a>
+            <a href="https://github.com/GeomancerAI/geomancer" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-section docs-hero-section">
+        <div class="container">
+          <div class="section-heading docs-heading">
+            <p class="eyebrow">Documentation</p>
+            <h1 class="docs-title">Geomancer Documentation</h1>
+            <p class="hero-description docs-description">
+              Learn how to install Geomancer, write your first prompt, understand the core concepts behind printable part generation, and export your results with confidence.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-section docs-section">
+        <div class="container docs-layout">
+          <aside class="feature-card docs-sidebar">
+            <p class="docs-sidebar-title">Documentation</p>
+
+            <div class="docs-nav-group">
+              <p class="docs-nav-heading">Getting Started</p>
+              <a href="#install">Install</a>
+              <a href="#first-prompt">Your First Prompt</a>
+              <a href="#export-stl">Export as STL</a>
+            </div>
+
+            <div class="docs-nav-group">
+              <p class="docs-nav-heading">Core Concepts</p>
+              <a href="#prompts">Prompts</a>
+              <a href="#dimensions">Dimensions</a>
+              <a href="#printability">Printability</a>
+            </div>
+
+            <div class="docs-nav-group">
+              <p class="docs-nav-heading">Examples</p>
+              <a href="#raspberry-pi-4-enclosure">Raspberry Pi 4 Enclosure</a>
+              <a href="#custom-gear">Custom Gear</a>
+              <a href="#basic-bracket">Basic Bracket</a>
+            </div>
+          </aside>
+
+          <div class="docs-content">
+            <article class="feature-card docs-article" id="first-prompt">
+              <p class="eyebrow">Step 1</p>
+              <h2>Your First Prompt</h2>
+              <p class="docs-subtitle">Start by installing Geomancer, launching it locally, and opening a new prompt session.</p>
+              <h3 id="install">Step 1: Install and Launch Geomancer</h3>
+              <p>
+                Install the Windows alpha, launch the app, and open the chat-style workspace. From there, Geomancer is ready to interpret your request and guide the first model generation flow.
+              </p>
+              <div class="app-window docs-image-frame">
+                <img
+                  class="hero-preview-image"
+                  src="assets/images/hero-ui-preview.png"
+                  alt="Geomancer interface preview for documentation"
+                >
+              </div>
+            </article>
+
+            <article class="feature-card docs-article" id="prompts">
+              <p class="eyebrow">Step 2</p>
+              <h2>Step 2: Describe the Part You Need</h2>
+              <p class="docs-subtitle">Use clear, practical language that explains the shape, purpose, and key constraints of the part.</p>
+              <div class="example-card docs-example-card">
+                <div class="example-side example-side-prompt">
+                  <span class="example-label">Example Prompt</span>
+                  <p>"Create a Raspberry Pi 4 enclosure with vents, USB and HDMI cutouts, and 3mm walls."</p>
+                </div>
+              </div>
+            </article>
+
+            <article class="feature-card docs-article" id="export-stl">
+              <p class="eyebrow">Step 3</p>
+              <h2>Step 3: Export as STL</h2>
+              <p class="docs-subtitle">Once the generated model looks right, export it as an STL for printing or open it directly in Blender for refinement.</p>
+              <p>
+                Geomancer is built around a prompt-to-geometry workflow, so the handoff stays simple. Review the model, confirm the printability details, and export the part when you are ready.
+              </p>
+            </article>
+
+            <article class="feature-card docs-article docs-reference" id="dimensions">
+              <h3>Core Concepts at a Glance</h3>
+              <p id="printability"><strong>Printability:</strong> Geomancer surfaces practical checks like wall thickness and general fit before you export.</p>
+              <p><strong>Dimensions:</strong> Describing target sizes helps the geometry engine generate more useful parts on the first pass.</p>
+              <p id="raspberry-pi-4-enclosure"><strong>Examples:</strong> Common starting points include Raspberry Pi enclosures, gears, and basic brackets.</p>
+              <p id="custom-gear"><strong>Prompts:</strong> The clearer your prompt is about purpose and constraints, the better the generated starting model.</p>
+              <p id="basic-bracket"><strong>Export:</strong> STL export is the fastest route to slicing, while Blender is available when you want to refine the generated model.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" id="footer">
+      <div class="container footer-row">
+        <p>&copy; 2026 Geomancer. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="index.html">Home</a>
+          <a href="download.html">Download</a>
+          <a href="docs.html" aria-current="page">Docs</a>
+          <a href="early-access.html">Early Access</a>
+          <!-- TODO: replace with Discord invite link -->
+            <a href="#">Discord</a>
+          <a href="https://github.com/GeomancerAI/geomancer" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

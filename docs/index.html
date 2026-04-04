@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="description"
+    content="Geomancer turns natural language prompts into functional 3D models using local AI and a deterministic geometry engine."
+  >
+  <title>Geomancer | AI 3D Model Creator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="home">
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="container">
+        <nav class="nav" aria-label="Primary">
+          <a class="brand" href="index.html" aria-label="Geomancer home">
+            <img class="brand-icon" src="assets/images/logo-icon.png" alt="" aria-hidden="true">
+            <span class="brand-text">Geomancer</span>
+          </a>
+          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-line"></span>
+            <span class="nav-toggle-line"></span>
+            <span class="nav-toggle-line"></span>
+            <span class="sr-only">Toggle navigation</span>
+          </button>
+          <div class="nav-links" id="nav-links">
+            <a href="index.html" aria-current="page">Home</a>
+            <a href="download.html">Download</a>
+            <a href="docs.html">Docs</a>
+            <a href="early-access.html">Early Access</a>
+            <!-- TODO: replace with Discord invite link -->
+            <a href="#">Discord</a>
+            <a href="https://github.com/GeomancerAI/geomancer" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero-section">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <div class="eyebrow">AI 3D Model Creator</div>
+            <h1>Turn prompts into 3D models</h1>
+            <p class="hero-subheadline">
+              Generate functional, printable parts in seconds using local AI.
+            </p>
+            <p class="hero-description">
+              Geomancer interprets intent with a local LLM, translates it into structured modeling
+              parameters, and produces deterministic Blender output for real parts you can refine,
+              print, and use.
+            </p>
+
+            <form class="signup-form" id="hero-signup" novalidate>
+              <label class="sr-only" for="hero-email">Email address</label>
+              <input
+                id="hero-email"
+                name="email"
+                type="email"
+                placeholder="Enter your email for early access"
+                autocomplete="email"
+                required
+              >
+              <button type="submit">Request Early Access</button>
+            </form>
+            <p class="form-support">
+              Alpha Preview targeted for June 1. Local-first workflow, Windows alpha, and no CAD experience required.
+            </p>
+            <p class="form-message" id="hero-message" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="hero-visual">
+            <div class="app-window">
+              <img
+                class="hero-preview-image"
+                src="assets/images/hero-ui-preview.png"
+                alt="Geomancer interface preview showing the prompt-to-model workflow"
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-section" id="features">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow">Why Geomancer</p>
+            <h2>Local AI paired with a deterministic geometry engine</h2>
+          </div>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3 13.8 8.2 19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path>
+                </svg>
+              </div>
+              <h3>Natural Language Prompts</h3>
+              <p>
+                Describe what you want in plain language, from planters to enclosures to sci-fi parts.
+              </p>
+            </article>
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m12 3 7 4v10l-7 4-7-4V7l7-4Z"></path>
+                  <path d="m5 7 7 4 7-4"></path>
+                  <path d="M12 11v10"></path>
+                </svg>
+              </div>
+              <h3>Functional, Printable Parts</h3>
+              <p>
+                Focus on usable geometry that can move cleanly from concept to slicer and then to print.
+              </p>
+            </article>
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3 6 5.5v5.8c0 4.1 2.5 7.8 6 9.7 3.5-1.9 6-5.6 6-9.7V5.5L12 3Z"></path>
+                  <path d="m9.4 12.1 1.7 1.7 3.6-3.8"></path>
+                </svg>
+              </div>
+              <h3>Detailed Printability Checks</h3>
+              <p>
+                Surface wall thickness, fit, and practical print details before you spend time iterating in Blender.
+              </p>
+            </article>
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                  <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+                </svg>
+              </div>
+              <h3>Local, Private, Reliable</h3>
+              <p>
+                Keep the workflow on your machine with local inference and repeatable output you can trust.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="positioning-section">
+        <div class="container">
+          <p>Built for makers, engineers, and 3D printing enthusiasts</p>
+        </div>
+      </section>
+
+      <section class="cta-section" id="final-cta">
+        <div class="container">
+          <div class="cta-card">
+            <div class="cta-copy">
+              <p class="eyebrow">Early Access</p>
+              <h2>Get started with Geomancer</h2>
+              <p>
+                Join the Windows alpha preview for a local-first 3D workflow that turns prompts into Blender-ready geometry without requiring traditional CAD experience.
+              </p>
+            </div>
+            <form class="signup-form signup-form-wide" id="footer-signup" novalidate>
+              <label class="sr-only" for="footer-email">Email address</label>
+              <input
+                id="footer-email"
+                name="email"
+                type="email"
+                placeholder="Your email address"
+                autocomplete="email"
+                required
+              >
+              <button type="submit">Request Early Access</button>
+            </form>
+            <p class="form-support">
+              Local workflow. Windows alpha. No CAD required.
+            </p>
+            <p class="form-message" id="footer-message" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" id="footer">
+      <div class="container footer-row">
+        <p>&copy; 2026 Geomancer. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="index.html" aria-current="page">Home</a>
+          <a href="download.html">Download</a>
+          <a href="docs.html">Docs</a>
+          <a href="early-access.html">Early Access</a>
+          <!-- TODO: replace with Discord invite link -->
+            <a href="#">Discord</a>
+          <a href="https://github.com/GeomancerAI/geomancer" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

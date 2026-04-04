@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="description"
+    content="Sign up for early access to Geomancer and get Windows alpha access, early feature updates, and iterative improvements."
+  >
+  <title>Early Access | Geomancer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body data-page="early-access">
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="container">
+        <nav class="nav" aria-label="Primary">
+          <a class="brand" href="index.html" aria-label="Geomancer home">
+            <img class="brand-icon" src="assets/images/logo-icon.png" alt="" aria-hidden="true">
+            <span class="brand-text">Geomancer</span>
+          </a>
+          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">
+            <span class="nav-toggle-line"></span>
+            <span class="nav-toggle-line"></span>
+            <span class="nav-toggle-line"></span>
+            <span class="sr-only">Toggle navigation</span>
+          </button>
+          <div class="nav-links" id="nav-links">
+            <a href="index.html">Home</a>
+            <a href="download.html">Download</a>
+            <a href="docs.html">Docs</a>
+            <a href="early-access.html" aria-current="page">Early Access</a>
+            <!-- TODO: replace with Discord invite link -->
+            <a href="#">Discord</a>
+            <a href="https://github.com/GeomancerAI/geomancer" target="_blank" rel="noopener noreferrer">GitHub</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-section">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <div class="eyebrow">Early Access</div>
+            <h1 class="early-access-title">Get Early Access to Geomancer</h1>
+            <p class="hero-description">
+              Join the early access list to be first in line for the Windows alpha and follow the first public rollout of Geomancer's local-first prompt-to-geometry workflow.
+            </p>
+            <form class="signup-form" id="hero-signup" novalidate>
+              <label class="sr-only" for="hero-email">Email address</label>
+              <input
+                id="hero-email"
+                name="email"
+                type="email"
+                placeholder="Enter your email for early access"
+                autocomplete="email"
+                required
+              >
+              <button type="submit">Request Early Access</button>
+            </form>
+            <p class="form-support">
+              Windows alpha first. MacOS and Linux are planned after the initial release.
+            </p>
+            <p class="form-message" id="hero-message" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="hero-visual">
+            <div class="app-window">
+              <img
+                class="hero-preview-image"
+                src="assets/images/hero-ui-preview.png"
+                alt="Geomancer interface preview showing prompt-based 3D model generation"
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-section early-access-section" id="what-you-get">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow">What You Get</p>
+            <h2>Early access with a simple, practical rollout</h2>
+          </div>
+          <div class="feature-card access-card">
+            <ul class="access-list">
+              <li>Windows alpha access</li>
+              <li>Early feature access</li>
+              <li>Updates and improvements</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-section early-access-section early-access-section-tight" id="timeline">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow">Timeline</p>
+            <h2>Launching in stages, then improving iteratively</h2>
+          </div>
+          <div class="workflow-step timeline-card">
+            <p class="timeline-item"><strong>Alpha release:</strong> June 1 marks the first Windows alpha preview.</p>
+            <p class="timeline-item"><strong>Iterative updates:</strong> Early access users will see ongoing fixes, improvements, and feature refinement after the initial release.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-section" id="final-cta">
+        <div class="container">
+          <div class="cta-card cta-card-centered early-access-cta">
+            <div class="cta-copy">
+              <p class="eyebrow">Sign Up</p>
+              <h2>Join the Geomancer early access list</h2>
+              <p>Enter your email to get notified when the Windows alpha is available and to receive rollout updates as Geomancer improves.</p>
+            </div>
+            <form class="signup-form signup-form-wide" id="footer-signup" novalidate>
+              <label class="sr-only" for="footer-email">Email address</label>
+              <input
+                id="footer-email"
+                name="email"
+                type="email"
+                placeholder="Your email address"
+                autocomplete="email"
+                required
+              >
+              <button type="submit">Request Early Access</button>
+            </form>
+            <p class="form-support">
+              Windows alpha first. MacOS and Linux coming later.
+            </p>
+            <p class="form-message" id="footer-message" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" id="footer">
+      <div class="container footer-row">
+        <p>&copy; 2026 Geomancer. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="index.html">Home</a>
+          <a href="download.html">Download</a>
+          <a href="docs.html">Docs</a>
+          <a href="early-access.html" aria-current="page">Early Access</a>
+          <!-- TODO: replace with Discord invite link -->
+            <a href="#">Discord</a>
+          <a href="https://github.com/GeomancerAI/geomancer" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
