@@ -1171,3 +1171,326 @@ button {
   margin-bottom: 0;
   stroke-width: 1.7;
 }
+
+
+.form-message[data-state="error"] {
+  color: #b54747;
+}
+
+.form-message[data-state="success"] {
+  color: var(--accent-deep);
+}
+
+.modal-open {
+  overflow: hidden;
+}
+
+.ea-modal[hidden] {
+  display: none;
+}
+
+.ea-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.ea-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 42, 43, 0.38);
+  backdrop-filter: blur(10px);
+}
+
+.ea-modal-dialog {
+  position: relative;
+  width: min(100%, 34rem);
+  outline: none;
+}
+
+.ea-modal-panel {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: calc(var(--radius-lg) + 2px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 32px 80px rgba(18, 42, 43, 0.18);
+  overflow: hidden;
+}
+
+.ea-modal-content {
+  padding: 1.7rem;
+}
+
+.ea-modal-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(19, 34, 35, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--muted);
+  box-shadow: 0 10px 24px rgba(18, 42, 43, 0.08);
+  transition: color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+}
+
+.ea-modal-close:hover,
+.ea-modal-close:focus-visible {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.98);
+  transform: translateY(-1px);
+}
+
+.ea-modal-close span {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.ea-modal-header {
+  max-width: 27rem;
+}
+
+.ea-modal-eyebrow {
+  margin: 0 0 0.85rem;
+  color: var(--accent-deep);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.ea-modal-title {
+  margin: 0;
+  max-width: 14ch;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-size: clamp(1.85rem, 4vw, 2.5rem);
+}
+
+.ea-modal-description,
+.ea-modal-subtext,
+.ea-modal-legal,
+.ea-modal-checkbox-row,
+.ea-modal-loading,
+.ea-modal-feedback {
+  color: var(--muted);
+}
+
+.ea-modal-description {
+  margin: 0.95rem 0 0;
+  max-width: 29rem;
+  line-height: 1.7;
+}
+
+.ea-modal-email-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.3rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(19, 34, 35, 0.08);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(245, 249, 249, 0.94));
+}
+
+.ea-modal-email-label {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ea-modal-email-value {
+  min-width: 0;
+  color: var(--text);
+  text-align: right;
+  font-size: 0.98rem;
+  overflow-wrap: anywhere;
+}
+
+.ea-modal-checkbox-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+  align-items: start;
+  margin-top: 1.15rem;
+  padding: 1rem;
+  border: 1px solid rgba(19, 34, 35, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  line-height: 1.65;
+}
+
+.ea-modal-checkbox {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--accent-deep);
+}
+
+.ea-modal-legal {
+  margin: 0.9rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.ea-modal-legal a {
+  color: var(--accent-deep);
+  font-weight: 700;
+}
+
+.ea-modal-feedback {
+  min-height: 1.3rem;
+  margin: 0.85rem 0 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.ea-modal-feedback.is-error {
+  color: #b54747;
+}
+
+.ea-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.3rem;
+}
+
+.ea-modal-actions .button-primary,
+.ea-modal-secondary {
+  min-height: 3.25rem;
+}
+
+.ea-modal-actions .button-primary {
+  min-width: 10.5rem;
+}
+
+.ea-modal-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.95rem 1.25rem;
+  border: 1px solid rgba(19, 34, 35, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(18, 42, 43, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.ea-modal-secondary:hover,
+.ea-modal-secondary:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(18, 42, 43, 0.08);
+  border-color: rgba(19, 34, 35, 0.16);
+}
+
+.ea-modal-secondary:disabled,
+.ea-modal-actions .button-primary:disabled {
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.ea-modal-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.2rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(19, 34, 35, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+}
+
+.ea-modal-loading-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), #85ebee);
+  box-shadow: 0 0 0 6px rgba(15, 163, 167, 0.08);
+  animation: ea-pulse 1.2s ease-in-out infinite;
+}
+
+.ea-modal-success-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-bottom: 1rem;
+  border-radius: 999px;
+  background: rgba(15, 163, 167, 0.12);
+  color: var(--accent-deep);
+  box-shadow: inset 0 0 0 1px rgba(15, 163, 167, 0.08);
+}
+
+.ea-modal-success-mark svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.ea-modal-header-success .ea-modal-title {
+  max-width: none;
+}
+
+.ea-modal-subtext {
+  margin: 0.95rem 0 0;
+  line-height: 1.65;
+}
+
+.ea-modal-actions-single {
+  justify-content: flex-start;
+}
+
+@keyframes ea-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(0.82);
+    opacity: 0.72;
+  }
+}
+
+@media (max-width: 560px) {
+  .ea-modal {
+    padding: 0.75rem;
+  }
+
+  .ea-modal-content {
+    padding: 1.2rem;
+  }
+
+  .ea-modal-close {
+    top: 0.65rem;
+    right: 0.65rem;
+  }
+
+  .ea-modal-email-row,
+  .ea-modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ea-modal-email-value {
+    text-align: left;
+  }
+}
