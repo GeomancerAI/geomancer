@@ -453,6 +453,16 @@ button {
   color: var(--accent-deep);
 }
 
+.use-case-grid.homepage-use-case-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.use-case-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 12px;
+}
+
 .download-hero-section {
   padding-bottom: 2.75rem;
 }
@@ -1112,3 +1122,52 @@ button {
   margin: -2px;
 }
 
+
+.use-case-grid .feature-icon {
+  border-radius: 999px;
+}
+
+.use-case-grid .use-case-icon {
+  margin-bottom: 0;
+  display: block;
+}
+
+.use-case-heading {
+  max-width: 48rem;
+}
+
+.use-case-intro {
+  margin: 0.85rem 0 0;
+  max-width: 42rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.use-case-card {
+  padding: 1.45rem;
+}
+
+.use-case-card .feature-icon {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1.15rem;
+  border-radius: 999px;
+  background: rgba(15, 163, 167, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(15, 163, 167, 0.08);
+}
+
+.use-case-card h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1.08rem;
+}
+
+.use-case-card p {
+  max-width: 30ch;
+  color: var(--muted);
+  line-height: 1.62;
+}
+
+.use-case-card .use-case-icon {
+  margin-bottom: 0;
+  stroke-width: 1.7;
+}
