@@ -147,9 +147,33 @@ button {
   transition: color 0.2s ease;
 }
 
+.nav-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.nav-social-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  opacity: 0.88;
+}
+
 .nav-links a:hover,
 .nav-links a:focus-visible {
   color: var(--text);
+}
+
+.nav-social-link:hover,
+.nav-social-link:focus-visible {
+  border-color: rgba(15, 163, 167, 0.16);
+  background: rgba(15, 163, 167, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(15, 163, 167, 0.08);
 }
 
 .nav-links a[aria-current="page"] {
@@ -424,6 +448,132 @@ button {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.85rem;
+}
+
+.tech-stack-intro {
+  margin: 0.85rem 0 0;
+  max-width: 38rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.tech-stack-groups {
+  display: grid;
+  gap: 1.45rem;
+}
+
+.tech-stack-group {
+  display: grid;
+  gap: 0.88rem;
+}
+
+.tech-stack-group-header {
+  display: flex;
+  align-items: center;
+}
+
+.tech-stack-group-title {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+}
+
+.tech-stack-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.tech-stack-grid-principles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tech-stack-grid-core {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tech-stack-item {
+  min-width: 0;
+}
+
+.tech-stack-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.68rem;
+  min-height: 11.25rem;
+  padding: 1.22rem 1.05rem 1.12rem;
+  border: 1px solid rgba(19, 34, 35, 0.09);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(247, 251, 251, 0.8));
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 42px rgba(18, 42, 43, 0.082);
+  text-align: center;
+}
+
+.tech-stack-link {
+  transition: transform 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, background-color 180ms ease-out;
+}
+
+.tech-stack-link:hover,
+.tech-stack-link:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(15, 163, 167, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 28px 60px rgba(18, 42, 43, 0.115);
+}
+
+.tech-stack-link:focus-visible {
+  outline: 2px solid rgba(15, 163, 167, 0.2);
+  outline-offset: 3px;
+}
+
+.tech-stack-icon-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  height: 5rem;
+  padding: 0.28rem;
+}
+
+.tech-stack-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(18, 42, 43, 0.08));
+  transition: filter 180ms ease-out, transform 180ms ease-out;
+}
+
+.tech-stack-link:hover .tech-stack-icon,
+.tech-stack-link:focus-visible .tech-stack-icon {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 10px 18px rgba(18, 42, 43, 0.1));
+}
+
+.tech-stack-label {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #162728;
+  transition: color 180ms ease-out;
+}
+
+.tech-stack-link:hover .tech-stack-label,
+.tech-stack-link:focus-visible .tech-stack-label {
+  color: var(--accent-deep);
+}
+
+.tech-stack-description {
+  margin: 0;
+  max-width: 16ch;
+  color: #556667;
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .feature-card {
@@ -928,8 +1078,14 @@ button {
     align-items: stretch;
   }
 
-  .feature-grid {
+  .feature-grid,
+  .tech-stack-grid {
     gap: 1rem;
+  }
+
+  .tech-stack-grid-principles,
+  .tech-stack-grid-core {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -962,6 +1118,13 @@ button {
     box-shadow: var(--shadow-soft);
   }
 
+  .nav-links .nav-social-link {
+    width: 100%;
+    height: auto;
+    justify-content: flex-start;
+    padding: 0.7rem 0.85rem;
+  }
+
   .nav-links.is-open {
     display: flex;
   }
@@ -972,6 +1135,8 @@ button {
 
   .hero-grid,
   .feature-grid,
+  .tech-stack-groups,
+  .tech-stack-grid,
   .cta-card,
   .workflow-strip,
   .use-case-grid,
