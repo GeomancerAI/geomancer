@@ -1,6 +1,9 @@
 {
-  "last_user_request": "make me a toy boat around 2 inches tall",
-  "last_generated_script_path": "C:\\Users\\Studl\\geomancer\\blender\\generated_model.py",
-  "last_generation_timestamp": "2026-03-28T19:32:53",
-  "last_run_status": "Blender launched in interactive mode using C:\\Program Files\\Blender Foundation\\Blender 5.0\\blender.exe."
+  "last_user_request": "Create a wall hook mount 50 x 80 mm with 40 mm arm length, 6 mm thickness, and two 5 mm mounting holes",
+  "last_generated_script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+  "last_preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview.glb",
+  "last_generation_timestamp": "2026-04-06T20:29:55",
+  "last_generation_family": "hook_mount",
+  "last_validation_summary": "Prepared deterministic simple hook / mount blockout with 4 normalized dimensions.",
+  "last_run_status": "not run yet"
 }

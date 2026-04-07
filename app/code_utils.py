@@ -6,7 +6,10 @@ import re
 import json
 from pathlib import Path
 
-from prompt_builder import BLENDER_TEMPLATE
+try:
+    from app.prompt_builder import BLENDER_TEMPLATE
+except ImportError:
+    from prompt_builder import BLENDER_TEMPLATE
 
 
 SAFE_FALLBACK_SCRIPT = """import bpy

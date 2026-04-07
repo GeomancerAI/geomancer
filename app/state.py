@@ -13,7 +13,17 @@ STATE_PATH = PROJECT_ROOT / "data" / "session_state.json"
 DEFAULT_STATE = {
     "last_user_request": "",
     "last_generated_script_path": "",
+    "last_preview_model_path": "",
+    "last_preview_export_status": "",
+    "last_preview_export_message": "",
     "last_generation_timestamp": "",
+    "last_generation_family": "",
+    "last_generation_status": "",
+    "last_generation_message": "",
+    "last_validation_summary": "",
+    "last_plan": {},
+    "last_validation": {},
+    "last_classification": {},
     "last_run_status": "",
 }
 

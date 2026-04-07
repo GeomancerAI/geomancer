@@ -1,12 +1,4 @@
-"""Terminal chat loop for Geomancer.
-
-This module keeps version 1 deliberately simple:
-- Read text from the terminal
-- Build a prompt for the local Ollama model
-- Extract Blender Python code from the reply
-- Save it to blender/generated_model.py
-- Optionally run Blender with the generated script
-"""
+"""Terminal chat loop for the current deterministic Geomancer backend."""
 
 from __future__ import annotations
 
@@ -14,8 +6,6 @@ import shutil
 import sys
 import threading
 import time
-import re
-import json
 from datetime import datetime
 from pathlib import Path
 
@@ -23,16 +13,24 @@ APP_DIR = Path(__file__).resolve().parent
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
-from blender_runner import run_generated_script
-from code_utils import build_script_from_template, extract_json_plan, extract_template_values, save_generated_script
-from llm_client import OllamaClient, OllamaClientError
-from prompt_builder import CODE_PARAM_SCHEMA, PLANNING_SCHEMA, build_code_prompt, build_planning_prompt
-from state import load_state, save_state
+try:
+    from app.backend.classifier import classify_request as backend_classify_request
+    from app.backend.pipeline import generate_model_request as backend_generate_model_request
+    from app.backend.versioning import load_version as load_project_version
+    from app.blender_runner import run_generated_script
+    from app.llm_client import OllamaClient, OllamaClientError
+    from app.state import load_state, save_state
+except ImportError:
+    from backend.classifier import classify_request as backend_classify_request
+    from backend.pipeline import generate_model_request as backend_generate_model_request
+    from backend.versioning import load_version as load_project_version
+    from blender_runner import run_generated_script
+    from llm_client import OllamaClient, OllamaClientError
+    from state import load_state, save_state
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 GENERATED_SCRIPT_PATH = PROJECT_ROOT / "blender" / "generated_model.py"
-VERSION_PATH = PROJECT_ROOT / "VERSION"
 
 
 HELP_TEXT = """Geomancer commands:
@@ -48,12 +46,8 @@ Any normal text will be treated as a new 3D model request.
 
 
 def load_version() -> str:
-    """Load the project version from the root VERSION file."""
-    if not VERSION_PATH.exists():
-        return "0.0.0-dev"
-
-    version_text = VERSION_PATH.read_text(encoding="utf-8").strip()
-    return version_text or "0.0.0-dev"
+    """Load the current project version."""
+    return load_project_version()
 
 
 def print_help() -> None:
@@ -65,7 +59,9 @@ def show_last_state() -> None:
     """Display the last saved session state in a readable format."""
     state = load_state()
     print("Last user request:", state.get("last_user_request") or "None")
+    print("Last family:", state.get("last_generation_family") or "None")
     print("Last generated script path:", state.get("last_generated_script_path") or "None")
+    print("Last validation summary:", state.get("last_validation_summary") or "None")
     print("Last run status:", state.get("last_run_status") or "None")
 
 
@@ -122,68 +118,9 @@ def prompt_yes_no_default_yes(message: str) -> bool:
 
 
 def classify_request(user_request: str) -> tuple[str, str]:
-    """Classify a modeling request before planning starts.
-
-    Returns:
-        (status, message)
-        status is one of: ready, clarify, unsupported
-    """
-    request_text = user_request.strip().lower()
-
-    if not request_text:
-        return "clarify", "What object do you want to model?"
-
-    unsupported_terms = {
-        "character",
-        "creature",
-        "face",
-        "human",
-        "portrait",
-        "dragon",
-        "tree",
-        "organic",
-        "cloth",
-        "terrain",
-        "landscape",
-        "city",
-        "engine",
-        "car interior",
-    }
-    if any(term in request_text for term in unsupported_terms):
-        return (
-            "unsupported",
-            "Geomancer cannot model that reliably yet. Try a simpler supported blockout such as a hollow sphere with openings and a flat base.",
-        )
-
-    if "boat" in request_text:
-        return "clarify", "What kind of boat do you want: rowboat, sailboat, or simple hull blockout?"
-
-    if "helmet" in request_text:
-        return "clarify", "What one defining helmet style should I use: smooth dome, angular sci-fi shell, or visor-front shell?"
-
-    supported_shape_terms = {
-        "sphere",
-        "uv sphere",
-        "shell",
-        "opening",
-        "hole",
-        "recess",
-        "flatten",
-        "flat base",
-    }
-    has_supported_shape = any(term in request_text for term in supported_shape_terms)
-    has_dimension = bool(re.search(r"\b\d+(?:\.\d+)?\s*mm\b", request_text))
-
-    if has_supported_shape and has_dimension:
-        return "ready", ""
-
-    if has_supported_shape:
-        return "clarify", "What key size in mm should I use for the main shape?"
-
-    return (
-        "unsupported",
-        "Geomancer currently works best with simple mechanical blockouts such as spheres, openings, recesses, shells, and flat bases.",
-    )
+    """Backward-compatible terminal classifier wrapper."""
+    result = backend_classify_request(user_request)
+    return result.status, result.message
 
 
 def run_with_spinner(action_text: str, func, *args, **kwargs):
@@ -211,56 +148,16 @@ def run_with_spinner(action_text: str, func, *args, **kwargs):
 
 def generate_model_request(user_request: str, client: OllamaClient, log=print, show_spinner: bool = True) -> dict:
     """Generate a model request and return structured results for terminal or GUI use."""
-    status, message = classify_request(user_request)
-    log(f"Classification result: {status}")
-    if status == "clarify":
-        log(message)
-        return {"status": status, "message": message}
-    if status == "unsupported":
-        log(message)
-        return {"status": status, "message": message}
-
-    log("Planning model...")
-    planning_prompt = build_planning_prompt(user_request)
     if show_spinner:
-        plan_output = run_with_spinner(
-            "Waiting for Ollama planning response...",
-            client.generate,
-            planning_prompt,
-            format_schema=PLANNING_SCHEMA,
+        return run_with_spinner(
+            "Building deterministic alpha-family model...",
+            backend_generate_model_request,
+            user_request,
+            client,
+            log,
+            show_spinner,
         )
-    else:
-        plan_output = client.generate(planning_prompt, format_schema=PLANNING_SCHEMA)
-    plan = extract_json_plan(plan_output)
-    log("Normalized plan:")
-    log(json.dumps(plan, indent=2))
-
-    log("Using strict Blender rule library...")
-    log("Generating Blender code...")
-    code_prompt = build_code_prompt(user_request, plan)
-    raw_output = client.generate_streaming(code_prompt, format_schema=CODE_PARAM_SCHEMA)
-
-    log("Building Blender script from template...")
-    template_values = extract_template_values(raw_output)
-    script_text = build_script_from_template(template_values, plan)
-    save_generated_script(script_text, GENERATED_SCRIPT_PATH)
-
-    state = load_state()
-    state["last_user_request"] = user_request
-    state["last_generated_script_path"] = str(GENERATED_SCRIPT_PATH)
-    state["last_generation_timestamp"] = datetime.now().isoformat(timespec="seconds")
-    state["last_run_status"] = "not run yet"
-    save_state(state)
-
-    log("Generated Blender script successfully.")
-    log(f"Saved generated script to: {GENERATED_SCRIPT_PATH}")
-
-    return {
-        "status": "ready",
-        "plan": plan,
-        "template_values": template_values,
-        "script_path": str(GENERATED_SCRIPT_PATH),
-    }
+    return backend_generate_model_request(user_request, client, log=log, show_spinner=show_spinner)
 
 
 def handle_generation_request(user_request: str, client: OllamaClient) -> None:

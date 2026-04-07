@@ -1,5 +1,5 @@
 import bpy
-from math import radians
+import math
 
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
@@ -7,69 +7,59 @@ bpy.ops.object.delete(use_global=False)
 def mm(value):
     return value / 1000.0
 
-# Main sphere from exact requested diameter.
-bpy.ops.mesh.primitive_uv_sphere_add(radius=mm(25.4), location=(0.0, 0.0, 0.0))
-target_obj = bpy.context.active_object
-target_obj.name = "Geomancer_Model"
+def set_active(obj):
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
 
-solidify_mod = target_obj.modifiers.new(name="Solidify", type='SOLIDIFY')
-solidify_mod.thickness = mm(1.5)
-solidify_mod.offset = 1.0
-solidify_mod.use_quality_normals = True
+def apply_boolean(target, cutter, operation='DIFFERENCE', modifier_name='GeomancerBool'):
+    modifier = target.modifiers.new(name=modifier_name, type='BOOLEAN')
+    modifier.operation = operation
+    modifier.object = cutter
+    set_active(target)
+    bpy.ops.object.modifier_apply(modifier=modifier.name)
+    bpy.data.objects.remove(cutter, do_unlink=True)
 
-bpy.ops.object.select_all(action='DESELECT')
-target_obj.select_set(True)
-bpy.context.view_layer.objects.active = target_obj
-bpy.ops.object.modifier_apply(modifier=solidify_mod.name)
+def join_objects(objects, final_name='Geomancer_Final'):
+    valid_objects = [obj for obj in objects if obj is not None]
+    if not valid_objects:
+        return None
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in valid_objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = valid_objects[0]
+    if len(valid_objects) > 1:
+        bpy.ops.object.join()
+    final_obj = bpy.context.view_layer.objects.active
+    final_obj.name = final_name
+    return final_obj
 
-bpy.ops.mesh.primitive_cylinder_add(radius=mm(45.0), depth=mm(10.0), location=(0.0, mm(75.0), 0.0))
-recess_cutter_obj = bpy.context.active_object
-recess_cutter_obj.name = "Geomancer_Recess_Cutter"
+# Family: hook_mount
+# Recipe: hook_mount
 
-recess_cutter_obj.rotation_euler = (radians(90.0), 0.0, 0.0)
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 0.0))
+base_plate = bpy.context.active_object
+base_plate.scale = (mm(2.5), mm(25.0), mm(40.0))
 
-recess_bool_mod = target_obj.modifiers.new(name="FaceRecess", type='BOOLEAN')
-recess_bool_mod.operation = 'DIFFERENCE'
-recess_bool_mod.object = recess_cutter_obj
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm(3.0), 0.0, mm(14.399999999999999)))
+hook_arm = bpy.context.active_object
+hook_arm.scale = (mm(3.0), mm(2.5), mm(2.5))
 
-bpy.ops.object.select_all(action='DESELECT')
-target_obj.select_set(True)
-bpy.context.view_layer.objects.active = target_obj
-bpy.ops.object.modifier_apply(modifier=recess_bool_mod.name)
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm(6.0), 0.0, mm(4.399999999999999)))
+hook_lip = bpy.context.active_object
+hook_lip.scale = (mm(2.5), mm(2.5), mm(5.0))
 
-bpy.data.objects.remove(recess_cutter_obj, do_unlink=True)
+for z_pos in (-mm(30.0), mm(30.0)):
+    bpy.ops.mesh.primitive_cylinder_add(radius=mm(2.5), depth=mm(12.5), location=(0.0, 0.0, z_pos))
+    mount_hole = bpy.context.active_object
+    mount_hole.rotation_euler = (0.0, math.radians(90.0), 0.0)
+    apply_boolean(base_plate, mount_hole, modifier_name='MountHole')
 
-bpy.ops.mesh.primitive_cylinder_add(radius=mm(30.0), depth=mm(30.479999999999997), location=(0.0, mm(10.16), 0.0))
-hole_cutter_obj = bpy.context.active_object
-hole_cutter_obj.name = "Geomancer_Hole_Cutter"
+final_obj = join_objects([base_plate, hook_arm, hook_lip])
 
-hole_cutter_obj.rotation_euler = (radians(90.0), 0.0, 0.0)
-
-hole_bool_mod = target_obj.modifiers.new(name="FaceHole", type='BOOLEAN')
-hole_bool_mod.operation = 'DIFFERENCE'
-hole_bool_mod.object = hole_cutter_obj
-
-bpy.ops.object.select_all(action='DESELECT')
-target_obj.select_set(True)
-bpy.context.view_layer.objects.active = target_obj
-bpy.ops.object.modifier_apply(modifier=hole_bool_mod.name)
-
-bpy.data.objects.remove(hole_cutter_obj, do_unlink=True)
-
-# Shallow bottom flatten cut along the -Z side for a stable resting surface.
-bpy.ops.mesh.primitive_cube_add(size=mm(101.6), location=(0.0, 0.0, mm(-70.19999999999999)))
-bottom_cutter_obj = bpy.context.active_object
-bottom_cutter_obj.name = "Geomancer_Bottom_Cutter"
-
-bottom_bool_mod = target_obj.modifiers.new(name="BottomCut", type='BOOLEAN')
-bottom_bool_mod.operation = 'DIFFERENCE'
-bottom_bool_mod.object = bottom_cutter_obj
-
-bpy.ops.object.select_all(action='DESELECT')
-target_obj.select_set(True)
-bpy.context.view_layer.objects.active = target_obj
-bpy.ops.object.modifier_apply(modifier=bottom_bool_mod.name)
-
-bpy.data.objects.remove(bottom_cutter_obj, do_unlink=True)
-
-target_obj.name = "Geomancer_Final"
+final_obj = locals().get("final_obj")
+if final_obj is None:
+    final_obj = bpy.context.active_object
+if final_obj is not None:
+    final_obj.name = "Geomancer_Final"
+    set_active(final_obj)

@@ -1,344 +1,207 @@
 # Geomancer
 
-Geomancer is a local-first terminal chat tool that turns plain-English 3D model requests into Blender Python scripts. It sends your request to a local Ollama model, extracts valid `bpy` code, saves the script to `blender/generated_model.py`, and can optionally run that script in Blender.
+Geomancer is a local-first AI 3D modeling project evolving toward a desktop application that pairs a Python backend with a native desktop shell and a web-based UI layer. The current repository still contains the original terminal workflow and a lightweight Tkinter dev console, but active development is now backend-first so the generation pipeline, state handling, Blender execution flow, and desktop integration points can stabilize before broader UI expansion.
 
-Version 1 is intentionally simple:
+## Current Status
 
-- Terminal only
-- Local Ollama backend
-- Blender Python with `bpy`
-- Beginner-friendly file layout
-- Windows-friendly paths
+- Project status: `alpha`
+- Current version: `0.5.0-alpha`
+- Current milestone: `desktop-backend-truth-bridge-pass`
+- Primary product direction: desktop app built around the existing Python generation pipeline
+- Current development emphasis: backend-first refactors, integration hardening, and documentation discipline
+
+The current alpha state should be treated as an actively changing foundation rather than a feature-complete product. Existing interfaces are useful for development and testing, but they are not yet the long-term final UX.
+
+## Development Direction
+
+Geomancer currently spans three active surfaces:
+
+- `app/`: core Python backend pipeline for prompt handling, Ollama calls, code extraction, state, and Blender execution
+- `app/backend/`: deterministic alpha-family pipeline for classification, normalization, generation, validation, and reporting
+- `desktop/`: desktop alpha shell that wraps the Python backend and hosts the future product UI
+- `docs/`: static site and marketing/support pages, not the authoritative source for backend architecture
+
+The immediate priority is backend-first development. That means future passes should optimize for:
+
+- backend correctness and reversibility
+- explicit version and milestone tracking
+- well-scoped refactors with file-level review notes
+- documenting limitations before broadening feature scope
+
+## Change Tracking Standard
+
+Project change tracking is standardized through:
+
+- `VERSION`: single current project version string
+- `CHANGELOG.md`: milestone history and Codex pass documentation format
+- repository and subfolder READMEs: current architecture and development-phase notes
+
+Before or alongside meaningful backend work, each Codex pass should leave behind documentation that includes:
+
+1. version or milestone label
+2. exact files changed
+3. summary of changes
+4. known limitations or incomplete parts
+5. rollback or review notes when relevant
+
+Use the format defined in `CHANGELOG.md` for future passes.
 
 ## Project Structure
 
 ```text
 geomancer/
   app/
-    chat_agent.py
-    llm_client.py
+    backend/
     blender_runner.py
+    chat_agent.py
     code_utils.py
+    dev_console.py
+    llm_client.py
     prompt_builder.py
     state.py
   blender/
     generated_model.py
+    rules/
     templates/
-      base_rules.txt
-    exports/
-      stl/
   data/
     session_state.json
+  desktop/
+    backend_controller.py
+    bridge.py
+    main.py
+    shell.py
+    ui/
+  docs/
   tests/
-    smoke_test.txt
-  .env.example
-  requirements.txt
+  CHANGELOG.md
   README.md
+  VERSION
+  requirements.txt
 ```
 
-## What Geomancer Does
+## What Geomancer Does Today
 
-1. You type a modeling request in plain English.
-2. Geomancer first asks Ollama for a small structured modeling plan.
-3. Geomancer then sends that compact plan into a second Blender code-generation call.
-4. Ollama returns text that should contain Blender Python code.
-5. Geomancer extracts usable Python code.
-6. The code is saved to `blender/generated_model.py`.
-7. You can optionally run the generated script in Blender automatically.
+1. Accepts a plain-English modeling request.
+2. Classifies the request into an explicit supported alpha family.
+3. Extracts and normalizes dimensions and family-specific parameters.
+4. Builds deterministic Blender Python for the selected family recipe.
+5. Saves the generated script to `blender/generated_model.py`.
+6. Exports a preview model for the desktop viewer when Blender is available.
+7. Persists session state plus validation/reporting metadata for follow-up tooling and desktop status reporting.
+
+## Deterministic Alpha Backend
+
+The current backend is structured around these modules:
+
+- `app/backend/families.py`: explicit supported alpha families and aliases
+- `app/backend/classifier.py`: family-based request classification
+- `app/backend/normalizer.py`: parameter extraction and normalization
+- `app/backend/geometry.py`: deterministic Blender script generation by family recipe
+- `app/backend/validation.py`: review-friendly validation and reporting
+- `app/backend/pipeline.py`: orchestration, preview export, and state updates
+
+Supported alpha families:
+
+- enclosure
+- bracket
+- cable clip
+- planter / vessel
+- gear
+- adapter
+- panel / plate
+- spacer / standoff
+- tray / box
+- simple hook / mount
+- simple housing / mechanical shell
+- dimensional primitive/blockout assemblies
+
+Current strongest golden-path families:
+
+- panel / plate
+- spacer / standoff
+- enclosure
+- tray / box
+- bracket
+- adapter
+- cable clip
+- simple hook / mount
+
+## Active Entry Points
+
+- Terminal workflow: `python app/chat_agent.py`
+- Dev console: `python app/dev_console.py`
+- Desktop alpha shell: `python -m desktop.main`
+
+The terminal and dev console remain valid development tools, but the desktop shell is the intended product direction.
 
 ## Requirements
 
 - Windows
 - Python 3.10 or newer
 - Blender installed locally
-- Ollama installed locally and running
+- Ollama is optional for legacy/local experiments and is not required for the deterministic alpha-family pipeline
 
-## Install Python Dependencies
-
-This version uses only the Python standard library.
+Install dependencies:
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-## Install Blender
+## Environment Configuration
 
-1. Download Blender from the official site:
-   `https://www.blender.org/download/`
-2. Install it normally on Windows.
-3. Check the path to `blender.exe`.
-
-Default example path used by Geomancer:
-
-```text
-C:\Program Files\Blender Foundation\Blender 5.0\blender.exe
-```
-
-If your Blender path is different, copy `.env.example` to `.env` and update `BLENDER_PATH`.
-
-## Set Blender Path
-
-Create a `.env` file in the project root if you want Geomancer to use a specific Blender install path.
-
-Example:
+Create a `.env` file in the project root to override defaults when needed:
 
 ```text
 BLENDER_PATH=C:\Program Files\Blender Foundation\Blender 5.0\blender.exe
 ```
 
-## Blender Run Modes
+## Blender and Ollama Notes
 
-- Background mode runs Blender with `--background --python blender/generated_model.py` and does not open the Blender UI.
-- Interactive mode runs Blender with `--python blender/generated_model.py` and opens the Blender window.
-- Interactive mode is recommended during development because you can see the generated result immediately.
-- Interactive mode now launches Blender without blocking the terminal, so Geomancer returns immediately after opening the Blender UI.
+- Background mode runs Blender with `--background --python blender/generated_model.py`.
+- Interactive mode runs Blender with `--python blender/generated_model.py`.
+- Interactive mode is usually the better development loop because the Blender UI opens immediately.
+- Preview export also runs through Blender in background mode.
+- The old Ollama prompt pipeline remains in the repo only as legacy support code during the backend transition.
 
-## Install and Run Ollama
+## Current Alpha Constraints
 
-1. Download Ollama from:
-   `https://ollama.com/download`
-2. Install it on Windows.
-3. Start Ollama.
-4. Pull a local code model.
+- Generated models are still rough primitive-based blockouts.
+- Outputs may require manual cleanup before printing or production use.
+- The Blender API surface is intentionally constrained through the rule files in `blender/rules/`.
+- Family recipes are explicit and deterministic, which means complex geometry requests may be rejected or simplified.
+- UI surfaces are still transitional and should not be treated as final product design.
+- Backend contracts may continue to change during the backend-first phase, so change tracking is mandatory for reviewability.
 
-Example:
+## Blender Rule Library
 
-```powershell
-ollama pull qwen2.5-coder:7b
-```
+Geomancer uses a focused local Blender rule library in `blender/rules/`:
 
-You can also use another local model if it follows instructions well enough to output Blender Python.
+- `blender_api_rules.md`
+- `allowed_operators.json`
+- `banned_patterns.json`
+- `modeling_conventions.md`
 
-## Pick a Model in Ollama
-
-The default model is:
-
-```text
-qwen2.5-coder:7b
-```
-
-To change it:
-
-1. Copy `.env.example` to `.env`
-2. Edit the `OLLAMA_MODEL` value
-
-Example:
-
-```text
-OLLAMA_MODEL=codellama:7b
-```
-
-The default Ollama API URL is:
-
-```text
-http://localhost:11434/api/generate
-```
-
-## Reducing Ollama Timeouts
-
-- Shorter prompts usually return faster than long highly constrained prompts.
-- Local coder models may take noticeably longer on CPU-heavy or lower-end systems.
-- Preloading or warming the model can reduce cold-start delays before Geomancer sends a full request.
-- Example warm-up command:
-
-```powershell
-ollama run qwen2.5-coder:7b ""
-```
-
-- Geomancer now sends `keep_alive` to Ollama to help reduce repeated cold-start delays.
-
-## Optional `.env` Setup
-
-Create a `.env` file in the project root if you want to override defaults:
-
-```text
-OLLAMA_URL=http://localhost:11434/api/generate
-OLLAMA_MODEL=qwen2.5-coder:7b
-BLENDER_PATH=C:\Program Files\Blender Foundation\Blender 5.0\blender.exe
-```
-
-## Run Geomancer
-
-From the project root:
-
-```powershell
-python app/chat_agent.py
-```
-
-You will see:
-
-```text
-Geomancer>
-```
-
-Geomancer now shows lightweight terminal activity feedback during long local model generations so the terminal does not appear frozen while Ollama is working.
-
-## Dev Console
-
-Geomancer now includes a lightweight local Tkinter testing UI that keeps the terminal workflow intact.
-
-Run it from the project root with:
-
-```powershell
-python app/dev_console.py
-```
-
-The Dev Console shows:
-
-- a prompt input field
-- a Run button
-- a scrollable output log
-- the current version
-- the last parsed plan JSON
-- the current generated script path
-
-Terminal mode and GUI mode remain separate entry points, and both use the same local planning and template-generation flow.
+These files define the conservative `bpy` subset and modeling conventions the generator should follow.
 
 ## Commands
 
-- `/help` shows the available commands
-- `/quit` exits the program
-- `/run` runs the last generated Blender script
-- `/show` prints the current generated script
-- `/save` saves a timestamped copy of the current script
-- `/last` shows the last saved session info
+Terminal mode currently supports:
 
-## Example Workflow
+- `/help`
+- `/quit`
+- `/run`
+- `/show`
+- `/save`
+- `/last`
 
-Start the app:
+## Generated Outputs
 
-```powershell
-python app/chat_agent.py
-```
+- Active generated script: `blender/generated_model.py`
+- Session state: `data/session_state.json`
 
-Enter a request like:
+## Documentation Notes
 
-```text
-Create a 160mm UV sphere with a 90mm circular face opening and 3mm shell thickness.
-```
-
-Geomancer will then:
-
-1. Build a compact planning prompt
-2. Call Ollama locally for a JSON modeling plan
-3. Build a shorter Blender code-generation prompt from that plan
-4. Extract Blender Python code
-5. Save the code to `blender/generated_model.py`
-6. Ask whether to run the script in Blender
-
-## Two-Stage Generation
-
-Geomancer now uses a compact two-stage flow for local generation:
-
-- Stage 1 asks Ollama for a compact JSON modeling plan.
-- Stage 2 asks Ollama for Blender Python using that plan plus a very small built-in Blender rule summary.
-
-This helps local models because the code-generation prompt is intentionally small and focused, which reduces hangs and timeouts compared with a large all-in-one prompt or a noisy grounded prompt.
-
-- In template mode, Geomancer ignores noisy planner operation strings and builds the script only from normalized dimensions and flags such as `diameter_mm`, `shell_thickness_mm`, `front_opening_diameter_mm`, `flatten_bottom`, and `front_axis`.
-
-## Second Test Example
-
-Use this prompt for a stronger follow-up test:
-
-```text
-create a 160mm uv sphere, cut a 90mm circular face opening, and hollow it to 3mm shell thickness
-```
-
-## Current Modeling Constraints
-
-- Geomancer currently produces rough primitive-based mechanical blockouts.
-- Boolean cuts should be made with solid cutter objects such as cylinders or cubes, not flat curves.
-- Boolean modifiers must live on the object being cut, not on the cutter object.
-- Blender modifier application is context-sensitive, so the correct target object must be selected and set active before modifiers are applied.
-- Front-opening cutters should be aligned on the intended front/back axis rather than the vertical axis.
-- Cylinders default to Blender's Z axis and must be rotated for front/back cuts.
-- Generated outputs may still need cleanup and refinement before they are ready for printing or final production use.
-
-## Blender API Rule Library
-
-Geomancer now uses a focused local Blender rule library in `blender/rules/` instead of treating all of `bpy` as fair game.
-
-- `blender_api_rules.md` defines the conservative scene setup, modifier, transform, and safety rules.
-- `allowed_operators.json` lists the small operator and modifier subset Geomancer should rely on for v1 blockouts.
-- `banned_patterns.json` lists risky or unsupported patterns that will trigger a fallback script before saving.
-- `modeling_conventions.md` maps plain-English requests like `front face opening` or `flatten the bottom` to fixed spatial behavior.
-
-## Strict Blender Build Rules
-
-Geomancer now uses a tiny allowlisted subset of `bpy` for rough blockout modeling instead of open-ended Blender code generation.
-
-- Primitive creation is restricted to the allowlisted `bpy.ops.mesh` operators for UV spheres, cylinders, and cubes.
-- Object creation should immediately capture `bpy.context.active_object` instead of guessing from operator return values.
-- Boolean cutters must always be separate objects from the target object being cut.
-- If generated code violates these strict rules, Geomancer falls back to a safe minimal script instead of saving risky code.
-
-## Dimension Handling
-
-- Geomancer should convert user-requested millimeter dimensions to Blender-safe meter values in generated scripts with a helper such as `def mm(value): return value / 1000.0`.
-- Requested shell thickness values should be used directly, for example `3mm` should become `mm(3)` rather than a halved value.
-- Front face openings should be cut with correctly placed solid cutter objects along the intended front-facing axis, not with arbitrary floating or flat geometry.
-
-## Spatial Conventions
-
-- Blender spatial directions are treated as `Z = up/down`, `Y = front/back`, and `X = left/right`.
-- In Geomancer prompts, `front` means `+Y`, `back` means `-Y`, `top` means `+Z`, and `bottom` means `-Z`.
-- This matters because cutters and flattening operations need consistent axis placement to create the intended geometry.
-
-## First Runtime Test
-
-1. Start Ollama and make sure your model is available:
-
-```powershell
-ollama run qwen2.5-coder:7b
-```
-
-2. In a new terminal, from the project root run:
-
-```powershell
-python app/chat_agent.py
-```
-
-3. At the `Geomancer>` prompt, enter:
-
-```text
-create a 160mm uv sphere and name it test_sphere
-```
-
-4. Inspect the generated script here:
-
-```text
-blender/generated_model.py
-```
-
-5. When prompted, optionally let Geomancer run Blender automatically.
-
-## Where Generated Code Is Saved
-
-The active generated Blender script is always saved here:
-
-```text
-blender/generated_model.py
-```
-
-Session state is saved here:
-
-```text
-data/session_state.json
-```
-
-## Notes for Beginners
-
-- The generated script is plain Python that uses Blender's `bpy` module.
-- If the model returns invalid output or no `bpy` usage is found, Geomancer saves a safe fallback Blender script.
-- If Blender cannot be found, the app will show a readable error instead of crashing.
-- If Ollama is not running, the app will show a readable connection error.
-- Local model generation can occasionally take longer on more complex prompts, and shorter clearer prompts may perform better if timeouts occur.
-- Geomancer shows simple terminal activity feedback during long model generations, but total generation time still depends on your hardware and prompt complexity.
-- The first generated models are rough blockouts meant to get the shape started, not final print-ready parts.
-- Millimeter-based shell thickness is still a rough blockout behavior and may need refinement for final print work.
-
-## Debugging Failed Scripts
-
-- If Blender shows a Python traceback, open `blender/generated_model.py` in Blender's Text Editor and run it there to inspect the exact error message.
-- Geomancer currently targets rough primitive-based blockouts and a conservative subset of `bpy` to reduce Blender API hallucinations.
+- `README.md` is the top-level source of truth for project status and development direction.
+- `desktop/README.md` describes the desktop alpha shell and its relationship to the backend.
+- `docs/README.md` describes the static site folder and clarifies that it is not the architecture source of truth.
+- `CHANGELOG.md` is the required ledger for versioned changes and future backend pass summaries.

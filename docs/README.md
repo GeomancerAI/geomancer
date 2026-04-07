@@ -1,35 +1,45 @@
-# Geomancer Webpage
+# Geomancer Docs Site
 
-Static local-first landing page for **Geomancer**, the AI 3D Model Creator.
+This directory contains the static website and support pages for Geomancer. It is a presentation and distribution surface, not the authoritative source for application architecture, backend workflow, or active alpha development priorities.
+
+## Scope
+
+- marketing and landing pages
+- download and early-access pages
+- support pages such as docs, privacy, and terms
+- static assets for the web presence
+
+## Architecture Relationship
+
+- The project source of truth for active product direction is the root [README](../README.md).
+- The source of truth for version and milestone history is the root `CHANGELOG.md`.
+- The docs site should stay aligned with current alpha messaging, especially the desktop-app direction and alpha-stage status.
+- Backend architecture decisions should be documented at the repo root or in dedicated engineering docs, not only here.
 
 ## Structure
 
 ```text
-Geomancer Webpage/
-├── docs.html
-├── download.html
-├── early-access.html
-├── index.html
-├── assets/
-│   ├── css/
-│   │   └── styles.css
-│   ├── images/
-│   └── js/
-│       └── main.js
-└── README.md
+docs/
+  index.html
+  download.html
+  early-access.html
+  docs.html
+  privacy.html
+  terms.html
+  assets/
+    css/
+    images/
+    js/
+    icons/
+  README.md
 ```
-
-## Notes
-
-- Built with plain HTML, CSS, and JavaScript only.
-- No framework, bundler, or deployment configuration is included.
-- Organized so more static pages can be added later without restructuring the project.
 
 ## Local Preview
 
-Open `index.html` directly in a browser for a quick preview, or serve the folder with any simple local static server if you want cleaner asset loading behavior.
+Open `index.html` directly in a browser for a quick preview, or serve the folder with a simple local static server if you want normal asset loading behavior.
 
-## Placeholder Assets
+## Maintenance Notes
 
-- Product UI screenshot or mockup image if you want to replace the current CSS-rendered preview panel.
-- Brand logo asset if you want to swap the text-plus-mark header lockup for a final logo file.
+- Keep product-status language consistent with the repo root docs.
+- If a backend or desktop pass changes public-facing expectations, update this folder only as needed to keep messaging accurate.
+- Avoid treating this folder as the engineering source of truth for system behavior.

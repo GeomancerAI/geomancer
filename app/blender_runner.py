@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 import subprocess
+import tempfile
+import textwrap
 from pathlib import Path
 
 
@@ -91,3 +93,92 @@ def run_generated_script(script_path: Path, interactive: bool = True) -> tuple[b
         )
 
     return True, f"Blender completed successfully in {mode_text} mode using {blender_path}."
+
+
+def export_preview_model(script_path: Path, preview_path: Path, export_format: str = "GLB") -> tuple[bool, str]:
+    """Run Blender headlessly and export a preview model for the desktop viewer."""
+    blender_path = get_blender_path()
+    script_path = Path(script_path)
+    preview_path = Path(preview_path)
+
+    if not blender_path.exists():
+        return False, (
+            f"Blender was not found at: {blender_path}. "
+            "Create or update a .env file in the project root with "
+            r"BLENDER_PATH=C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
+        )
+
+    if not script_path.exists():
+        return False, f"Generated script not found at: {script_path}"
+
+    preview_path.parent.mkdir(parents=True, exist_ok=True)
+
+    wrapper_text = textwrap.dedent(
+        f"""
+        import os
+        import runpy
+        import traceback
+
+        import bpy
+
+        SCRIPT_PATH = {str(script_path)!r}
+        PREVIEW_PATH = {str(preview_path)!r}
+
+        try:
+            runpy.run_path(SCRIPT_PATH, run_name="__main__")
+            bpy.ops.object.select_all(action='SELECT')
+            target = bpy.data.objects.get("Geomancer_Final")
+            if target is not None:
+                bpy.context.view_layer.objects.active = target
+            bpy.ops.export_scene.gltf(
+                filepath=PREVIEW_PATH,
+                export_format={export_format!r},
+                use_selection=False,
+                export_yup=True,
+            )
+            print(f"Preview export complete: {{PREVIEW_PATH}}")
+        except Exception:
+            traceback.print_exc()
+            raise
+        """
+    ).strip()
+
+    temp_script_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile("w", suffix="_geomancer_preview_export.py", delete=False, encoding="utf-8") as handle:
+            handle.write(wrapper_text)
+            temp_script_path = Path(handle.name)
+
+        command = [
+            str(blender_path),
+            "--background",
+            "--factory-startup",
+            "--python",
+            str(temp_script_path),
+        ]
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=300,
+        )
+    except subprocess.TimeoutExpired:
+        return False, f"Preview export timed out after 300 seconds for script: {script_path}"
+    except OSError as error:
+        return False, f"Blender could not be started from {blender_path}. Details: {error}"
+    finally:
+        if temp_script_path is not None:
+            temp_script_path.unlink(missing_ok=True)
+
+    if result.returncode != 0:
+        stderr_text = result.stderr.strip() or result.stdout.strip() or "No export output was returned."
+        return False, (
+            f"Preview export failed with exit code {result.returncode} while running {script_path}. "
+            f"Details: {stderr_text}"
+        )
+
+    if not preview_path.exists():
+        return False, f"Preview export completed without writing a file to: {preview_path}"
+
+    return True, f"Preview exported successfully to {preview_path}."
