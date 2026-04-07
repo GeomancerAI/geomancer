@@ -5,8 +5,8 @@ Geomancer is a local-first AI 3D modeling project evolving toward a desktop appl
 ## Current Status
 
 - Project status: `alpha`
-- Current version: `0.5.0-alpha`
-- Current milestone: `desktop-backend-truth-bridge-pass`
+- Current version: `0.6.0-alpha`
+- Current milestone: `desktop-core-loop-stabilization`
 - Primary product direction: desktop app built around the existing Python generation pipeline
 - Current development emphasis: backend-first refactors, integration hardening, and documentation discipline
 

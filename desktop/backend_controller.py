@@ -9,6 +9,7 @@ from typing import Callable
 from app.blender_runner import run_generated_script
 from app.chat_agent import GENERATED_SCRIPT_PATH, generate_model_request, load_version
 from app.llm_client import OllamaClient
+from app.model_library import get_library_summary
 from app.state import load_state
 
 
@@ -33,6 +34,8 @@ class DesktopStatus:
     last_plan: dict
     last_validation: dict
     last_classification: dict
+    last_saved_model_entry: dict
+    library_summary: dict
     last_run_status: str
 
 
@@ -64,6 +67,8 @@ class BackendController:
             last_plan=state.get("last_plan") or {},
             last_validation=state.get("last_validation") or {},
             last_classification=state.get("last_classification") or {},
+            last_saved_model_entry=state.get("last_saved_model_entry") or {},
+            library_summary=get_library_summary(),
             last_run_status=state.get("last_run_status") or "idle",
         )
 

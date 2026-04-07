@@ -24,6 +24,7 @@ DEFAULT_STATE = {
     "last_plan": {},
     "last_validation": {},
     "last_classification": {},
+    "last_saved_model_entry": {},
     "last_run_status": "",
 }
 

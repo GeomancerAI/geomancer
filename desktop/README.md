@@ -33,6 +33,14 @@ The desktop shell now consumes those backend outputs directly for:
 - validation/readiness messaging
 - preview model path handoff to the viewer
 
+Current desktop loop expectations:
+
+- launch to a clean idle chat state
+- submit a prompt into the active generation loop
+- review the resulting viewer and model summary
+- start a fresh chat without deleting saved model history
+- keep local model-library data available for future Models/Projects/Templates views
+
 ## Run
 
 ```powershell

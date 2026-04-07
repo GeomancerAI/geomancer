@@ -1,0 +1,95 @@
+{
+  "saved_models": [
+    {
+      "id": "model-20260406213039-c14a1b",
+      "created_at": "2026-04-06T21:30:39",
+      "prompt": "make a 120 x 80 x 4 mm panel plate with 4 holes",
+      "family": "panel_plate",
+      "family_label": "panel / plate",
+      "plan": {
+        "family": "panel_plate",
+        "family_label": "panel / plate",
+        "recipe": "panel_plate",
+        "request_text": "make a 120 x 80 x 4 mm panel plate with 4 holes",
+        "dimensions": {
+          "width_mm": 120.0,
+          "height_mm": 80.0,
+          "thickness_mm": 4.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "hole_spacing_mm": 0.0,
+          "hole_pattern": "corners",
+          "corner_holes": true
+        },
+        "assumptions": [],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "plate",
+          "family_summary": "Flat plate or panel with optional mounting holes."
+        }
+      },
+      "validation_summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260406212830-64266e",
+      "created_at": "2026-04-06T21:28:30",
+      "prompt": "make a 120 x 80 x 4 mm panel plate with 4 holes",
+      "family": "panel_plate",
+      "family_label": "panel / plate",
+      "plan": {
+        "family": "panel_plate",
+        "family_label": "panel / plate",
+        "recipe": "panel_plate",
+        "request_text": "make a 120 x 80 x 4 mm panel plate with 4 holes",
+        "dimensions": {
+          "width_mm": 120.0,
+          "height_mm": 80.0,
+          "thickness_mm": 4.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "hole_spacing_mm": 0.0,
+          "hole_pattern": "corners",
+          "corner_holes": true
+        },
+        "assumptions": [],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "plate",
+          "family_summary": "Flat plate or panel with optional mounting holes."
+        }
+      },
+      "validation_summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview.glb",
+      "preview_export_status": "ready"
+    }
+  ],
+  "projects": [],
+  "templates": [
+    {
+      "id": "template-panel-plate",
+      "name": "Panel Plate",
+      "family": "panel_plate",
+      "prompt": "Make a 120 x 80 x 4 mm panel plate with four 5 mm mounting holes"
+    },
+    {
+      "id": "template-bracket",
+      "name": "Mounting Bracket",
+      "family": "bracket",
+      "prompt": "Make a reinforced mounting bracket 120 x 30 x 80 mm with four 5 mm holes and 6 mm thickness"
+    },
+    {
+      "id": "template-enclosure",
+      "name": "Small Enclosure",
+      "family": "enclosure",
+      "prompt": "Create an enclosure 120 x 80 x 50 mm with 3 mm walls and a 60 x 25 mm front opening"
+    }
+  ]
+}

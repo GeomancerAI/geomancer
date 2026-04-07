@@ -34,28 +34,14 @@ def join_objects(objects, final_name='Geomancer_Final'):
     final_obj.name = final_name
     return final_obj
 
-# Family: hook_mount
-# Recipe: hook_mount
+# Family: panel_plate
+# Recipe: panel_plate
 
 bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 0.0))
-base_plate = bpy.context.active_object
-base_plate.scale = (mm(2.5), mm(25.0), mm(40.0))
+panel = bpy.context.active_object
+panel.scale = (mm(60.0), mm(2.0), mm(40.0))
 
-bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm(3.0), 0.0, mm(14.399999999999999)))
-hook_arm = bpy.context.active_object
-hook_arm.scale = (mm(3.0), mm(2.5), mm(2.5))
-
-bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm(6.0), 0.0, mm(4.399999999999999)))
-hook_lip = bpy.context.active_object
-hook_lip.scale = (mm(2.5), mm(2.5), mm(5.0))
-
-for z_pos in (-mm(30.0), mm(30.0)):
-    bpy.ops.mesh.primitive_cylinder_add(radius=mm(2.5), depth=mm(12.5), location=(0.0, 0.0, z_pos))
-    mount_hole = bpy.context.active_object
-    mount_hole.rotation_euler = (0.0, math.radians(90.0), 0.0)
-    apply_boolean(base_plate, mount_hole, modifier_name='MountHole')
-
-final_obj = join_objects([base_plate, hook_arm, hook_lip])
+final_obj = panel
 
 final_obj = locals().get("final_obj")
 if final_obj is None:

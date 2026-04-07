@@ -42,12 +42,60 @@ const viewerResetButton = document.getElementById("viewer-reset-button");
 const viewerToolOrbit = document.getElementById("viewer-tool-orbit");
 const viewerToolPan = document.getElementById("viewer-tool-pan");
 const viewerToolZoom = document.getElementById("viewer-tool-zoom");
+const newConversationButton = document.getElementById("new-conversation-button");
+const newChatButton = document.getElementById("new-chat-button");
+const topnavTabs = Array.from(document.querySelectorAll(".topnav-tab"));
+let generationInFlight = false;
+let activeSession = createEmptySession();
+let librarySummary = { saved_model_count: 0, recent_saved_models: [], project_count: 0, template_count: 0, templates: [] };
+let hasLoadedInitialState = false;
+
+const TAB_INTENTS = {
+  chat: "Active generation workflow",
+  models: "Saved generated model library",
+  projects: "Grouped model organization",
+  templates: "Starter creations and capability examples",
+};
 
 function appendLog(message) {
   const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const line = `[${timestamp}] ${message}`;
   logOutput.textContent = `${logOutput.textContent}\n${line}`.trim();
   logOutput.scrollTop = logOutput.scrollHeight;
+}
+
+function setGenerationInFlight(isActive) {
+  generationInFlight = isActive;
+  setGenerating(isActive);
+}
+
+function createEmptySession() {
+  return {
+    promptText: "",
+    plan: null,
+    validation: null,
+    classification: null,
+    resultStatus: "",
+    message: "",
+    previewStatus: "",
+    previewMessage: "",
+    previewModelPath: "",
+    previewKey: "",
+  };
+}
+
+async function resolveBridgeJson(rawValue, contextLabel) {
+  const resolvedValue = rawValue && typeof rawValue.then === "function"
+    ? await rawValue
+    : rawValue;
+
+  if (typeof resolvedValue === "string") {
+    return JSON.parse(resolvedValue);
+  }
+  if (resolvedValue && typeof resolvedValue === "object") {
+    return resolvedValue;
+  }
+  throw new Error(`${contextLabel} returned unsupported payload type: ${typeof resolvedValue}`);
 }
 
 function formatMm(value) {
@@ -226,6 +274,59 @@ function applyBackendSnapshot({ promptText = "", plan = null, validation = null,
   updateRightPanel(plan);
   updateMetricsFromPlan(plan, validation, resultStatus === "ready" ? "Generation complete" : (resultStatus || "Ready"));
   readinessState.textContent = validation?.summary || message || previewMessage || "Ready for export and Blender handoff.";
+}
+
+function setIdleSessionUI(reasonText = "Start a new generation when ready.") {
+  historyUserPrompt.textContent = "No active prompt.";
+  historyPlanState.textContent = reasonText;
+  historySummaryList.innerHTML = [
+    "Chat tab is idle",
+    "Prompt input is ready",
+    "Viewer is waiting for generation",
+    `Saved models available: ${librarySummary.saved_model_count || 0}`,
+  ].map((item) => `<li>${item}</li>`).join("");
+  historyResultTitle.textContent = "Generation result";
+  historyResultText.textContent = "Run a prompt to generate a model and populate the current session.";
+  updateRightPanel(null);
+  updateMetricsFromPlan(null, null, "Idle");
+  readinessState.textContent = "Idle launch state. Submit a prompt to begin.";
+}
+
+function resetActiveSession(options = {}) {
+  const { reasonText = "Start a new generation when ready.", clearPrompt = true } = options;
+  activeSession = createEmptySession();
+  setGenerationInFlight(false);
+  if (clearPrompt) {
+    promptInput.value = "";
+  }
+  setIdleSessionUI(reasonText);
+  if (viewer.initialized) {
+    viewer.setEmpty();
+  }
+  promptInput.focus();
+}
+
+function applyActiveSession(sessionUpdate) {
+  activeSession = {
+    ...activeSession,
+    ...sessionUpdate,
+  };
+  applyBackendSnapshot(activeSession);
+}
+
+function updatePassiveShellState(state) {
+  librarySummary = state.librarySummary || librarySummary;
+  backendStatus.textContent = `${state.appName} v${state.version}`;
+  lastRunStatus.textContent = state.lastRunStatus || "Idle";
+  scriptPath.textContent = state.generatedScriptPath || "Unavailable";
+  footerVersion.textContent = `v${state.version}`;
+}
+
+function setActiveTab(tabName) {
+  topnavTabs.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.tab === tabName);
+  });
+  appendLog(`Tab selected: ${tabName} -> ${TAB_INTENTS[tabName] || "Unknown role"}`);
 }
 
 function setViewerOverlay(mode, title, text) {
@@ -698,12 +799,25 @@ class GeomancerViewer {
       return;
     }
     const box = new THREE.Box3().setFromObject(object3D);
+    if (box.isEmpty()) {
+      return;
+    }
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
-    const maxDimension = Math.max(size.x, size.y, size.z, 1);
-    const distance = maxDimension * 2.25;
-    this.camera.position.set(center.x + distance, center.y + distance * 0.72, center.z + distance);
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
+    const aspect = this.camera.aspect || 1;
+    const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
+    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect);
+    const fitHeightDistance = (size.y / 2) / Math.tan(verticalFov / 2);
+    const fitWidthDistance = (Math.max(size.x, size.z) / 2) / Math.tan(horizontalFov / 2);
+    const fitDistance = Math.max(fitHeightDistance, fitWidthDistance, sphere.radius * 1.35, 0.28);
+    const direction = new THREE.Vector3(1, 0.72, 1).normalize();
+    const offset = direction.multiplyScalar(fitDistance * 1.18);
+    this.camera.position.copy(center).add(offset);
     this.controls.target.copy(center);
+    this.camera.near = Math.max(fitDistance / 100, 0.001);
+    this.camera.far = Math.max(fitDistance * 20, 20);
+    this.camera.updateProjectionMatrix();
     this.controls.update();
   }
 
@@ -793,33 +907,22 @@ class GeomancerViewer {
 
 const viewer = new GeomancerViewer();
 
-function applyState(rawState) {
-  const state = JSON.parse(rawState);
-  backendStatus.textContent = `${state.appName} v${state.version}`;
-  lastRunStatus.textContent = state.lastRunStatus || "Idle";
-  scriptPath.textContent = state.generatedScriptPath || "Unavailable";
-  footerVersion.textContent = `v${state.version}`;
-  generationStatus.textContent = state.lastGenerationStatus || state.lastRunStatus || "Ready for preview";
-
-  applyBackendSnapshot({
-    promptText: state.lastUserRequest || "",
-    plan: state.lastPlan || null,
-    validation: state.lastValidation || null,
-    classification: state.lastClassification || null,
-    resultStatus: state.lastGenerationStatus || "",
-    message: state.lastGenerationMessage || "",
-    previewStatus: state.previewExportStatus || "",
-    previewMessage: state.previewExportMessage || "",
-  });
-
-  if (state.lastUserRequest && viewer.initialized && !viewer.previewObject) {
-    void viewer.loadPreview({
-      promptText: state.lastUserRequest,
-      plan: state.lastPlan || null,
-      previewModelPath: state.previewModelPath || "",
-      previewKey: `${state.generatedScriptPath || state.lastUserRequest}-${state.lastGenerationTimestamp || "initial"}`,
+async function applyState(rawState) {
+  const state = await resolveBridgeJson(rawState, "getInitialState/stateChanged");
+  appendLog(`Debug: restored state applied -> status=${state.lastGenerationStatus || "idle"}, family=${state.lastGenerationFamily || "none"}, saved_models=${state.librarySummary?.saved_model_count || 0}`);
+  updatePassiveShellState(state);
+  if (!hasLoadedInitialState) {
+    hasLoadedInitialState = true;
+    resetActiveSession({
+      reasonText: state.librarySummary?.saved_model_count
+        ? `Idle launch. ${state.librarySummary.saved_model_count} saved model(s) are available in the local library.`
+        : "Idle launch. No active generation session is loaded.",
+      clearPrompt: true,
     });
+    promptInput.focus();
+    return;
   }
+  appendLog(`Passive backend refresh applied. Saved models: ${state.librarySummary?.saved_model_count || 0}`);
 }
 
 function setGenerating(isGenerating) {
@@ -835,13 +938,19 @@ function connectBridge() {
 
   new QWebChannel(qt.webChannelTransport, (channel) => {
     bridge = channel.objects.geomancerBridge;
-    bridge.stateChanged.connect(applyState);
+    bridge.stateChanged.connect((payload) => {
+      void applyState(payload).catch((error) => {
+        appendLog(`Failed to apply backend state: ${error}`);
+      });
+    });
     bridge.logMessage.connect(appendLog);
     bridge.generationCompleted.connect((payload) => {
+      appendLog("Debug: result received from generationCompleted signal.");
       const result = JSON.parse(payload);
+      appendLog("Debug: generation complete.");
       appendLog(`Generation finished with status: ${result.status}`);
-      setGenerating(false);
-      applyBackendSnapshot({
+      setGenerationInFlight(false);
+      applyActiveSession({
         promptText: promptInput.value.trim(),
         plan: result.plan || null,
         validation: result.validation || null,
@@ -850,14 +959,21 @@ function connectBridge() {
         message: result.message || "",
         previewStatus: result.preview_export_status || "",
         previewMessage: result.preview_export_message || "",
+        previewModelPath: result.preview_model_path || result.previewModelPath || "",
+        previewKey: `${result.script_path || promptInput.value.trim()}-${Date.now()}`,
       });
+      appendLog("Debug: result applied to UI state.");
+      if (result.saved_model_entry?.id) {
+        appendLog(`Saved model entry updated: ${result.saved_model_entry.id}`);
+      }
 
       if (result.status === "ready") {
+        appendLog(`Debug: preview path applied from result -> ${result.preview_model_path || result.previewModelPath || "none"}`);
         void viewer.loadPreview({
           promptText: promptInput.value.trim(),
           plan: result.plan || null,
           previewModelPath: result.preview_model_path || result.previewModelPath || "",
-          previewKey: `${result.script_path || promptInput.value.trim()}-${Date.now()}`,
+          previewKey: activeSession.previewKey,
         });
       } else {
         viewer.setError(result.message || "The generated result could not be previewed.");
@@ -870,10 +986,13 @@ function connectBridge() {
       generationStatus.textContent = "Generation failed";
       readinessState.textContent = "Resolve the prompt or runtime issue before export.";
       viewer.setError(message);
-      setGenerating(false);
+      setGenerationInFlight(false);
     });
 
-    applyState(bridge.getInitialState());
+    appendLog("Debug: requesting initial bridge state.");
+    void applyState(bridge.getInitialState()).catch((error) => {
+      appendLog(`Failed to load initial backend state: ${error}`);
+    });
     appendLog("Desktop shell connected.");
   });
 }
@@ -881,16 +1000,26 @@ function connectBridge() {
 generateButton.addEventListener("click", () => {
   const promptText = promptInput.value.trim();
   if (!bridge) {
+    appendLog("Debug: submit blocked -> bridge not ready.");
     appendLog("Desktop bridge is not ready.");
     return;
   }
   if (!promptText) {
+    appendLog("Debug: submit blocked -> empty prompt.");
     appendLog("Enter a prompt before generating.");
     return;
   }
+  if (generationInFlight) {
+    appendLog("Debug: submit blocked -> generation already in flight.");
+    return;
+  }
 
-  setGenerating(true);
+  appendLog("Debug: submit allowed.");
+  setGenerationInFlight(true);
+  appendLog(`Debug: prompt submit -> ${promptText}`);
+  appendLog("Debug: generation start.");
   appendLog(`Prompt submitted: ${promptText}`);
+  activeSession = createEmptySession();
   updateHistoryPanel({
     promptText,
     plan: null,
@@ -911,16 +1040,21 @@ generateButton.addEventListener("click", () => {
     "Viewer update pending",
   ].map((item) => `<li>${item}</li>`).join("");
   viewer.setLoading("Waiting for generation output before previewing the current model.");
+  appendLog("Debug: bridge generateModel call start.");
   bridge.generateModel(promptText);
 });
 
-openBlenderButton.addEventListener("click", () => {
+openBlenderButton.addEventListener("click", async () => {
   if (!bridge) {
     appendLog("Desktop bridge is not ready.");
     return;
   }
-  const result = JSON.parse(bridge.openLatestInBlender());
-  appendLog(result.message);
+  try {
+    const result = await resolveBridgeJson(bridge.openLatestInBlender(), "openLatestInBlender");
+    appendLog(result.message);
+  } catch (error) {
+    appendLog(`Failed to launch Blender: ${error}`);
+  }
 });
 
 promptInput.addEventListener("keydown", (event) => {
@@ -929,11 +1063,28 @@ promptInput.addEventListener("keydown", (event) => {
   }
 });
 
+function startNewChat() {
+  appendLog("New chat requested. Active session reset to idle.");
+  resetActiveSession({
+    reasonText: "New chat started. Submit a prompt to begin a fresh generation loop.",
+    clearPrompt: true,
+  });
+}
+
+newConversationButton.addEventListener("click", startNewChat);
+newChatButton.addEventListener("click", startNewChat);
+topnavTabs.forEach((button) => {
+  button.addEventListener("click", () => {
+    setActiveTab(button.dataset.tab || "chat");
+  });
+});
+
 async function bootstrap() {
   await viewer.init();
   if (viewer.initialized) {
     viewer.setEmpty();
   }
+  setActiveTab("chat");
   connectBridge();
 }
 

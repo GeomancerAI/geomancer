@@ -66,6 +66,107 @@ Every future backend-focused Codex pass should record, either in the changelog o
 
 ## Entries
 
+## 2026-04-06 - 0.6.0-alpha - desktop-core-loop-stabilization
+
+### Files Changed
+- `README.md`
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/README.md`
+- `app/state.py`
+- `app/model_library.py`
+- `app/backend/pipeline.py`
+- `desktop/backend_controller.py`
+- `desktop/bridge.py`
+- `desktop/ui/index.html`
+- `desktop/ui/app.js`
+
+### Summary
+- Stabilized the core desktop loop around a clean idle launch, reliable prompt submission, successful generation application, and repeatable new-chat resets.
+- Split passive restored backend/library state from the active desktop chat session so the app no longer boots into the last generation as if it were the current session.
+- Added a lightweight local-first model library store and wired successful generations to create saved model entries.
+- Added tab-intent groundwork for Chat, Models, Projects, and Templates, plus a starter template data structure for future use.
+- Preserved the current backend and viewer architecture while improving desktop session/state flow.
+
+### Verification
+- `python -m compileall app desktop tests`
+- Controller/library smoke checks for `DesktopStatus.library_summary`
+- Static inspection of desktop UI wiring for:
+- idle bootstrap reset
+- new chat reset handlers
+- repeated-generation guard handling
+- tab intent groundwork
+
+### Known Limitations
+- The Models/Projects/Templates tabs still use groundwork data and intent only; they are not full tab views yet.
+- Model library persistence is intentionally lightweight and local-first, not yet a full project-management system.
+- Desktop verification in this pass is static/code-path based rather than live UI automation.
+
+### Rollback / Review Notes
+- Review `app/model_library.py`, `app/backend/pipeline.py`, `desktop/backend_controller.py`, `desktop/bridge.py`, and `desktop/ui/app.js` together.
+- This pass avoids cosmetic redesign and focuses on desktop loop stability and lightweight persistence groundwork.
+- If rollback is needed, revert this as a single desktop-loop stabilization checkpoint on top of `0.5.2-alpha`.
+
+## 2026-04-06 - 0.5.2-alpha - desktop-restored-state-and-viewer-fit-fix
+
+### Files Changed
+- `README.md`
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/ui/app.js`
+
+### Summary
+- Fixed the desktop restored-state behavior so bootstrapped previous results are treated as restored history instead of an active generation.
+- Cleared generation guard state after restored state is applied so prompt submission is immediately usable on app load and identical prompts can be resubmitted.
+- Added UI debug logging for restored state application, submit allow/block decisions, generation start, and generation completion.
+- Replaced the viewer auto-fit distance logic so real preview assets are framed from their actual bounds rather than being pushed away by a hardcoded minimum-size clamp.
+
+### Verification
+- `python -m compileall app desktop tests`
+- Static inspection of `desktop/ui/app.js` confirmed:
+- restored state clears `generationInFlight`
+- submit path logs allow/block reasons
+- generation completion clears the guard
+- viewer fit now uses actual bounds and bounding-sphere-aware distance instead of `Math.max(..., 1)`
+
+### Known Limitations
+- This pass does not add live runtime desktop automation.
+- Very unusual models may still need manual Focus/Reset interaction if their origin or orientation is unexpected.
+- Debug logging remains temporary and UI-side only.
+
+### Rollback / Review Notes
+- The fix is intentionally narrow and centered in `desktop/ui/app.js`.
+- If rollback is needed, revert this as a focused desktop-state/viewer-fit patch on top of `0.5.1-alpha`.
+
+## 2026-04-06 - 0.5.1-alpha - desktop-result-flow-promise-fix
+
+### Files Changed
+- `README.md`
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/ui/app.js`
+
+### Summary
+- Fixed the desktop UI result flow bug where Promise-returning Qt WebChannel slot calls were being parsed as if they were already JSON strings.
+- Updated the UI bridge handling so initial state and Blender-launch responses are awaited before JSON parsing.
+- Added temporary UI-layer debug logging around prompt submit, bridge call start, result receipt, result application, and preview path application.
+- Preserved the existing backend, bridge, and viewer architecture while unblocking the desktop shell from leaving the UI stuck in `Generating...`.
+
+### Verification
+- `python -m compileall app desktop tests`
+- Static inspection of `desktop/ui/app.js` confirmed:
+- `getInitialState()` is now awaited before parsing
+- `openLatestInBlender()` is now awaited before parsing
+- `generationCompleted` still parses a resolved signal payload string directly
+
+### Known Limitations
+- This pass does not add full live desktop end-to-end runtime automation; verification is still static plus code-path review.
+- Debug logging is intentionally temporary and UI-side only.
+
+### Rollback / Review Notes
+- The bug fix is intentionally narrow and centered in `desktop/ui/app.js`.
+- If rollback is needed, revert this as a small UI result-handling patch on top of `0.5.0-alpha`.
+
 ## 2026-04-06 - 0.5.0-alpha - desktop-backend-truth-bridge-pass
 
 ### Files Changed

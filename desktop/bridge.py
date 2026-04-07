@@ -65,6 +65,8 @@ class GeomancerBridge(QObject):
             "lastPlan": status.last_plan,
             "lastValidation": status.last_validation,
             "lastClassification": status.last_classification,
+            "lastSavedModelEntry": status.last_saved_model_entry,
+            "librarySummary": status.library_summary,
             "lastRunStatus": status.last_run_status,
             "viewerStatus": status.preview_export_status or "idle",
         }

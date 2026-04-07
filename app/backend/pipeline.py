@@ -8,10 +8,12 @@ from pathlib import Path
 try:
     from app.blender_runner import export_preview_model
     from app.code_utils import save_generated_script
+    from app.model_library import add_saved_model_entry
     from app.state import load_state, save_state
 except ImportError:
     from blender_runner import export_preview_model
     from code_utils import save_generated_script
+    from model_library import add_saved_model_entry
     from state import load_state, save_state
 
 from .classifier import classify_request
@@ -86,6 +88,17 @@ def generate_model_request(user_request: str, client=None, log=print, show_spinn
     log(preview_message)
     preview_model_path = str(GENERATED_PREVIEW_PATH) if preview_success else ""
 
+    saved_model_entry = add_saved_model_entry(
+        user_request=user_request,
+        family=plan.family,
+        family_label=plan.family_label,
+        plan=plan.to_dict(),
+        validation=validation.to_dict(),
+        script_path=str(GENERATED_SCRIPT_PATH),
+        preview_model_path=preview_model_path,
+        preview_export_status="ready" if preview_success else "unavailable",
+    )
+
     _save_state(
         user_request=user_request,
         plan=plan,
@@ -94,6 +107,7 @@ def generate_model_request(user_request: str, client=None, log=print, show_spinn
         preview_model_path=preview_model_path,
         preview_export_status="ready" if preview_success else "unavailable",
         preview_export_message=preview_message,
+        saved_model_entry=saved_model_entry,
     )
 
     return {
@@ -107,6 +121,7 @@ def generate_model_request(user_request: str, client=None, log=print, show_spinn
         "preview_model_path": preview_model_path,
         "preview_export_status": "ready" if preview_success else "unavailable",
         "preview_export_message": preview_message,
+        "saved_model_entry": saved_model_entry,
         "supported_families": _supported_family_labels(),
     }
 
@@ -119,6 +134,7 @@ def _save_state(
     preview_model_path: str,
     preview_export_status: str,
     preview_export_message: str,
+    saved_model_entry: dict,
 ) -> None:
     state = load_state()
     state["last_user_request"] = user_request
@@ -135,6 +151,7 @@ def _save_state(
     state["last_plan"] = plan.to_dict()
     state["last_validation"] = validation
     state["last_classification"] = classification
+    state["last_saved_model_entry"] = saved_model_entry
     save_state(state)
 
 
@@ -152,6 +169,7 @@ def _save_nonready_state(user_request: str, status: str, message: str, classific
     state["last_validation_summary"] = message
     state["last_plan"] = {}
     state["last_validation"] = {}
+    state["last_saved_model_entry"] = {}
     save_state(state)
 
 

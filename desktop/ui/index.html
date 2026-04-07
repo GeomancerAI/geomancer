@@ -14,10 +14,10 @@
       </div>
 
       <nav class="topnav" aria-label="Primary">
-        <button class="topnav-tab is-active" type="button">Chat</button>
-        <button class="topnav-tab" type="button">Models</button>
-        <button class="topnav-tab" type="button">Projects</button>
-        <button class="topnav-tab" type="button">Templates</button>
+        <button class="topnav-tab is-active" type="button" data-tab="chat">Chat</button>
+        <button class="topnav-tab" type="button" data-tab="models">Models</button>
+        <button class="topnav-tab" type="button" data-tab="projects">Projects</button>
+        <button class="topnav-tab" type="button" data-tab="templates">Templates</button>
       </nav>
 
       <div class="topbar-meta">
@@ -31,11 +31,11 @@
     <main class="workspace">
       <aside class="left-rail panel">
         <div class="rail-header">
-          <button class="new-conversation" type="button">
+          <button id="new-conversation-button" class="new-conversation" type="button">
             <span class="rail-icon">&#9635;</span>
             <span>New Conversation</span>
           </button>
-          <button class="icon-button" type="button" aria-label="Add conversation">+</button>
+          <button id="new-chat-button" class="icon-button" type="button" aria-label="Add conversation">+</button>
         </div>
 
         <div class="conversation-list">
