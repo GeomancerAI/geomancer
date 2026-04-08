@@ -14,7 +14,7 @@
       </div>
 
       <nav class="topnav" aria-label="Primary">
-        <button class="topnav-tab is-active" type="button" data-tab="chat">Chat</button>
+        <button class="topnav-tab is-active" type="button" data-tab="chat">Workspace</button>
         <button class="topnav-tab" type="button" data-tab="models">Models</button>
         <button class="topnav-tab" type="button" data-tab="projects">Projects</button>
         <button class="topnav-tab" type="button" data-tab="templates">Templates</button>
@@ -22,8 +22,8 @@
 
       <div class="topbar-meta">
         <div class="mode-switch" aria-label="Mode">
-          <button class="mode-chip is-active" type="button">Beginner</button>
-          <button class="mode-chip" type="button">Advanced</button>
+          <button class="mode-chip is-active" type="button">Alpha</button>
+          <button class="mode-chip" type="button">Review</button>
         </div>
       </div>
     </header>
@@ -31,96 +31,130 @@
     <main class="workspace">
       <aside class="left-rail panel">
         <div class="rail-header">
-          <button id="new-conversation-button" class="new-conversation" type="button">
-            <span class="rail-icon">&#9635;</span>
-            <span>New Conversation</span>
-          </button>
-          <button id="new-chat-button" class="icon-button" type="button" aria-label="Add conversation">+</button>
+          <div class="rail-heading">
+            <p class="rail-eyebrow">Local workflow</p>
+            <h2>Conversation</h2>
+          </div>
+          <button
+            id="new-conversation-button"
+            class="new-chat-button"
+            type="button"
+            aria-label="Start new chat"
+            title="Start new chat (Ctrl+Enter submits prompt)"
+          >+</button>
         </div>
 
         <div class="conversation-list">
-          <article class="message-card assistant-card">
-            <div class="message-avatar">&#9672;</div>
-            <div class="message-body">
-              <p class="message-title">System ready</p>
-              <p class="message-text">Geomancer is ready for a local generation request. Submit a part, tool, vessel, bracket, enclosure, or other geometric object to begin.</p>
-              <p class="message-time">12:37 PM</p>
+          <section class="rail-section">
+            <div class="section-header">
+              <p class="section-eyebrow">Setup and guidance</p>
             </div>
-          </article>
 
-          <article class="message-card assistant-card compact-card">
-            <div class="message-avatar">&#9672;</div>
-            <div class="message-body">
-              <p class="message-title">Example prompts</p>
-              <div class="example-prompts" aria-hidden="true">
-                <span class="example-pill">Wall-mounted bracket</span>
-                <span class="example-pill">Spur gear</span>
-                <span class="example-pill">Cable clip</span>
-                <span class="example-pill">Desk planter</span>
-                <span class="example-pill">Raspberry Pi enclosure</span>
+            <article class="message-card assistant-card compact-card">
+              <div class="message-avatar">&#9672;</div>
+              <div class="message-body">
+                <p class="message-title">What Geomancer does</p>
+                <p class="message-text">Describe a supported part in plain language. Local AI interprets the request, then Geomancer builds deterministic geometry for Blender.</p>
               </div>
-            </div>
-          </article>
+            </article>
 
-          <article class="message-card user-card">
-            <div class="message-body">
-              <p class="message-title">Example prompt</p>
-              <p class="message-text" id="history-user-prompt">Create a Raspberry Pi 4 enclosure with vents, USB and HDMI cutouts, and 3mm walls.</p>
-              <p class="message-time">12:36 PM</p>
-            </div>
-          </article>
-
-          <article class="message-card checklist-card">
-            <div class="message-avatar">&#9672;</div>
-            <div class="message-body">
-              <p class="message-title">Planning + parse summary</p>
-              <p class="message-text" id="history-plan-state">Prompt parsed into model intent, dimensional constraints, and optional object-specific features.</p>
-              <ul class="message-checklist" id="history-summary-list">
-                <li>Current example object: Raspberry Pi 4 enclosure</li>
-                <li>Base size target: 90 x 65 x 35 mm</li>
-                <li>Current model wall thickness: 3.0 mm</li>
-                <li>Current model features: vents and device cutouts</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="message-card assistant-card compact-card">
-            <div class="message-avatar">&#9672;</div>
-            <div class="message-body">
-              <p class="message-title" id="history-result-title">Generation result</p>
-              <p class="message-text" id="history-result-text">Latest model script is ready for viewer preview, export, or Blender handoff.</p>
-              <p class="message-time">12:33 PM</p>
-            </div>
-          </article>
-
-          <article class="message-card backend-card">
-            <div class="message-body">
-              <div class="backend-row">
-                <p class="message-title">Runtime status</p>
-                <span class="status-pill" id="backend-status">Connecting...</span>
+            <article class="message-card assistant-card compact-card">
+              <div class="message-avatar">&#9672;</div>
+              <div class="message-body">
+                <p class="message-title">Try one of these</p>
+                <div class="example-prompts" aria-hidden="true">
+                  <span class="example-pill">Wall bracket with four holes</span>
+                  <span class="example-pill">Desk cable clip</span>
+                  <span class="example-pill">Small electronics enclosure</span>
+                  <span class="example-pill">Planter with 3 mm walls</span>
+                </div>
               </div>
-              <p class="backend-meta">Last run: <span id="last-run-status">Idle</span></p>
-              <pre id="log-output">Waiting for backend state...</pre>
-              <code id="script-path">Unavailable</code>
+            </article>
+          </section>
+
+          <section class="rail-section">
+            <div class="section-header">
+              <p class="section-eyebrow">Current request</p>
             </div>
-          </article>
+
+            <article class="message-card user-card">
+              <div class="message-body">
+                <p class="message-title">Prompt</p>
+                <p class="message-text" id="history-user-prompt">No prompt submitted yet.</p>
+                <p class="message-time">Updates after each generation</p>
+              </div>
+            </article>
+          </section>
+
+          <section class="rail-section">
+            <div class="section-header">
+              <p class="section-eyebrow">Generation status</p>
+            </div>
+
+            <article class="message-card checklist-card">
+              <div class="message-avatar">&#9672;</div>
+              <div class="message-body">
+                <p class="message-title">Interpretation summary</p>
+                <p class="message-text" id="history-plan-state">Waiting for a prompt.</p>
+                <ul class="message-checklist" id="history-summary-list">
+                  <li>No parsed geometry summary yet.</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="message-card assistant-card compact-card">
+              <div class="message-avatar">&#9672;</div>
+              <div class="message-body">
+                <p class="message-title" id="history-result-title">Latest result</p>
+                <p class="message-text" id="history-result-text">When a generation finishes, this panel summarizes what happened and what to review next.</p>
+              </div>
+            </article>
+          </section>
+
         </div>
 
-        <div class="composer">
-          <label class="sr-only" for="prompt-input">Prompt</label>
-          <textarea id="prompt-input" placeholder="Describe the model you want Geomancer to generate..."></textarea>
-          <button id="generate-button" class="composer-send" type="button" aria-label="Generate">&#8599;</button>
-        </div>
+        <div class="composer-shell">
+          <div class="composer-copy">
+            <p class="section-eyebrow">Prompt</p>
+            <h3>Describe the part you want</h3>
+            <p>Keep it dimensional and concrete. Geomancer will classify the request, normalize the inputs, and generate deterministic geometry.</p>
+          </div>
 
-        <div class="composer-toolbar" aria-hidden="true">
-          <button class="toolbar-icon" type="button">Prompt</button>
-          <button class="toolbar-icon" type="button">Files</button>
-          <button class="toolbar-icon" type="button">Plan</button>
-          <button class="toolbar-icon" type="button">More</button>
+          <div class="composer">
+            <label class="sr-only" for="prompt-input">Prompt</label>
+            <textarea id="prompt-input" placeholder="Describe your part (e.g. 120mm plate with 4 holes)"></textarea>
+            <button id="generate-button" class="composer-send" type="button" aria-label="Generate">Go</button>
+          </div>
         </div>
       </aside>
 
       <section class="center-stage panel">
+        <section id="setup-wizard" class="setup-wizard" hidden>
+          <div class="setup-wizard-card">
+            <p class="setup-eyebrow">First-run setup</p>
+            <h2 id="setup-status-title">Preparing your local workspace</h2>
+            <p id="setup-status-text">Geomancer checks Blender, the local AI runtime, and the required AI model before generation is enabled.</p>
+            <div id="setup-steps" class="setup-steps"></div>
+            <div class="setup-actions">
+              <button id="setup-detect-button" class="action-button setup-primary" type="button">Check This PC</button>
+              <button id="setup-pull-button" class="action-button" type="button">Set Up AI</button>
+              <button id="setup-smoke-button" class="action-button" type="button">Run Quick Check</button>
+              <button id="setup-refresh-button" class="action-button" type="button">Refresh</button>
+            </div>
+            <p id="setup-help-text" class="setup-help-text">
+              Geomancer stays deterministic. Local AI helps interpret the request, but Geomancer still owns the geometry output.
+            </p>
+          </div>
+        </section>
+
+        <div class="generation-bar">
+          <div class="generation-bar-copy">
+            <span class="generation-chip" id="generation-status">Idle</span>
+            <p id="readiness-state">Finish setup or submit a prompt to begin.</p>
+          </div>
+          <button class="footer-button toolbar-button" type="button" disabled>View plan</button>
+        </div>
+
         <div class="viewer-header">
           <div class="viewer-mode-toggle" aria-label="View mode">
             <button id="viewer-mode-solid" class="viewer-mode is-active" type="button"><span class="mode-dot"></span>Solid</button>
@@ -128,7 +162,7 @@
           </div>
           <div class="viewer-header-tools">
             <button id="viewer-focus-button" class="icon-button subtle" type="button">Focus</button>
-            <button id="viewer-reset-button" class="icon-button subtle" type="button">Reset</button>
+            <button id="viewer-reset-button" class="icon-button subtle" type="button">Reset View</button>
           </div>
         </div>
 
@@ -142,11 +176,25 @@
           <div class="viewer-canvas">
             <div id="viewer-render-surface" class="viewer-render-surface" aria-label="Model viewer"></div>
             <div class="grid-fade"></div>
+            <div class="viewer-hud viewer-hud-top">
+              <div id="viewer-orbit-control" class="viewer-orbit-control" aria-label="Orbit control">
+                <div id="viewer-orbit-thumb" class="viewer-orbit-thumb"></div>
+              </div>
+            </div>
+            <div class="viewer-hud viewer-hud-bottom">
+              <div id="viewer-axis-indicator" class="viewer-axis-indicator" aria-hidden="true">
+                <div id="viewer-axis-scene" class="viewer-axis-scene">
+                  <div class="axis-line axis-x"><span>X</span></div>
+                  <div class="axis-line axis-y"><span>Y</span></div>
+                  <div class="axis-line axis-z"><span>Z</span></div>
+                </div>
+              </div>
+            </div>
             <div id="viewer-overlay" class="viewer-overlay is-visible" aria-live="polite">
               <div class="viewer-overlay-card">
                 <div id="viewer-overlay-spinner" class="viewer-overlay-spinner" hidden></div>
-                <p id="viewer-overlay-title" class="viewer-overlay-title">Viewer ready</p>
-                <p id="viewer-overlay-text" class="viewer-overlay-text">Generate a model to preview it here, or load a future preview asset from the backend bridge.</p>
+                <p id="viewer-overlay-title" class="viewer-overlay-title">Ready for a model</p>
+                <p id="viewer-overlay-text" class="viewer-overlay-text">Generate a part to review it here.</p>
               </div>
             </div>
           </div>
@@ -154,32 +202,40 @@
 
         <div class="info-strip">
           <section class="info-card">
+            <p class="info-heading">System status</p>
+            <div class="metric-grid">
+              <div class="metric-row"><span>AI</span><strong id="system-ai-status">Checking...</strong></div>
+              <div class="metric-row"><span>Blender</span><strong id="system-blender-status">Checking...</strong></div>
+              <div class="metric-row"><span>Last</span><strong id="last-run-status">Idle</strong></div>
+            </div>
+            <div class="info-card-actions">
+              <span class="status-pill" id="backend-status">Checking...</span>
+              <button id="show-logs-button" class="footer-button compact-button" type="button">Logs</button>
+            </div>
+          </section>
+
+          <section class="info-card">
             <p class="info-heading">Dimensions</p>
             <div class="metric-grid">
-              <div class="metric-row"><span>Length</span><strong id="metric-length">90 mm</strong></div>
-              <div class="metric-row"><span>Width</span><strong id="metric-width">65 mm</strong></div>
-              <div class="metric-row"><span>Height</span><strong id="metric-height">35 mm</strong></div>
+              <div class="metric-row"><span>Length</span><strong id="metric-length">Unavailable</strong></div>
+              <div class="metric-row"><span>Width</span><strong id="metric-width">Unavailable</strong></div>
+              <div class="metric-row"><span>Height</span><strong id="metric-height">Unavailable</strong></div>
             </div>
           </section>
 
           <section class="info-card">
-            <p class="info-heading">Generation</p>
-            <div class="printability-chip" id="generation-status">Ready for preview</div>
+            <p class="info-heading">Generation summary</p>
             <div class="metric-grid compact-metrics">
               <div class="metric-row"><span>Volume</span><strong id="metric-volume">Unavailable</strong></div>
-              <div class="metric-row"><span>Current model wall</span><strong id="metric-wall">Unavailable</strong></div>
+              <div class="metric-row"><span>Wall</span><strong id="metric-wall">Unavailable</strong></div>
             </div>
           </section>
 
           <section class="info-card">
-            <p class="info-heading">Mesh</p>
+            <p class="info-heading">Review status</p>
             <div class="metric-grid">
-              <div class="metric-row"><span>Triangles</span><strong id="metric-triangles">Unavailable</strong></div>
-              <div class="metric-row"><span>Quality</span><strong id="metric-quality">Alpha</strong></div>
-            </div>
-            <div class="mesh-note">
-              <div class="mesh-badge">&#9672;</div>
-              <p id="readiness-state">Ready for export and Blender handoff.</p>
+              <div class="metric-row"><span>Triangles</span><strong id="metric-triangles">Not measured</strong></div>
+              <div class="metric-row"><span>Confidence</span><strong id="metric-quality">Review needed</strong></div>
             </div>
           </section>
         </div>
@@ -187,11 +243,10 @@
         <div class="viewer-footer">
           <div class="footer-status">
             <span class="footer-chip">&#9672;</span>
-            <span>Local Ollama: llama3</span>
+            <span id="footer-runtime-primary">Checking local tools</span>
             <span class="status-divider">&bull;</span>
-            <span>Connected</span>
+            <span id="footer-runtime-secondary">Waiting for runtime health</span>
           </div>
-          <button class="footer-button" type="button">View Generation Plan</button>
         </div>
       </section>
 
@@ -199,47 +254,75 @@
         <div class="panel-title-row">
           <div class="panel-title-mark">&#9672;</div>
           <div>
-            <p class="panel-title">Current Model</p>
+            <p class="section-eyebrow">Current model</p>
+            <p class="panel-title">Facts and actions</p>
           </div>
         </div>
 
-        <section class="property-group">
-          <h3>Dimensions</h3>
-          <div class="property-grid" id="current-model-dimensions">
-            <div class="check-row"><span class="checkmark">&#9672;</span><span>No dimensions loaded yet</span></div>
-          </div>
-        </section>
+        <div class="right-rail-scroll">
+          <section class="property-group">
+            <h3>Dimensions</h3>
+            <p class="property-copy">Only parsed dimensions from the current generation are shown here.</p>
+            <div class="property-grid" id="current-model-dimensions">
+              <div class="check-row"><span class="checkmark">&#9672;</span><span>Unavailable until a generation completes</span></div>
+            </div>
+          </section>
 
-        <section class="property-group">
-          <h3>Shell / Thickness</h3>
-          <div id="current-model-shell">
-            <div class="check-row"><span class="checkmark">&#9672;</span><span>No shell or wall data loaded yet</span></div>
-          </div>
-        </section>
+          <section class="property-group">
+            <h3>Shell and thickness</h3>
+            <p class="property-copy">Wall, shell, and base values appear when the family supports them.</p>
+            <div id="current-model-shell">
+              <div class="check-row"><span class="checkmark">&#9672;</span><span>No shell information yet</span></div>
+            </div>
+          </section>
 
-        <section class="property-group">
-          <h3>Model Features</h3>
-          <div id="current-model-features">
-            <div class="check-row"><span class="checkmark">&#9672;</span><span>No feature flags loaded yet</span></div>
-          </div>
-        </section>
+          <section class="property-group overflow-section">
+            <h3>Features</h3>
+            <p class="property-copy">Feature details come from Geomancer's normalized plan, not from placeholder presets.</p>
+            <div id="current-model-features">
+              <div class="check-row"><span class="checkmark">&#9672;</span><span>No feature details yet</span></div>
+            </div>
+          </section>
 
-        <section class="property-group">
-          <h3>Current Model Cutouts</h3>
-          <div id="current-model-cutouts">
-            <div class="check-row"><span class="checkmark">&#9672;</span><span>No cutouts or hole summary loaded yet</span></div>
-          </div>
-        </section>
+          <section class="property-group overflow-section">
+            <h3>Openings and holes</h3>
+            <p class="property-copy">Cutouts, openings, and hole details appear here when available.</p>
+            <div id="current-model-cutouts">
+              <div class="check-row"><span class="checkmark">&#9672;</span><span>No openings or holes recorded yet</span></div>
+            </div>
+          </section>
+        </div>
 
         <section class="property-group actions-group">
           <h3>Actions</h3>
-          <button class="action-button inspector-action" type="button">Update Preview</button>
-          <button class="action-button primary-action" type="button">&#11015; Export STL</button>
-          <button id="open-blender-button" class="action-button" type="button">&#9673; Open in Blender</button>
-          <button class="action-button" type="button">&#9635; Save Project</button>
+          <p class="property-copy">Blender handoff is the primary next step in this alpha. Other export and project actions remain staged.</p>
+          <button id="open-blender-button" class="action-button primary-action" type="button">Open Latest in Blender</button>
+          <button class="action-button inspector-action" type="button" disabled>Refresh preview later in alpha</button>
+          <button class="action-button" type="button" disabled>Export STL later in alpha</button>
+          <button class="action-button" type="button" disabled>Save project later in alpha</button>
         </section>
       </aside>
     </main>
+
+    <div id="logs-modal" class="logs-modal" hidden>
+      <div id="logs-backdrop" class="logs-backdrop"></div>
+      <div class="logs-dialog" role="dialog" aria-modal="true" aria-labelledby="logs-title">
+        <div class="logs-header">
+          <div>
+            <p class="section-eyebrow">System status</p>
+            <h2 id="logs-title">Logs</h2>
+          </div>
+          <button id="close-logs-button" class="icon-button" type="button" aria-label="Close logs">×</button>
+        </div>
+        <div class="logs-body">
+          <pre id="log-output">Waiting for desktop state...</pre>
+          <div class="path-block">
+            <span class="path-label">Generated script</span>
+            <code id="script-path">Unavailable</code>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <footer class="desktop-footer">
       <div class="footer-left">

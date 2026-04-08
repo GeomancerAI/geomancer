@@ -1,45 +1,63 @@
-# Geomancer Desktop Alpha
+# Geomancer Desktop
 
-This directory contains the current desktop-facing alpha shell for Geomancer. It is not a separate product line from the Python backend. Its purpose is to wrap the existing backend pipeline in a native desktop window, expose controlled bridge operations to the UI layer, and create a stable surface for future product iteration.
+The desktop app is the intended product surface for Geomancer alpha. It now has a clearer workspace structure, a local setup gate, a simpler background execution path for generation, and a more dominant grounded viewer presentation.
 
-## Current Role In The Architecture
+## Current Desktop Shape
 
-- `desktop/` is the intended product direction for Geomancer.
-- `app/` remains the source of truth for generation, Blender execution, and persisted backend state.
-- `app/backend/` now contains the deterministic alpha-family backend pipeline used by both terminal and desktop flows.
-- The desktop shell is currently a thin integration layer, not a backend replacement.
-- During the current backend-first phase, desktop work should prefer stabilizing contracts and observability over broad UI expansion.
+- left rail: setup guidance, request history, generation status, prompt entry
+- center stage: model viewer, generation summary, readiness messaging, compact info strip
+- right rail: current model facts, parsed dimensions, features, and next actions
 
-## Current Files
+Viewer presentation notes:
 
-- `main.py`: desktop entrypoint
-- `shell.py`: Qt main window and WebEngine host
-- `bridge.py`: JS-to-Python bridge surface
-- `backend_controller.py`: thin adapter over the existing backend pipeline
-- `ui/`: HTML, CSS, JavaScript, and bundled viewer dependencies for the desktop shell
+- preview orientation is normalized before grounding using a generic principal-axis pose solver instead of family-specific exception rules
+- previews are placed cleanly on the stage floor rather than floating ambiguously
+- support-aware placement now favors the resting footprint near the floor instead of always centering from the full model bounds
+- first-load framing is deterministic and lightly family-aware
+- empty, generating, and ready states use lighter product-facing overlay language
+- the top viewer controls are intentionally compressed into a thin toolbar
+- the lower summary area is now a denser telemetry strip instead of a dashboard-style card row
+- runtime logs remain available from the `Show logs` modal instead of occupying the main workspace
 
-The backend result flow now centers on:
+The UI is intentionally truthful:
 
-- family classification
-- normalized plan output
-- validation/reporting metadata
-- generated script path
-- preview export path/status
+- no fake dimensions or features
+- unavailable data is labeled clearly
+- review-level metrics are described as approximate or not yet measured
 
-The desktop shell now consumes those backend outputs directly for:
+## Current Architecture
 
-- prompt and family history
-- normalized parameter summaries
-- validation/readiness messaging
-- preview model path handoff to the viewer
+- `desktop/main.py`: desktop entrypoint
+- `desktop/shell.py`: Qt window and WebEngine host
+- `desktop/bridge.py`: bridge surface plus Python background generation execution
+- `desktop/backend_controller.py`: generation adapter and runtime health controller
+- `desktop/ui/`: setup gate, viewer, layout, and shell styling
 
-Current desktop loop expectations:
+Runtime flow:
 
-- launch to a clean idle chat state
-- submit a prompt into the active generation loop
-- review the resulting viewer and model summary
-- start a fresh chat without deleting saved model history
-- keep local model-library data available for future Models/Projects/Templates views
+1. desktop shell
+2. local setup and runtime health
+3. deterministic geometry pipeline
+4. Blender preview and handoff
+
+## Runtime Truth
+
+Desktop status should come from real runtime checks, not placeholder copy.
+
+The current shell reports:
+
+- local AI setup state
+- Blender detection state
+- generation readiness
+- current generation summary
+- runtime logs through the logs modal
+
+The main workspace stays gated until:
+
+- local AI is installed and reachable
+- the required AI model is ready
+- Blender is detected and callable
+- setup completion is recorded
 
 ## Run
 
@@ -47,20 +65,9 @@ Current desktop loop expectations:
 python -m desktop.main
 ```
 
-## Alpha Notes
+## Scope Notes
 
-- The desktop shell is still alpha scaffolding.
-- The terminal workflow in `app/chat_agent.py` remains useful for direct backend testing.
-- The Tkinter dev console in `app/dev_console.py` remains available as a legacy developer tool.
-- The current backend is deterministic by supported alpha family and no longer depends on a freeform prompt-to-code path for core generation.
-- Future passes in this folder should document bridge changes, controller changes, and UI contract changes explicitly in the root `CHANGELOG.md`.
-
-## Review Expectations For Future Passes
-
-When work touches `desktop/`, document:
-
-- the milestone or version label
-- exact files changed
-- bridge or controller contract changes
-- incomplete UI/backend integration areas
-- rollback notes if the pass changes desktop startup or backend invocation behavior
+- `app/chat_agent.py` remains a legacy developer entrypoint.
+- The desktop path still uses deterministic geometry generation as the core product path.
+- Future passes can deepen export actions, model-library views, and plan inspection without changing the product direction.
+- Viewer grounding and framing are polished for alpha presentation, but they are still lightweight heuristics rather than CAD-grade camera logic.

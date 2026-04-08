@@ -1,145 +1,73 @@
 # Geomancer
 
-Geomancer is a local-first AI 3D modeling project evolving toward a desktop application that pairs a Python backend with a native desktop shell and a web-based UI layer. The current repository still contains the original terminal workflow and a lightweight Tkinter dev console, but active development is now backend-first so the generation pipeline, state handling, Blender execution flow, and desktop integration points can stabilize before broader UI expansion.
+Geomancer is a local-first desktop geometry tool. Local AI interprets requests, Geomancer owns deterministic geometry generation, and Blender remains the local preview and editing target.
 
 ## Current Status
 
-- Project status: `alpha`
-- Current version: `0.6.0-alpha`
-- Current milestone: `desktop-core-loop-stabilization`
-- Primary product direction: desktop app built around the existing Python generation pipeline
-- Current development emphasis: backend-first refactors, integration hardening, and documentation discipline
+- Version: `0.7.11-alpha`
+- Stage: `alpha`
+- Product direction: desktop shell -> local setup -> deterministic geometry pipeline -> Blender handoff
+- Core rule: AI interprets language, Geomancer owns geometry
 
-The current alpha state should be treated as an actively changing foundation rather than a feature-complete product. Existing interfaces are useful for development and testing, but they are not yet the long-term final UX.
+## Product Shape
 
-## Development Direction
+The current alpha experience is centered on one desktop workspace:
 
-Geomancer currently spans three active surfaces:
+- left column: setup context, request history, generation status, prompt entry
+- center stage: viewer, generation summary, readiness state, bottom info strip
+- right column: current model facts, dimensions, features, actions
 
-- `app/`: core Python backend pipeline for prompt handling, Ollama calls, code extraction, state, and Blender execution
-- `app/backend/`: deterministic alpha-family pipeline for classification, normalization, generation, validation, and reporting
-- `desktop/`: desktop alpha shell that wraps the Python backend and hosts the future product UI
-- `docs/`: static site and marketing/support pages, not the authoritative source for backend architecture
+The UI now prioritizes truthful state over placeholder polish. If dimensions, features, or review signals are not available yet, the shell says so directly. The viewer is the hero surface and now uses a thinner toolbar, a denser telemetry strip, a generic principal-axis preview pose solver, support-aware floor grounding, and more deliberate first-view framing.
 
-The immediate priority is backend-first development. That means future passes should optimize for:
+## Architecture
 
-- backend correctness and reversibility
-- explicit version and milestone tracking
-- well-scoped refactors with file-level review notes
-- documenting limitations before broadening feature scope
+### Desktop path
 
-## Change Tracking Standard
+- `desktop/main.py` and `desktop/shell.py`: Qt desktop host
+- `desktop/bridge.py`: WebChannel bridge plus Python background execution for generation
+- `desktop/backend_controller.py`: desktop-facing controller and runtime health API
+- `desktop/ui/`: setup gate, grounded viewer, workspace layout, and status surfaces
 
-Project change tracking is standardized through:
+### Runtime/setup path
 
-- `VERSION`: single current project version string
-- `CHANGELOG.md`: milestone history and Codex pass documentation format
-- repository and subfolder READMEs: current architecture and development-phase notes
+- `app/runtime/ollama.py`: local AI detection, reachability, model readiness, pulls, smoke checks
+- `app/runtime/blender.py`: Blender detection and callability checks
+- `app/runtime/health.py`: structured runtime health for UI/controller use
+- `app/runtime/setup.py`: first-run setup state, step flow, and completion persistence
+- `app/runtime/models.py`: recommended local AI model definitions
 
-Before or alongside meaningful backend work, each Codex pass should leave behind documentation that includes:
+### Geometry path
 
-1. version or milestone label
-2. exact files changed
-3. summary of changes
-4. known limitations or incomplete parts
-5. rollback or review notes when relevant
-
-Use the format defined in `CHANGELOG.md` for future passes.
-
-## Project Structure
-
-```text
-geomancer/
-  app/
-    backend/
-    blender_runner.py
-    chat_agent.py
-    code_utils.py
-    dev_console.py
-    llm_client.py
-    prompt_builder.py
-    state.py
-  blender/
-    generated_model.py
-    rules/
-    templates/
-  data/
-    session_state.json
-  desktop/
-    backend_controller.py
-    bridge.py
-    main.py
-    shell.py
-    ui/
-  docs/
-  tests/
-  CHANGELOG.md
-  README.md
-  VERSION
-  requirements.txt
-```
-
-## What Geomancer Does Today
-
-1. Accepts a plain-English modeling request.
-2. Classifies the request into an explicit supported alpha family.
-3. Extracts and normalizes dimensions and family-specific parameters.
-4. Builds deterministic Blender Python for the selected family recipe.
-5. Saves the generated script to `blender/generated_model.py`.
-6. Exports a preview model for the desktop viewer when Blender is available.
-7. Persists session state plus validation/reporting metadata for follow-up tooling and desktop status reporting.
-
-## Deterministic Alpha Backend
-
-The current backend is structured around these modules:
-
-- `app/backend/families.py`: explicit supported alpha families and aliases
-- `app/backend/classifier.py`: family-based request classification
-- `app/backend/normalizer.py`: parameter extraction and normalization
-- `app/backend/geometry.py`: deterministic Blender script generation by family recipe
-- `app/backend/validation.py`: review-friendly validation and reporting
+- `app/backend/classifier.py`: supported-family classification
+- `app/backend/normalizer.py`: deterministic parameter extraction
+- `app/backend/geometry.py`: deterministic Blender Python generation
+- `app/backend/validation.py`: validation and review summaries
 - `app/backend/pipeline.py`: orchestration, preview export, and state updates
 
-Supported alpha families:
+## First-Run Flow
 
-- enclosure
-- bracket
-- cable clip
-- planter / vessel
-- gear
-- adapter
-- panel / plate
-- spacer / standoff
-- tray / box
-- simple hook / mount
-- simple housing / mechanical shell
-- dimensional primitive/blockout assemblies
+The alpha product uses an in-app local setup flow:
 
-Current strongest golden-path families:
+1. Check this PC for Blender and the local AI runtime
+2. Guide local setup if the AI runtime is missing
+3. Set up the required AI model
+4. Run a quick local check
+5. Unlock the main workspace
 
-- panel / plate
-- spacer / standoff
-- enclosure
-- tray / box
-- bracket
-- adapter
-- cable clip
-- simple hook / mount
+The workspace remains gated until runtime health is complete.
 
-## Active Entry Points
+## Generation Flow
 
-- Terminal workflow: `python app/chat_agent.py`
-- Dev console: `python app/dev_console.py`
-- Desktop alpha shell: `python -m desktop.main`
+1. The user submits a dimensional part request.
+2. Local AI interprets the request.
+3. Geomancer classifies the request into a supported family.
+4. Geomancer normalizes dimensions and features.
+5. Geomancer generates deterministic Blender Python.
+6. Blender is used locally for preview export and handoff, with the desktop viewer showing a grounded review preview first.
 
-The terminal and dev console remain valid development tools, but the desktop shell is the intended product direction.
+Geomancer does not use arbitrary AI-written Blender code as the main path.
 
-## Requirements
-
-- Windows
-- Python 3.10 or newer
-- Blender installed locally
-- Ollama is optional for legacy/local experiments and is not required for the deterministic alpha-family pipeline
+## Run
 
 Install dependencies:
 
@@ -147,61 +75,42 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-## Environment Configuration
+Run the desktop shell:
 
-Create a `.env` file in the project root to override defaults when needed:
+```powershell
+python -m desktop.main
+```
+
+Legacy developer entrypoints still exist:
+
+- `python app/chat_agent.py`
+- `python app/dev_console.py`
+
+## Local Configuration
+
+Optional `.env` overrides:
 
 ```text
 BLENDER_PATH=C:\Program Files\Blender Foundation\Blender 5.0\blender.exe
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen2.5:7b
 ```
 
-## Blender and Ollama Notes
+## State And Outputs
 
-- Background mode runs Blender with `--background --python blender/generated_model.py`.
-- Interactive mode runs Blender with `--python blender/generated_model.py`.
-- Interactive mode is usually the better development loop because the Blender UI opens immediately.
-- Preview export also runs through Blender in background mode.
-- The old Ollama prompt pipeline remains in the repo only as legacy support code during the backend transition.
-
-## Current Alpha Constraints
-
-- Generated models are still rough primitive-based blockouts.
-- Outputs may require manual cleanup before printing or production use.
-- The Blender API surface is intentionally constrained through the rule files in `blender/rules/`.
-- Family recipes are explicit and deterministic, which means complex geometry requests may be rejected or simplified.
-- UI surfaces are still transitional and should not be treated as final product design.
-- Backend contracts may continue to change during the backend-first phase, so change tracking is mandatory for reviewability.
-
-## Blender Rule Library
-
-Geomancer uses a focused local Blender rule library in `blender/rules/`:
-
-- `blender_api_rules.md`
-- `allowed_operators.json`
-- `banned_patterns.json`
-- `modeling_conventions.md`
-
-These files define the conservative `bpy` subset and modeling conventions the generator should follow.
-
-## Commands
-
-Terminal mode currently supports:
-
-- `/help`
-- `/quit`
-- `/run`
-- `/show`
-- `/save`
-- `/last`
-
-## Generated Outputs
-
-- Active generated script: `blender/generated_model.py`
 - Session state: `data/session_state.json`
+- Model library: `data/model_library.json`
+- Generated script: `blender/generated_model.py`
+- Preview exports: `data/previews/`
 
-## Documentation Notes
+## Current Alpha Limits
 
-- `README.md` is the top-level source of truth for project status and development direction.
-- `desktop/README.md` describes the desktop alpha shell and its relationship to the backend.
-- `docs/README.md` describes the static site folder and clarifies that it is not the architecture source of truth.
-- `CHANGELOG.md` is the required ledger for versioned changes and future backend pass summaries.
+- The desktop shell is now more product-shaped, but still alpha.
+- Export, save-project, and deeper plan-inspection actions remain staged for later passes.
+- Blender detection is still Windows-oriented.
+- Deterministic geometry coverage is still limited to supported alpha families.
+- Viewer framing is deterministic and family-aware, but still based on lightweight heuristics rather than deep geometry analysis.
+- The compact telemetry strip is optimized for glanceability, so deeper inspection still belongs in later detail views rather than the main workspace chrome.
+- Viewer support placement is still a lightweight sampled heuristic from preview geometry, not a semantic understanding of real-world load-bearing faces.
+- Resting orientation is selected from a small deterministic candidate set rather than inferred from deeper mesh semantics or physics.
+- The generic preview pose solver now uses principal-axis normalization and blended presentation scoring, but it is still a lightweight viewer heuristic rather than a full geometry semantics system.

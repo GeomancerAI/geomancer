@@ -1,92 +1,114 @@
 {
-  "last_user_request": "make a 120 x 80 x 4 mm panel plate with 4 holes",
+  "setup_completed": true,
+  "first_run_completed": true,
+  "ollama_installed": true,
+  "ollama_running": true,
+  "ollama_version": "0.20.3",
+  "ollama_model_name": "qwen2.5:7b",
+  "ollama_model_ready": true,
+  "blender_detected": true,
+  "blender_path": "C:\\Program Files\\Blender Foundation\\Blender 5.0\\blender.exe",
+  "runtime_health_status": "ready",
+  "runtime_health_message": "Local runtime is healthy. Geomancer is ready to generate deterministic geometry.",
+  "last_user_request": "a desk clip",
+  "last_generation_id": "gen-20260408171815-8343708f",
   "last_generated_script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-  "last_preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview.glb",
+  "last_preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171815-8343708f.glb",
+  "last_preview_asset_version": "gen-20260408171815-8343708f",
   "last_preview_export_status": "ready",
-  "last_preview_export_message": "Preview exported successfully to C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview.glb.",
-  "last_generation_timestamp": "2026-04-06T21:30:39",
-  "last_generation_family": "panel_plate",
+  "last_preview_export_message": "Preview exported successfully to C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171815-8343708f.glb.",
+  "last_generation_timestamp": "2026-04-08T17:18:21",
+  "last_generation_family": "cable_clip",
   "last_generation_status": "ready",
+  "last_generation_raw_status": "ready",
   "last_generation_message": "",
-  "last_validation_summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
+  "last_validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
   "last_plan": {
-    "family": "panel_plate",
-    "family_label": "panel / plate",
-    "recipe": "panel_plate",
-    "request_text": "make a 120 x 80 x 4 mm panel plate with 4 holes",
+    "family": "cable_clip",
+    "family_label": "cable clip",
+    "recipe": "cable_clip",
+    "request_text": "a desk clip",
     "dimensions": {
-      "width_mm": 120.0,
-      "height_mm": 80.0,
+      "clip_width_mm": 28.0,
+      "opening_mm": 15.400000000000002,
+      "depth_mm": 16.0,
       "thickness_mm": 4.0
     },
     "features": {
-      "hole_diameter_mm": 0.0,
-      "hole_spacing_mm": 0.0,
-      "hole_pattern": "corners",
-      "corner_holes": true
+      "cable_diameter_mm": 13.400000000000002,
+      "base_length_mm": 28.0,
+      "mount_hole_mm": 0.0,
+      "closed_ring": false
     },
-    "assumptions": [],
+    "assumptions": [
+      "Inferred cable diameter from the requested opening and clip width."
+    ],
     "warnings": [],
     "limitations": [],
     "classification": {
-      "matched_alias": "plate",
-      "family_summary": "Flat plate or panel with optional mounting holes."
+      "matched_alias": "clip",
+      "family_summary": "Open clip for holding a cable or wire bundle."
     }
   },
   "last_validation": {
     "status": "ready",
-    "summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
+    "summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
     "warnings": [],
     "limitations": [
       "Family outputs are alpha blockouts and may need manual refinement."
     ],
     "review_notes": [
-      "Family: panel / plate",
-      "Recipe: panel_plate",
-      "Deterministic Blender generation only; no freeform mesh synthesis is attempted."
+      "Family: cable clip",
+      "Recipe: cable_clip",
+      "Deterministic Blender generation only; no freeform mesh synthesis is attempted.",
+      "Inferred cable diameter from the requested opening and clip width."
     ]
   },
   "last_classification": {
     "status": "ready",
-    "family_key": "panel_plate",
-    "matched_alias": "plate",
+    "family_key": "cable_clip",
+    "matched_alias": "clip",
     "confidence": 0.99,
     "message": ""
   },
   "last_saved_model_entry": {
-    "id": "model-20260406213039-c14a1b",
-    "created_at": "2026-04-06T21:30:39",
-    "prompt": "make a 120 x 80 x 4 mm panel plate with 4 holes",
-    "family": "panel_plate",
-    "family_label": "panel / plate",
+    "id": "model-20260408171821-a0eba2",
+    "generation_id": "gen-20260408171815-8343708f",
+    "created_at": "2026-04-08T17:18:21",
+    "prompt": "a desk clip",
+    "family": "cable_clip",
+    "family_label": "cable clip",
     "plan": {
-      "family": "panel_plate",
-      "family_label": "panel / plate",
-      "recipe": "panel_plate",
-      "request_text": "make a 120 x 80 x 4 mm panel plate with 4 holes",
+      "family": "cable_clip",
+      "family_label": "cable clip",
+      "recipe": "cable_clip",
+      "request_text": "a desk clip",
       "dimensions": {
-        "width_mm": 120.0,
-        "height_mm": 80.0,
+        "clip_width_mm": 28.0,
+        "opening_mm": 15.400000000000002,
+        "depth_mm": 16.0,
         "thickness_mm": 4.0
       },
       "features": {
-        "hole_diameter_mm": 0.0,
-        "hole_spacing_mm": 0.0,
-        "hole_pattern": "corners",
-        "corner_holes": true
+        "cable_diameter_mm": 13.400000000000002,
+        "base_length_mm": 28.0,
+        "mount_hole_mm": 0.0,
+        "closed_ring": false
       },
-      "assumptions": [],
+      "assumptions": [
+        "Inferred cable diameter from the requested opening and clip width."
+      ],
       "warnings": [],
       "limitations": [],
       "classification": {
-        "matched_alias": "plate",
-        "family_summary": "Flat plate or panel with optional mounting holes."
+        "matched_alias": "clip",
+        "family_summary": "Open clip for holding a cable or wire bundle."
       }
     },
-    "validation_summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
+    "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
     "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-    "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview.glb",
+    "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171815-8343708f.glb",
     "preview_export_status": "ready"
   },
-  "last_run_status": "not run yet"
+  "last_run_status": "ready"
 }

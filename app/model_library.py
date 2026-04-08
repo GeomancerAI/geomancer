@@ -75,6 +75,7 @@ def save_model_library(library: dict) -> Path:
 
 def add_saved_model_entry(
     *,
+    generation_id: str,
     user_request: str,
     family: str,
     family_label: str,
@@ -89,6 +90,7 @@ def add_saved_model_entry(
     timestamp = datetime.now().isoformat(timespec="seconds")
     entry = {
         "id": f"model-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:6]}",
+        "generation_id": generation_id,
         "created_at": timestamp,
         "prompt": user_request,
         "family": family,

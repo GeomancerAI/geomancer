@@ -34,14 +34,26 @@ def join_objects(objects, final_name='Geomancer_Final'):
     final_obj.name = final_name
     return final_obj
 
-# Family: panel_plate
-# Recipe: panel_plate
+# Family: cable_clip
+# Recipe: cable_clip
 
 bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 0.0))
-panel = bpy.context.active_object
-panel.scale = (mm(60.0), mm(2.0), mm(40.0))
+base_plate = bpy.context.active_object
+base_plate.scale = (mm(14.0), mm(2.0), mm(14.0))
 
-final_obj = panel
+
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, mm(-4.0), 0.0))
+back_bar = bpy.context.active_object
+back_bar.scale = (mm(14.0), mm(2.0), mm(10.700000000000001))
+
+clip_parts = [base_plate, back_bar]
+for x_offset in (-mm(9.700000000000001), mm(9.700000000000001)):
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(x_offset, mm(1.92), 0.0))
+    arm = bpy.context.active_object
+    arm.scale = (mm(2.0), mm(8.0), mm(10.700000000000001))
+    clip_parts.append(arm)
+
+final_obj = join_objects(clip_parts)
 
 final_obj = locals().get("final_obj")
 if final_obj is None:

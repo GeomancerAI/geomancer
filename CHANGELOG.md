@@ -66,6 +66,738 @@ Every future backend-focused Codex pass should record, either in the changelog o
 
 ## Entries
 
+## 2026-04-08 - 0.7.11-alpha - generic-preview-pose-solver-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the family-specific preview pose rules with a generic deterministic viewer-side pose solver.
+- Added principal-axis normalization by sampling representative mesh vertices, computing a covariance matrix, and extracting a stable PCA-like basis for the preview object.
+- The viewer now evaluates six generic grounded candidate poses from that basis: `+X up`, `-X up`, `+Y up`, `-Y up`, `+Z up`, and `-Z up`.
+- Candidate selection now uses blended presentation scoring based on support footprint quality, projected center balance over support, grounded height, and silhouette spread instead of family-specific hardcoded pose policies.
+- Kept the existing final pipeline intact after pose selection: floor grounding, support/contact centering, contact shadow placement, and camera framing still run on the winning pose.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The principal-axis solver is still a lightweight viewer heuristic and may need further refinement for highly symmetric or visually ambiguous meshes.
+- This pass only affects desktop preview presentation and does not alter backend geometry generation or Blender output.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` together; the PCA basis extraction, generic candidate generation, and pose scoring are a single coupled policy shift.
+
+## 2026-04-08 - 0.7.10-alpha - orientation-heuristic-rollback-and-family-pose-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+
+### Summary
+- Rolled back the overly aggressive orientation search for sensitive preview families and replaced it with a more restrained presentation-first pose policy.
+- Constrained `clip`, `bracket`, `hook`, and `adapter`-style previews to family-specific candidate sets that mainly preserve the authored upright pose and only allow limited yaw-style presentation variants.
+- Added upright-readability weighting, pose-alignment weighting relative to the base pose, and family-specific guardrails that heavily penalize or reject side-lying and overly tipped candidates.
+- Kept the existing post-selection pipeline intact: bounding-box grounding, support/contact centering, shadow placement, and camera framing still run after pose selection.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Presentation pose selection is still heuristic and preview-family driven rather than based on deeper semantic understanding of functional faces.
+- This pass only affects the desktop preview viewer and does not change backend geometry generation or Blender output.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` together; the candidate set restriction, readability scoring, and guardrails are designed as one policy change.
+
+## 2026-04-08 - 0.7.9-alpha - resting-orientation-and-floor-contact-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+
+### Summary
+- Added a deterministic resting-orientation normalization pass before grounding and framing in the desktop viewer.
+- The viewer now evaluates a small candidate rotation set around the current orientation, computes support quality from a lower support slice, and selects the orientation with the strongest believable resting footprint.
+- Added lightweight family-aware tie bias so flat parts prefer natural broad support while clips, brackets, and similar parts favor practical support faces.
+- Preserved the existing support-aware grounding, contact shadow, floor stability, and camera framing pipeline after orientation normalization.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Resting orientation is still chosen from a small heuristic candidate set, so unusual shapes may still need later tuning.
+- This pass only affects desktop preview presentation and does not change backend geometry generation or Blender output.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` together; the orientation selection, support scoring, and post-orientation grounding pipeline are intentionally connected.
+
+## 2026-04-08 - 0.7.8-alpha - stage-contact-and-shadow-stability-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+
+### Summary
+- Kept the existing bounding-box grounding sequence, then improved resting placement by sampling a lower support slice of the preview geometry and centering from that support footprint when available.
+- Updated the contact shadow to size and position from the support footprint instead of the full object bounds, which gives offset parts such as clips a more believable resting read on the stage.
+- Simplified and stabilized the floor stack by removing a redundant shadow-catching layer, separating render-order responsibilities across the floor, halo, contact shadow, and grid, and disabling depth writes on the transparent floor overlays.
+- Kept the existing viewer size and layout changes from `0.7.7-alpha` intact.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Support-aware centering is still a lightweight sampled heuristic from preview vertices, so unusual meshes can still need later tuning.
+- This pass improves stage stability in the desktop preview scene only; it does not change Blender output or backend geometry behavior.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` in one pass; the placement, camera-target, and floor-layer changes are intentionally coupled.
+
+## 2026-04-08 - 0.7.7-alpha - viewer-dominance-and-grounding-fix
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Compressed the viewer chrome so the model occupies more of the workspace: the generation bar is thinner, the viewer toolbar is lighter, and the bottom summary area now reads as a compact telemetry strip instead of a dashboard.
+- Tightened info-strip typography and spacing, shortened several labels, removed non-essential explanatory copy from the primary view, and kept the four-section structure intact.
+- Corrected preview grounding by lifting each loaded object so its lowest bounding-box point sits exactly on the floor, recentering it horizontally at the origin, and keeping the contact shadow fixed on the floor plane.
+- Adjusted camera targeting to use a lower-biased focal point based on model height rather than the raw geometric center, which makes framing feel more grounded.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Grounding and framing still rely on preview-scene heuristics and bounding boxes rather than semantic geometry anchors.
+- The compact telemetry strip intentionally favors glanceable data over explanation, so richer review detail still needs a later dedicated surface.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; this pass depends on the layout density and grounding logic changing in tandem.
+
+## 2026-04-08 - 0.7.6-alpha - viewer-grounding-and-presentation-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Refined the desktop viewer presentation without changing the corrected workspace layout.
+- Added a stronger but still minimal stage floor, contact shadow treatment, and floor placement logic so preview objects sit cleanly in space instead of feeling detached from the scene.
+- Removed automatic preview spin and introduced more deliberate, deterministic first-load framing with lightweight family-aware camera profiles for flatter parts, box-like parts, and depth-sensitive parts.
+- Reduced overlay weight around the viewer, tightened the generation bar styling, and polished the orbit puck and XYZ orientation indicator so the model remains the visual focus.
+- Updated empty, generating, and ready viewer messaging to use lighter product-facing language.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Viewer framing remains heuristic and preview-kind driven; it is not yet based on richer geometry semantics or saved camera presets.
+- Grounding improvements currently affect the desktop preview scene only and do not change backend-generated geometry or Blender output.
+- The orientation aid is still a lightweight overlay rather than a full inset 3D navigation widget.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` and `desktop/ui/styles.css` together; the behavioral and visual parts of the viewer polish are intentionally paired.
+- This pass is presentation-focused and does not alter backend generation contracts or setup/runtime architecture.
+
+## 2026-04-08 - 0.7.5-alpha - system-status-layout-correction
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Removed the incorrect full-width bottom system-status dock and restored the main workspace to a cleaner single-page layout.
+- Integrated system status into the existing info strip so the lower summary area now contains four consistent sections: System status, Dimensions, Generation summary, and Review status.
+- Moved logs out of the primary layout into a modal accessed from the new `Show logs` button in the System status section.
+- Preserved real runtime state wiring for local AI readiness, Blender status, last action, and generation status without reducing viewer height.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Logs are now modal-only; if persistent inline diagnostics are needed later, they should return in a secondary debug-only surface rather than the core workspace.
+- The `Show logs` flow is intentionally lightweight and does not yet include filtering or copy/export actions.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; this pass is a focused correction to the system-status placement and layout balance.
+
+## 2026-04-08 - 0.7.4-alpha - ui-refinement-layout-polish
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Reworked the workspace layout toward a clearer single-page modeling shell with a smaller inline generation bar above the viewer instead of a heavier summary card.
+- Replaced the previous new-chat treatment with a circular `+` button and tooltip, shortened the prompt placeholder, and improved prompt spacing and focus treatment.
+- Moved runtime/log output into a collapsible bottom dock labeled `System status` and `Logs`.
+- Refined the right rail into a scrollable facts area with the Actions section pinned to the bottom.
+- Added viewer overlay controls: a bottom-right XYZ axis indicator that responds to camera orientation and a top-right circular orbit control for quick view rotation.
+- Kept the working generation loop and real backend state wiring intact while reducing visual weight and increasing viewer dominance.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The on-screen orbit puck is a lightweight alpha interaction aid, not a full CAD navigation widget.
+- The axis indicator is a UI overlay driven from camera orientation rather than a separate full 3D inset scene.
+- `View plan` and several right-rail actions remain staged for later alpha passes.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; this pass is primarily layout and interaction polish.
+
+## 2026-04-08 - 0.7.3-alpha - alpha-ux-lock-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Refined the desktop workspace into clearer product roles: setup and request context on the left, viewer and current-state summary in the center, and model facts plus actions on the right.
+- Replaced developer-ish setup wording with more understandable local-first language such as `Set Up AI`, `AI ready`, and `Check This PC`.
+- Improved visual hierarchy, spacing, and action emphasis so the current generation state is easier to read at a glance.
+- Removed misleading placeholder values from the initial UI and made unavailable or review-level information explicitly labeled.
+- Updated all README surfaces to reflect the current alpha product shape and local-first desktop experience.
+
+### Verification
+- `python -m compileall app desktop tests`
+
+### Known Limitations
+- Some actions remain intentionally disabled or staged for later alpha passes, including export, save-project flow, and deep plan inspection.
+- This pass focuses on UX shaping and wording; it does not change backend geometry logic.
+- Full live desktop polish still depends on future passes with real interactive runtime review.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; they define the full UX lock pass.
+- Review the three README files together; they now describe the same desktop-first alpha product story.
+
+## 2026-04-07 - 0.7.2-alpha - python-executor-generation-refactor
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Removed Qt ownership of model-generation execution and moved the generation path onto a single-worker `ThreadPoolExecutor` for simpler alpha reliability.
+- Added a plain Python generation job wrapper that logs job start, calls `backend_controller.generate_model(...)`, preserves terminal payload shape, and converts unexpected exceptions into structured failure payloads.
+- Added a Qt-safe handoff from executor futures back into the bridge through internal bridge signals so UI-facing signal emission and bridge state mutation still occur on the Qt side.
+- Preserved the runtime/setup architecture, desktop payload contract, and existing UI-facing `generationCompleted` / `generationFailed` flow.
+- Kept alpha stability simple by rejecting overlapping generation requests while one job is active.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Model generation now avoids Qt-thread execution, but live runtime behavior still depends on end-to-end desktop execution outside unit tests.
+- Ollama model-pull handling still uses the existing Qt thread path; this pass only changes model-generation execution.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` and `tests/test_desktop_bridge.py` together; they contain the full execution-model change.
+- `desktop/backend_controller.py` remains the generation/runtime API boundary; this pass does not alter backend geometry logic.
+
+## 2026-04-07 - 0.7.1-alpha - qthread-worker-pattern-fix
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Replaced the `GenerationThread(QThread)` generation path with a `GenerationWorker(QObject)` moved onto a plain `QThread`.
+- Wired `thread.started -> worker.run`, `worker.resultReady/resultFailed -> thread.quit`, and kept strong references in the bridge via `_active_thread` and `_active_worker`.
+- Preserved the bridge architecture while adding explicit worker-run logs before and after `thread.start()` plus worker entry/exception logs.
+- Updated focused desktop bridge tests for the worker lifecycle, cleanup, and success/failure payloads.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass fixes the generation worker threading pattern only; it does not change backend generation logic or broader desktop UI flow.
+- Live runtime confirmation still depends on running the desktop shell and observing the emitted worker logs.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` and `tests/test_desktop_bridge.py` together; the main change is the move from QThread subclassing to a QObject worker.
+- If rollback is needed, revert this pass as a single threading-pattern checkpoint.
+
+## 2026-04-07 - 0.7.0-alpha - local-first-runtime-foundation
+
+### Files Changed
+- `.gitignore`
+- `CHANGELOG.md`
+- `README.md`
+- `VERSION`
+- `app/state.py`
+- `app/runtime/__init__.py`
+- `app/runtime/blender.py`
+- `app/runtime/health.py`
+- `app/runtime/models.py`
+- `app/runtime/ollama.py`
+- `app/runtime/setup.py`
+- `desktop/README.md`
+- `desktop/backend_controller.py`
+- `desktop/bridge.py`
+- `desktop/ui/app.js`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `tests/test_backend_alpha_pipeline.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Added a dedicated `app/runtime/` package for Ollama detection, Blender detection, runtime health, setup coordination, and recommended model definitions.
+- Extended persisted session state with runtime/setup fields so desktop startup, repair flows, and readiness gating share one source of truth.
+- Refactored the desktop controller and bridge to expose runtime health APIs, model pulls, and a setup smoke test without depending on terminal chat orchestration.
+- Added an in-app setup gate in the desktop UI so generation is blocked until Ollama, the required local model, Blender, and setup completion are all verified.
+- Replaced placeholder Ollama-connected footer copy with runtime-health-driven status text.
+- Tightened ignore rules for review zips, nested `.git` folders, generated previews, Blender outputs, and cache artifacts.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The setup UI is still a foundational guided gate, not a polished multi-screen wizard.
+- Blender detection is currently Windows-oriented and relies on common local install paths plus `BLENDER_PATH`.
+- The model recommendation set is intentionally small and opinionated for the transition pass.
+- This pass does not fully redesign the main workspace after setup completion; it focuses on runtime/setup backbone and truthful gating.
+
+### Rollback / Review Notes
+- Review `app/runtime/*`, `desktop/backend_controller.py`, and `desktop/bridge.py` together; they define the new runtime contract.
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; they define the setup gate and runtime-truth UI changes.
+- Revert this pass as one architectural checkpoint if the runtime/setup foundation needs to be backed out cleanly.
+
+## 2026-04-07 - 0.6.12-alpha - webchannel-generate-model-entrypoint-verification
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `desktop/ui/app.js`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Kept the direct `QThread.run()` generation path and cleaned up the WebChannel entrypoint around it.
+- Added a first-line bridge slot log for the exposed `@Slot(str) generateModel(self, prompt_text: str)` method and wrapped the full slot body so any pre-thread exception logs a traceback and emits a terminal failure payload.
+- Renamed the generation-thread payload signals from `finished`/`failed` to `resultReady`/`resultFailed` to avoid colliding with `QThread.finished()`.
+- Added JS-side logging of `typeof bridge.generateModel`, explicit missing-entrypoint handling, and a guarded `try/catch` around the WebChannel method call.
+- Updated focused bridge tests for the renamed signals and new generateModel slot exception message.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- Live runtime confirmation is still needed to prove whether the Python slot is now being entered when the UI logs `bridge generateModel call start`.
+- This pass verifies and hardens the JS -> Python boundary only; it does not change backend generation logic or UI rendering logic.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` and `desktop/ui/app.js` together; this pass is about the exposed entrypoint and unambiguous signal naming.
+- `tests/test_desktop_bridge.py` now asserts the slot-entry log and `resultReady`/`resultFailed` signal usage.
+- If rollback is needed, revert this as a single WebChannel entrypoint verification checkpoint on top of `0.6.11-alpha`.
+
+## 2026-04-07 - 0.6.11-alpha - bridge-generation-thread-refactor
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Replaced the `QObject` worker plus `moveToThread` startup path with a direct `GenerationThread(QThread)` implementation that performs deterministic generation inside `run()`.
+- Removed the active-path `moveToThread`, `thread.started -> worker.run`, and `invokeMethod` choreography from bridge startup, leaving a simpler thread lifecycle with direct `thread.start()`.
+- Kept the completion contract intact by emitting JSON-safe terminal payloads from the generation thread on both success and exception paths.
+- Simplified cleanup so the thread is allowed to finish naturally and the bridge clears active refs in one thread-finished cleanup path.
+- Updated the focused bridge tests for the new direct-thread lifecycle and structured failure emission.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- Live Qt runtime confirmation is still needed to prove the direct `QThread.run()` path resolves the original thread-start stall in the packaged desktop shell.
+- This pass does not change backend generation logic or UI rendering behavior; it only replaces the generation-thread startup mechanism.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` first; the core change is the replacement of `GenerationWorker` with `GenerationThread`.
+- `tests/test_desktop_bridge.py` now covers the direct thread success/failure path rather than the removed `moveToThread` choreography.
+- If rollback is needed, revert this as a single generation-thread refactor checkpoint on top of `0.6.10-alpha`.
+
+## 2026-04-07 - 0.6.10-alpha - bridge-worker-log-slot-fix
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Made the bridge worker log relay a real Qt slot with `@Slot(str)` so the `worker.log` hookup uses an explicit signature-safe receiver.
+- Added an explicit `[BRIDGE] worker.log connected` trace immediately after the connection point that now appears to be the last visible setup boundary before the live stall.
+- Kept the rest of the minimal signal map unchanged and did not alter backend generation or UI rendering behavior.
+- Added a focused bridge test assertion that the setup path reaches the new worker-log connection trace before thread start.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass makes the `worker.log` hookup Qt-safe and observable, but live runtime confirmation is still needed to prove whether this connection was the actual blocker.
+- If the next live trace now reaches `worker.log connected` and stops later, the blocker has moved further down the setup path and is narrower again.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` first; the change is narrowly centered on the worker log relay and its connection trace.
+- `tests/test_desktop_bridge.py` now asserts that setup reaches the `worker.log connected` boundary.
+- If rollback is needed, revert this as a single worker-log slot hardening checkpoint on top of `0.6.9-alpha`.
+
+## 2026-04-07 - 0.6.9-alpha - worker-run-invokemethod-start-fix
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Replaced the direct `thread.started -> worker.run` hookup with a bridge-owned `QMetaObject.invokeMethod(...)` start path so worker execution is triggered explicitly after the thread start signal fires.
+- Kept `GenerationWorker.run` as an explicit zero-argument Qt slot and added bridge logs around invoke start, invoke return value, and invoke failure.
+- Made invoke failures terminal: if `invokeMethod` returns false or raises, the bridge now emits a structured terminal failure payload and requests thread shutdown so the desktop shell unwinds cleanly.
+- Added a focused regression test covering the `invokeMethod` failure path.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass still needs live Qt runtime confirmation to prove the worker now starts reliably in the real desktop shell.
+- The exact original failure is most likely the direct `thread.started -> worker.run` hookup, but live trace after this pass is still needed for final confirmation.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` first; the core change is in `_handle_thread_started`.
+- `tests/test_desktop_bridge.py` now covers the `invokeMethod` failure unwind path.
+- If rollback is needed, revert this as a single worker-start invocation checkpoint on top of `0.6.8-alpha`.
+
+## 2026-04-07 - 0.6.8-alpha - bridge-minimal-signal-wiring
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Simplified the Qt bridge start path to a minimal explicit signal/slot map: `thread.started -> worker.run`, `worker.finished -> _handle_worker_finished`, `worker.failed -> _handle_worker_failed`, and `thread.finished -> _handle_thread_finished`.
+- Removed direct setup-time quit and inline cleanup signal hookups from the active generation path, so bridge-owned handlers now control completion, thread shutdown, and cleanup in one place.
+- Added explicit lifecycle handlers for worker-finished, worker-failed, thread-finished, and cleanup, with trace logs around each remaining connection and lifecycle boundary.
+- Kept the submit/setup exception trap so any remaining setup failure still emits a terminal failure payload instead of leaving the shell stuck in `Generating...`.
+- Added focused bridge regression coverage for the simplified cleanup path and updated completion-path tests to the new handler names.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- Live Qt runtime confirmation is still needed to prove the simplified signal map resolves the original setup-time failure in the actual desktop shell.
+- This pass narrows the setup path, but it does not change backend generation or UI rendering behavior.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` first; the core change is the reduced signal wiring and explicit bridge-owned lifecycle handlers.
+- `tests/test_desktop_bridge.py` covers cleanup and failure behavior for the new handler structure.
+- If rollback is needed, revert this as a single bridge wiring simplification checkpoint on top of `0.6.7-alpha`.
+
+## 2026-04-07 - 0.6.7-alpha - bridge-submitprompt-exception-trap
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Wrapped the full bridge submit/setup path in `try/except` so thread/worker setup failures can no longer stop silently between connection wiring and `thread.start()`.
+- Added explicit trace logs for every remaining setup step, including finished/failed signal hookups, thread-quit hookups, thread-finished hookup, cleanup hookup, and the boundary around `thread.start()`.
+- Added explicit early-return logs for empty-prompt and already-running guards.
+- Ensured setup-time exceptions emit a terminal failure payload and failure signal so the UI can unwind instead of remaining in `Generating...`.
+- Added a focused bridge regression test that forces a setup exception before thread start and verifies terminal failure emission.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass traps setup failure, but the exact live failing line still requires one traced runtime reproduction to confirm whether it is in a Qt connect call or `thread.start()` boundary.
+- The pass is intentionally limited to bridge setup and does not change backend generation or UI rendering logic.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` first; the entire fix is in the submit/setup block.
+- `tests/test_desktop_bridge.py` now covers one synthetic setup-time exception path.
+- If rollback is needed, revert this as a single submitPrompt exception-trap checkpoint on top of `0.6.6-alpha`.
+
+## 2026-04-07 - 0.6.6-alpha - qt-worker-start-path-fix
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/bridge.py`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Tightened the Qt worker start path by keeping explicit active thread/worker references on the bridge and tracing the full start lifecycle from thread creation through thread start and worker-start watchdog.
+- Switched the worker run connection to an explicit queued connection and added thread-start and thread-finished trace hooks.
+- Added a lightweight watchdog log to report when `worker.run` has not started shortly after `thread.start()`.
+- Kept completion logic intact and focused only on guaranteeing and tracing the pre-generation start path.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass improves lifecycle persistence and traceability, but live Qt runtime confirmation is still needed to verify the original failure is resolved.
+- The watchdog is diagnostic only and does not force-start the worker.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` first; that file contains the entire lifecycle change.
+- `tests/test_desktop_bridge.py` now includes a focused assertion that active thread/worker refs persist through the start call.
+- If rollback is needed, revert this as a single Qt start-path fix checkpoint on top of `0.6.5-alpha`.
+
+## 2026-04-07 - 0.6.5-alpha - desktop-live-trace-instrumentation
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/backend_controller.py`
+- `desktop/bridge.py`
+- `desktop/ui/app.js`
+
+### Summary
+- Added explicit live trace logging across the desktop generation path so one failing run can be followed from submit through worker execution, bridge completion emit, state refresh, UI terminal handling, and preview loading.
+- Added bridge-side logging for submit, worker creation, worker start, backend return, payload details before emit, completion handler entry, completion emit boundaries, refresh boundaries, fallback emission, and full tracebacks.
+- Added UI-side logging for WebChannel bootstrap, bridge/signal connection, generation start, completion callback entry, raw payload receipt, payload parse, terminal status identity, terminal renderer entry, preview load start/success/failure, and final terminal UI application.
+- Added one safety measure so the UI clears `generationInFlight` before awaiting preview load, preventing preview delay from leaving the shell visually stuck in `Generating...`.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass is diagnostic and does not attempt to fix the underlying live runtime failure beyond ensuring preview wait does not hold the active-generation state.
+- Duplicate trace lines may appear because the bridge and UI now both log adjacent phases intentionally.
+- Live terminal output and desktop DevTools/browser console capture are still needed to identify the exact failing hop.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` and `desktop/ui/app.js` together; the value of this pass is the aligned trace coverage across the handoff boundary.
+- `desktop/backend_controller.py` only gained narrow trace output around deterministic generation start/return.
+- If rollback is needed, revert this as a single diagnostics-only checkpoint on top of `0.6.4-alpha`.
+
+## 2026-04-07 - 0.6.4-alpha - desktop-flow-decoupling-cleanup
+
+### Files Changed
+- `README.md`
+- `CHANGELOG.md`
+- `VERSION`
+- `.gitignore`
+- `app/backend/runtime.py`
+- `app/backend/pipeline.py`
+- `app/chat_agent.py`
+- `desktop/README.md`
+- `desktop/backend_controller.py`
+- `desktop/bridge.py`
+- `desktop/ui/app.js`
+
+### Summary
+- Decoupled the desktop path from `app/chat_agent.py` by moving controller imports to the deterministic backend pipeline, backend runtime paths, and backend version helpers directly.
+- Removed unused Ollama coupling from the desktop controller; the desktop path no longer constructs or passes `OllamaClient` for deterministic generation.
+- Simplified bridge responsibilities so the worker serializes through the controller JSON-safe path and the bridge centers on generation completion emission plus passive state refresh.
+- Removed the misleading procedural gear preview fallback from the desktop UI so frontend expectations stay aligned with current backend alpha-family support.
+- Added repo hygiene ignore rules for runtime state, generated previews, generated Blender scripts, and Python cache artifacts.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline`
+- `python -m unittest tests.test_desktop_bridge`
+
+### Known Limitations
+- Live desktop runtime confirmation is still needed after decoupling to validate the simplified flow under real Qt WebEngine conditions.
+- Terminal chat mode in `app/chat_agent.py` still keeps its own optional Ollama-oriented terminal behavior for legacy use; this cleanup only removes that dependency from the desktop path.
+- The bridge still contains defensive fallback logic because the desktop shell needs explicit unwind guarantees, though the core desktop path is now narrower and easier to trace.
+
+### Rollback / Review Notes
+- Review `app/backend/runtime.py`, `desktop/backend_controller.py`, `desktop/bridge.py`, and `app/chat_agent.py` together; those files carry the desktop-path decoupling.
+- `desktop/ui/app.js` changed only to remove the misleading gear fallback preview.
+- If rollback is needed, revert this as a single desktop flow cleanup checkpoint on top of `0.6.3-alpha`.
+
+## 2026-04-07 - 0.6.3-alpha - desktop-bridge-crash-hardening
+
+### Files Changed
+- `README.md`
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/backend_controller.py`
+- `desktop/bridge.py`
+- `desktop/ui/app.js`
+- `tests/test_desktop_bridge.py`
+
+### Summary
+- Hardened bridge completion so `_handle_generation_finished` now logs each step, normalizes payloads defensively, and catches completion/refresh exceptions instead of letting the slot raise.
+- Made `getInitialState()` JSON-safe by converting controller status values recursively before serialization and returning a safe fallback state payload if bridge serialization fails.
+- Added a last-resort bridge fallback so malformed completion payloads and bridge-side failures still emit a terminal event to the UI.
+- Kept refresh failures from killing the run loop: a successful completion emit is preserved even if later state refresh fails.
+- Added focused bridge regression coverage for JSON-safe bootstrap state, malformed completion payload fallback, refresh failure after completion emit, and terminal failure delivery.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline`
+- `python -m unittest tests.test_desktop_bridge`
+- Manual inspection confirmed:
+- `generationFailed` now also unwinds the UI if completion emit degrades
+- bridge logs include payload type/preview, refresh status, and exception tracebacks
+- bridge fallback still reaches the UI terminal path
+
+### Known Limitations
+- Live Qt runtime confirmation is still needed to verify the exact original crash signature against the new bridge logging.
+- This pass does not remove duplicate terminal notifications in every fallback case; it prioritizes guaranteed unwind over deduplicating diagnostics.
+- The Chromium GPU SharedImage warning remains unrelated to this Python-side crash hardening pass.
+
+### Rollback / Review Notes
+- Review `desktop/bridge.py` first, then `desktop/backend_controller.py`, `desktop/ui/app.js`, and `tests/test_desktop_bridge.py`.
+- This pass is narrowly focused on bridge serialization, completion safety, and refresh fallback behavior.
+- If rollback is needed, revert this as a single bridge crash hardening checkpoint on top of `0.6.2-alpha`.
+
+## 2026-04-07 - 0.6.2-alpha - desktop-terminal-failure-unwind-hardening
+
+### Files Changed
+- `README.md`
+- `CHANGELOG.md`
+- `VERSION`
+- `app/backend/pipeline.py`
+- `app/state.py`
+- `desktop/backend_controller.py`
+- `desktop/bridge.py`
+- `desktop/ui/app.js`
+- `tests/test_backend_alpha_pipeline.py`
+
+### Summary
+- Normalized the terminal generation contract so desktop-facing results now carry explicit terminal status fields for ready, unsupported, validation-failed, and error outcomes.
+- Made backend pipeline exceptions return structured terminal payloads instead of escaping the worker path without a normal completion payload.
+- Routed bridge-level failures through the same terminal completion signal so the UI receives a terminal event for worker exceptions and local bridge failures.
+- Hardened the UI to unwind every terminal outcome, replace loading overlays with explicit terminal messages, and log request text, generation id, status, reason, and preview path for alpha diagnosis.
+- Added regression coverage for unsupported results, caught backend errors, preview export failures, and controller status passthrough.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline`
+- Manual inspection of `desktop/ui/app.js` confirmed:
+- `generationInFlight` is always cleared in `finally`
+- non-ready terminal payloads do not wait for preview
+- unsupported and error outcomes render explicit terminal messaging
+- bridge failures are converted into terminal completion payloads
+
+### Known Limitations
+- Live Qt desktop runtime still needs confirmation for every failure mode, especially malformed payload handling inside the WebChannel runtime.
+- `pytest` is not installed in this environment, so verification used the requested unittest target instead.
+- Preview export failure still leaves model generation marked `ready`; the terminal contract relies on `preview_export_status="error"` plus explicit UI messaging rather than redefining generation success.
+
+### Rollback / Review Notes
+- Review `app/backend/pipeline.py`, `desktop/bridge.py`, and `desktop/ui/app.js` together because the stabilization depends on the shared terminal payload shape.
+- `desktop/backend_controller.py` now also persists controller-owned terminal failures so runtime status cards reflect actual bridge/worker failures.
+- If rollback is needed, revert this as a single failure-path hardening checkpoint on top of `0.6.1-alpha`.
+
+## 2026-04-07 - 0.6.1-alpha - desktop-active-run-loop-hardening
+
+### Files Changed
+- `README.md`
+- `CHANGELOG.md`
+- `VERSION`
+- `desktop/README.md`
+- `app/state.py`
+- `app/model_library.py`
+- `app/backend/pipeline.py`
+- `desktop/backend_controller.py`
+- `desktop/bridge.py`
+- `desktop/ui/app.js`
+- `tests/test_backend_alpha_pipeline.py`
+
+### Summary
+- Added backend-owned `generation_id` and preview asset identity to each generation result and persisted both into session state for desktop bootstrap and refresh.
+- Switched preview export to generation-specific GLB filenames so the viewer no longer depends on a constant preview path or frontend-owned timestamps to refresh.
+- Passed generation identity and preview identity through the desktop controller and bridge unchanged.
+- Hardened the desktop completion flow with guarded result handling, backend-owned request text, awaited preview loading, and procedural fallback when external preview loading fails.
+- Blocked New Chat during an in-flight generation so the active desktop session cannot desynchronize from the worker result.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `pytest tests/test_backend_alpha_pipeline.py`
+- Static inspection of `desktop/ui/app.js` confirmed:
+- `generationCompleted` is guarded by `try/catch/finally`
+- `generationInFlight` is cleared in `finally`
+- preview loading uses backend-owned preview identity
+- New Chat is blocked while a generation is in flight
+
+### Known Limitations
+- This pass still needs live desktop runtime confirmation in Qt WebEngine to validate end-to-end refresh behavior with repeated GLB loads.
+- Generation-specific preview files currently accumulate in `data/previews/`; this pass stabilizes identity and caching first, not cleanup policy.
+- The desktop shell still supports only one active generation worker at a time and does not implement cancellation.
+
+### Rollback / Review Notes
+- Review `app/backend/pipeline.py`, `app/state.py`, `desktop/backend_controller.py`, `desktop/bridge.py`, and `desktop/ui/app.js` together because the stabilization depends on the shared payload contract.
+- `app/model_library.py` was updated only to carry the backend-owned generation identity into saved model entries.
+- If rollback is needed, revert this as a single cross-layer desktop loop hardening checkpoint on top of `0.6.0-alpha`.
+
 ## 2026-04-06 - 0.6.0-alpha - desktop-core-loop-stabilization
 
 ### Files Changed

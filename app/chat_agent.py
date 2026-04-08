@@ -15,6 +15,7 @@ if str(APP_DIR) not in sys.path:
 
 try:
     from app.backend.classifier import classify_request as backend_classify_request
+    from app.backend.runtime import GENERATED_SCRIPT_PATH
     from app.backend.pipeline import generate_model_request as backend_generate_model_request
     from app.backend.versioning import load_version as load_project_version
     from app.blender_runner import run_generated_script
@@ -22,15 +23,12 @@ try:
     from app.state import load_state, save_state
 except ImportError:
     from backend.classifier import classify_request as backend_classify_request
+    from backend.runtime import GENERATED_SCRIPT_PATH
     from backend.pipeline import generate_model_request as backend_generate_model_request
     from backend.versioning import load_version as load_project_version
     from blender_runner import run_generated_script
     from llm_client import OllamaClient, OllamaClientError
     from state import load_state, save_state
-
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-GENERATED_SCRIPT_PATH = PROJECT_ROOT / "blender" / "generated_model.py"
 
 
 HELP_TEXT = """Geomancer commands:

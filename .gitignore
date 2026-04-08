@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.zip
+*.bak
+
+# Review bundles and accidental nested repos
+**/.git/
+review-zip/
+review_zips/
+
+# Runtime state and local model library
+data/session_state.json
+data/model_library.json
+data/runtime_state.json
+
+# Generated preview exports
+data/previews/
+previews/
+
+# Generated Blender output
+blender/generated_model.py
+blender/generated_model_*.py
+*.blend1
+*.blend2

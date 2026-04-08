@@ -1,11 +1,13 @@
 import unittest
 from unittest.mock import patch
 
+from app.state import DEFAULT_STATE
 from app.backend.classifier import classify_request
 from app.backend.geometry import build_script
 from app.backend.models import GenerationPlan
 from app.backend.normalizer import normalize_request
 from app.backend.pipeline import generate_model_request
+from desktop.backend_controller import BackendController
 
 
 class BackendAlphaPipelineTests(unittest.TestCase):
@@ -87,7 +89,10 @@ class BackendAlphaPipelineTests(unittest.TestCase):
         with patch("app.backend.pipeline.save_generated_script") as save_script, patch(
             "app.backend.pipeline.export_preview_model",
             return_value=(True, "Preview exported successfully."),
-        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state:
+        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
+            "app.backend.pipeline.add_saved_model_entry",
+            return_value={"id": "saved-model-1"},
+        ):
             result = generate_model_request("Create a 120 x 80 x 50 mm enclosure with 3 mm walls", log=lambda _msg: None)
 
         save_script.assert_called_once()
@@ -96,6 +101,12 @@ class BackendAlphaPipelineTests(unittest.TestCase):
         self.assertEqual(result["family"], "enclosure")
         self.assertEqual(result["preview_export_status"], "ready")
         self.assertIn("validation", result)
+        self.assertTrue(result["generation_id"].startswith("gen-"))
+        self.assertEqual(result["preview_asset_version"], result["generation_id"])
+        self.assertIn(result["generation_id"], result["preview_model_path"])
+        saved_state = save_state.call_args.args[0]
+        self.assertEqual(saved_state["last_generation_id"], result["generation_id"])
+        self.assertEqual(saved_state["last_preview_asset_version"], result["generation_id"])
 
     def test_classifier_prefers_cable_clip_for_wire_clip_language(self):
         result = classify_request("Create a wire clip for a 10 mm cable with a mounting base")
@@ -150,7 +161,10 @@ class BackendAlphaPipelineTests(unittest.TestCase):
         with patch("app.backend.pipeline.save_generated_script") as save_script, patch(
             "app.backend.pipeline.export_preview_model",
             return_value=(True, "Preview exported successfully."),
-        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state:
+        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
+            "app.backend.pipeline.add_saved_model_entry",
+            return_value={"id": "saved-model-2"},
+        ):
             result = generate_model_request("Make a bracket 120 x 30 x 80 mm with four 5 mm holes and 6 mm thickness", log=lambda _msg: None)
 
         save_script.assert_called_once()
@@ -158,6 +172,100 @@ class BackendAlphaPipelineTests(unittest.TestCase):
         self.assertEqual(result["status"], "ready")
         self.assertEqual(result["family"], "bracket")
         self.assertEqual(result["preview_export_status"], "ready")
+
+    def test_pipeline_returns_generation_identity_for_nonready_result(self):
+        with patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state:
+            result = generate_model_request("Make me a dragon sculpture", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "unsupported")
+        self.assertTrue(result["is_terminal"])
+        self.assertTrue(result["generation_id"].startswith("gen-"))
+        self.assertEqual(result["request_text"], "Make me a dragon sculpture")
+        saved_state = save_state.call_args.args[0]
+        self.assertEqual(saved_state["last_generation_id"], result["generation_id"])
+        self.assertEqual(saved_state["last_preview_asset_version"], "")
+
+    def test_pipeline_returns_ready_when_preview_export_fails(self):
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model",
+            return_value=(False, "Preview export failed."),
+        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
+            "app.backend.pipeline.add_saved_model_entry",
+            return_value={"id": "saved-model-3"},
+        ):
+            result = generate_model_request("Create a 120 x 80 x 50 mm enclosure with 3 mm walls", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["preview_export_status"], "error")
+        self.assertEqual(result["preview_model_path"], "")
+        self.assertEqual(result["preview_export_message"], "Preview export failed.")
+        saved_state_payload = save_state.call_args.args[0]
+        self.assertEqual(saved_state_payload["last_generation_status"], "ready")
+        self.assertEqual(saved_state_payload["last_preview_export_status"], "error")
+
+    def test_pipeline_returns_error_when_generation_raises(self):
+        with patch("app.backend.pipeline.build_script", side_effect=RuntimeError("script build exploded")), patch(
+            "app.backend.pipeline.load_state",
+            return_value={},
+        ), patch("app.backend.pipeline.save_state") as save_state:
+            result = generate_model_request("Create a 120 x 80 x 50 mm enclosure with 3 mm walls", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["raw_status"], "error")
+        self.assertTrue(result["is_terminal"])
+        self.assertEqual(result["preview_export_status"], "not_requested")
+        saved_state_payload = save_state.call_args.args[0]
+        self.assertEqual(saved_state_payload["last_generation_status"], "error")
+        self.assertEqual(saved_state_payload["last_generation_raw_status"], "error")
+
+    def test_backend_controller_surfaces_terminal_status_fields(self):
+        controller = BackendController()
+        mocked_state = {
+            "last_generation_id": "gen-test-1",
+            "last_generated_script_path": "blender/generated_model.py",
+            "last_preview_model_path": "",
+            "last_preview_asset_version": "",
+            "last_preview_export_status": "error",
+            "last_preview_export_message": "Preview export failed.",
+            "last_user_request": "make something unsupported",
+            "last_generation_family": "",
+            "last_generation_status": "unsupported",
+            "last_generation_raw_status": "unsupported",
+            "last_generation_message": "Unsupported request.",
+            "last_generation_timestamp": "2026-04-07T12:00:00",
+            "last_validation_summary": "Unsupported request.",
+            "last_plan": {},
+            "last_validation": {},
+            "last_classification": {},
+            "last_saved_model_entry": {},
+            "last_run_status": "unsupported",
+        }
+        with patch("desktop.backend_controller.load_state", return_value=mocked_state), patch(
+            "desktop.backend_controller.get_library_summary",
+            return_value={"saved_model_count": 0, "recent_saved_models": [], "project_count": 0, "template_count": 0, "templates": []},
+        ), patch.object(controller, "refresh_runtime_health", return_value={"runtime_health_status": "setup_required"}):
+            status = controller.get_status()
+
+        self.assertEqual(status.generation_id, "gen-test-1")
+        self.assertEqual(status.last_generation_status, "unsupported")
+        self.assertEqual(status.last_generation_raw_status, "unsupported")
+        self.assertEqual(status.preview_export_status, "error")
+
+    def test_state_defaults_include_runtime_setup_fields(self):
+        required_keys = {
+            "setup_completed",
+            "first_run_completed",
+            "ollama_installed",
+            "ollama_running",
+            "ollama_version",
+            "ollama_model_name",
+            "ollama_model_ready",
+            "blender_detected",
+            "blender_path",
+            "runtime_health_status",
+            "runtime_health_message",
+        }
+        self.assertTrue(required_keys.issubset(DEFAULT_STATE))
 
 
 if __name__ == "__main__":
