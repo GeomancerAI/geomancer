@@ -30,100 +30,53 @@
 
     <main class="workspace">
       <aside class="left-rail panel">
-        <div class="rail-header">
-          <div class="rail-heading">
-            <p class="rail-eyebrow">Local workflow</p>
-            <h2>Conversation</h2>
+        <div class="rail-header conversation-header">
+          <div class="rail-heading convo-title-group">
+            <span class="convo-header-label">Session</span>
+            <span class="convo-header-title" id="sessionTitle">Untitled</span>
           </div>
           <button
             id="new-conversation-button"
-            class="new-chat-button"
+            class="new-chat-button new-chat-btn"
             type="button"
             aria-label="Start new chat"
             title="Start new chat (Ctrl+Enter submits prompt)"
           >+</button>
         </div>
 
-        <div class="conversation-list">
-          <section class="rail-section">
-            <div class="section-header">
-              <p class="section-eyebrow">Setup and guidance</p>
-            </div>
-
-            <article class="message-card assistant-card compact-card">
-              <div class="message-avatar">&#9672;</div>
-              <div class="message-body">
-                <p class="message-title">What Geomancer does</p>
-                <p class="message-text">Describe a supported part in plain language. Local AI interprets the request, then Geomancer builds deterministic geometry for Blender.</p>
-              </div>
-            </article>
-
-            <article class="message-card assistant-card compact-card">
-              <div class="message-avatar">&#9672;</div>
-              <div class="message-body">
-                <p class="message-title">Try one of these</p>
-                <div class="example-prompts" aria-hidden="true">
-                  <span class="example-pill">Wall bracket with four holes</span>
-                  <span class="example-pill">Desk cable clip</span>
-                  <span class="example-pill">Small electronics enclosure</span>
-                  <span class="example-pill">Planter with 3 mm walls</span>
-                </div>
-              </div>
-            </article>
-          </section>
-
-          <section class="rail-section">
-            <div class="section-header">
-              <p class="section-eyebrow">Current request</p>
-            </div>
-
-            <article class="message-card user-card">
-              <div class="message-body">
-                <p class="message-title">Prompt</p>
-                <p class="message-text" id="history-user-prompt">No prompt submitted yet.</p>
-                <p class="message-time">Updates after each generation</p>
-              </div>
-            </article>
-          </section>
-
-          <section class="rail-section">
-            <div class="section-header">
-              <p class="section-eyebrow">Generation status</p>
-            </div>
-
-            <article class="message-card checklist-card">
-              <div class="message-avatar">&#9672;</div>
-              <div class="message-body">
-                <p class="message-title">Interpretation summary</p>
-                <p class="message-text" id="history-plan-state">Waiting for a prompt.</p>
-                <ul class="message-checklist" id="history-summary-list">
-                  <li>No parsed geometry summary yet.</li>
-                </ul>
-              </div>
-            </article>
-
-            <article class="message-card assistant-card compact-card">
-              <div class="message-avatar">&#9672;</div>
-              <div class="message-body">
-                <p class="message-title" id="history-result-title">Latest result</p>
-                <p class="message-text" id="history-result-text">When a generation finishes, this panel summarizes what happened and what to review next.</p>
-              </div>
-            </article>
-          </section>
-
+        <div class="conversation-thread-region">
+          <div id="conversation-thread" class="conversation-thread chat-scroll" aria-live="polite">
+          </div>
         </div>
 
         <div class="composer-shell">
-          <div class="composer-copy">
-            <p class="section-eyebrow">Prompt</p>
-            <h3>Describe the part you want</h3>
-            <p>Keep it dimensional and concrete. Geomancer will classify the request, normalize the inputs, and generate deterministic geometry.</p>
-          </div>
-
           <div class="composer">
             <label class="sr-only" for="prompt-input">Prompt</label>
             <textarea id="prompt-input" placeholder="Describe your part (e.g. 120mm plate with 4 holes)"></textarea>
             <button id="generate-button" class="composer-send" type="button" aria-label="Generate">Go</button>
+          </div>
+          <div class="composer-toolbelt" aria-label="Composer tools">
+            <div class="composer-toolbelt-group">
+              <button id="toolbelt-image" class="toolbelt-button is-disabled" type="button" aria-label="Image to model" title="Image to model — Coming soon" disabled>
+                <span aria-hidden="true">🖼</span>
+              </button>
+              <button id="toolbelt-mic" class="toolbelt-button is-disabled" type="button" aria-label="Voice prompt" title="Voice prompt — Coming soon" disabled>
+                <span aria-hidden="true">🎙</span>
+              </button>
+              <button id="toolbelt-improve" class="toolbelt-button" type="button" aria-label="Improve prompt" title="Improve prompt">
+                <span aria-hidden="true">✦</span>
+              </button>
+            </div>
+            <div class="composer-toolbelt-group composer-toolbelt-group-right">
+              <button id="toolbelt-settings" class="toolbelt-button" type="button" aria-label="Conversation settings" title="Conversation settings">
+                <span aria-hidden="true">⋯</span>
+              </button>
+              <div id="composer-quick-menu" class="composer-quick-menu" hidden>
+                <button id="quick-clear-conversation" class="quick-menu-item" type="button">Clear conversation</button>
+                <button id="quick-toggle-autoscroll" class="quick-menu-item" type="button">Auto-scroll: On</button>
+                <button id="quick-toggle-timestamps" class="quick-menu-item" type="button">Timestamps: On</button>
+              </div>
+            </div>
           </div>
         </div>
       </aside>
@@ -147,14 +100,6 @@
           </div>
         </section>
 
-        <div class="generation-bar">
-          <div class="generation-bar-copy">
-            <span class="generation-chip" id="generation-status">Idle</span>
-            <p id="readiness-state">Finish setup or submit a prompt to begin.</p>
-          </div>
-          <button class="footer-button toolbar-button" type="button" disabled>View plan</button>
-        </div>
-
         <div class="viewer-header">
           <div class="viewer-mode-toggle" aria-label="View mode">
             <button id="viewer-mode-solid" class="viewer-mode is-active" type="button"><span class="mode-dot"></span>Solid</button>
@@ -167,12 +112,6 @@
         </div>
 
         <div class="viewer-frame">
-          <div class="viewer-side-tools">
-            <button id="viewer-tool-orbit" class="viewer-tool is-active" type="button">Orbit</button>
-            <button id="viewer-tool-pan" class="viewer-tool" type="button">Pan</button>
-            <button id="viewer-tool-zoom" class="viewer-tool" type="button">Zoom</button>
-          </div>
-
           <div class="viewer-canvas">
             <div id="viewer-render-surface" class="viewer-render-surface" aria-label="Model viewer"></div>
             <div class="grid-fade"></div>
@@ -181,9 +120,20 @@
                 <div id="viewer-orbit-thumb" class="viewer-orbit-thumb"></div>
               </div>
             </div>
+            <div class="viewer-hud viewer-hud-left">
+              <div class="viewer-overlay-tools">
+                <button id="viewer-tool-orbit" class="viewer-tool is-active" type="button">Orbit</button>
+                <button id="viewer-tool-pan" class="viewer-tool" type="button">Pan</button>
+                <button id="viewer-tool-zoom" class="viewer-tool" type="button">Zoom</button>
+              </div>
+            </div>
+            <div class="viewer-hud viewer-hud-bottom-left">
+              <button id="viewer-auto-orbit-toggle" class="viewer-auto-orbit-button" type="button" aria-pressed="false">Play</button>
+            </div>
             <div class="viewer-hud viewer-hud-bottom">
               <div id="viewer-axis-indicator" class="viewer-axis-indicator" aria-hidden="true">
                 <div id="viewer-axis-scene" class="viewer-axis-scene">
+                  <div class="axis-origin"></div>
                   <div class="axis-line axis-x"><span>X</span></div>
                   <div class="axis-line axis-y"><span>Y</span></div>
                   <div class="axis-line axis-z"><span>Z</span></div>
@@ -202,15 +152,14 @@
 
         <div class="info-strip">
           <section class="info-card">
-            <p class="info-heading">System status</p>
+            <p class="info-heading">System</p>
             <div class="metric-grid">
               <div class="metric-row"><span>AI</span><strong id="system-ai-status">Checking...</strong></div>
               <div class="metric-row"><span>Blender</span><strong id="system-blender-status">Checking...</strong></div>
-              <div class="metric-row"><span>Last</span><strong id="last-run-status">Idle</strong></div>
+              <div class="metric-row"><span>Last action</span><strong id="last-run-status">Idle</strong></div>
             </div>
             <div class="info-card-actions">
-              <span class="status-pill" id="backend-status">Checking...</span>
-              <button id="show-logs-button" class="footer-button compact-button" type="button">Logs</button>
+              <button id="show-logs-button" class="info-strip-link" type="button">Logs</button>
             </div>
           </section>
 
@@ -224,28 +173,32 @@
           </section>
 
           <section class="info-card">
-            <p class="info-heading">Generation summary</p>
-            <div class="metric-grid compact-metrics">
-              <div class="metric-row"><span>Volume</span><strong id="metric-volume">Unavailable</strong></div>
-              <div class="metric-row"><span>Wall</span><strong id="metric-wall">Unavailable</strong></div>
+            <p class="info-heading">Generation</p>
+            <div class="metric-grid">
+              <div class="metric-row"><span>Family</span><strong id="generation-family">Pending</strong></div>
+              <div class="metric-row"><span>Recipe</span><strong id="generation-recipe">Pending</strong></div>
+              <div class="metric-row"><span>Features</span><strong id="generation-features">Pending</strong></div>
             </div>
           </section>
 
           <section class="info-card">
-            <p class="info-heading">Review status</p>
+            <p class="info-heading">Review</p>
             <div class="metric-grid">
-              <div class="metric-row"><span>Triangles</span><strong id="metric-triangles">Not measured</strong></div>
-              <div class="metric-row"><span>Confidence</span><strong id="metric-quality">Review needed</strong></div>
+              <div class="metric-row"><span>Confidence</span><strong id="review-confidence">Pending</strong></div>
+              <div class="metric-row"><span>Review</span><strong id="review-status">Pending</strong></div>
+              <div class="metric-row"><span>Triangles</span><strong id="metric-triangles">Pending</strong></div>
             </div>
           </section>
         </div>
 
         <div class="viewer-footer">
-          <div class="footer-status">
-            <span class="footer-chip">&#9672;</span>
-            <span id="footer-runtime-primary">Checking local tools</span>
-            <span class="status-divider">&bull;</span>
-            <span id="footer-runtime-secondary">Waiting for runtime health</span>
+          <div class="viewer-footer-main">
+            <span class="generation-chip" id="generation-status">Idle</span>
+            <span id="readiness-state" class="viewer-footer-summary" title="Finish setup or submit a prompt to begin.">Finish setup or submit a prompt to begin.</span>
+            <button id="view-plan-button" class="viewer-footer-link" type="button" disabled>View plan</button>
+          </div>
+          <div class="viewer-footer-meta">
+            <span>Geomancer <span id="footer-version">v1.0.0</span></span>
           </div>
         </div>
       </section>
@@ -324,12 +277,34 @@
       </div>
     </div>
 
-    <footer class="desktop-footer">
-      <div class="footer-left">
-        <span class="footer-chip">&#9672;</span>
-        <span>Geomancer <span id="footer-version">v1.0.0</span></span>
+    <div id="prompt-improver-modal" class="logs-modal" hidden>
+      <div id="prompt-improver-backdrop" class="logs-backdrop"></div>
+      <div class="logs-dialog prompt-improver-dialog" role="dialog" aria-modal="true" aria-labelledby="prompt-improver-title">
+        <div class="logs-header">
+          <div>
+            <p class="section-eyebrow">Prompt tools</p>
+            <h2 id="prompt-improver-title">Improve prompt</h2>
+          </div>
+          <button id="close-prompt-improver" class="icon-button" type="button" aria-label="Close prompt improver">×</button>
+        </div>
+        <div class="prompt-improver-body">
+          <p class="prompt-improver-copy">Geomancer can suggest a clearer alpha-ready prompt from your current input.</p>
+          <div class="prompt-improver-block">
+            <p class="prompt-improver-label">Current prompt</p>
+            <p id="prompt-improver-original" class="prompt-improver-text"></p>
+          </div>
+          <div class="prompt-improver-block">
+            <p class="prompt-improver-label">Suggested prompt</p>
+            <p id="prompt-improver-suggestion" class="prompt-improver-text prompt-improver-text-strong"></p>
+          </div>
+          <div class="prompt-improver-actions">
+            <button id="use-prompt-suggestion" class="action-button setup-primary" type="button">Use suggestion</button>
+            <button id="keep-original-prompt" class="action-button" type="button">Keep original</button>
+          </div>
+        </div>
       </div>
-    </footer>
+    </div>
+
   </div>
 
   <script src="qrc:///qtwebchannel/qwebchannel.js"></script>

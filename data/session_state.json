@@ -3,111 +3,113 @@
   "first_run_completed": true,
   "ollama_installed": true,
   "ollama_running": true,
-  "ollama_version": "0.20.3",
+  "ollama_version": "0.20.4",
   "ollama_model_name": "qwen2.5:7b",
   "ollama_model_ready": true,
   "blender_detected": true,
   "blender_path": "C:\\Program Files\\Blender Foundation\\Blender 5.0\\blender.exe",
   "runtime_health_status": "ready",
   "runtime_health_message": "Local runtime is healthy. Geomancer is ready to generate deterministic geometry.",
-  "last_user_request": "a desk clip",
-  "last_generation_id": "gen-20260408171815-8343708f",
+  "last_user_request": "Wall bracket with four holes",
+  "last_generation_id": "gen-20260408205533-2dbd6219",
   "last_generated_script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-  "last_preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171815-8343708f.glb",
-  "last_preview_asset_version": "gen-20260408171815-8343708f",
+  "last_preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408205533-2dbd6219.glb",
+  "last_preview_asset_version": "gen-20260408205533-2dbd6219",
   "last_preview_export_status": "ready",
-  "last_preview_export_message": "Preview exported successfully to C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171815-8343708f.glb.",
-  "last_generation_timestamp": "2026-04-08T17:18:21",
-  "last_generation_family": "cable_clip",
+  "last_preview_export_message": "Preview exported successfully to C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408205533-2dbd6219.glb.",
+  "last_generation_timestamp": "2026-04-08T20:55:38",
+  "last_generation_family": "bracket",
   "last_generation_status": "ready",
   "last_generation_raw_status": "ready",
   "last_generation_message": "",
-  "last_validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
+  "last_validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
   "last_plan": {
-    "family": "cable_clip",
-    "family_label": "cable clip",
-    "recipe": "cable_clip",
-    "request_text": "a desk clip",
+    "family": "bracket",
+    "family_label": "bracket",
+    "recipe": "bracket",
+    "request_text": "Wall bracket with four holes",
     "dimensions": {
-      "clip_width_mm": 28.0,
-      "opening_mm": 15.400000000000002,
-      "depth_mm": 16.0,
-      "thickness_mm": 4.0
+      "base_length_mm": 100.0,
+      "flange_width_mm": 30.0,
+      "vertical_height_mm": 80.0,
+      "thickness_mm": 6.0
     },
     "features": {
-      "cable_diameter_mm": 13.400000000000002,
-      "base_length_mm": 28.0,
-      "mount_hole_mm": 0.0,
-      "closed_ring": false
+      "hole_diameter_mm": 0.0,
+      "mounting_holes": false,
+      "hole_count": 4,
+      "bracket_angle_deg": 90.0,
+      "gusset": false
     },
     "assumptions": [
-      "Inferred cable diameter from the requested opening and clip width."
+      "Used default bracket dimensions where the request did not provide a complete length x width x height set."
     ],
     "warnings": [],
     "limitations": [],
     "classification": {
-      "matched_alias": "clip",
-      "family_summary": "Open clip for holding a cable or wire bundle."
+      "matched_alias": "bracket",
+      "family_summary": "Simple L-style support bracket blockout."
     }
   },
   "last_validation": {
     "status": "ready",
-    "summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
+    "summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
     "warnings": [],
     "limitations": [
       "Family outputs are alpha blockouts and may need manual refinement."
     ],
     "review_notes": [
-      "Family: cable clip",
-      "Recipe: cable_clip",
+      "Family: bracket",
+      "Recipe: bracket",
       "Deterministic Blender generation only; no freeform mesh synthesis is attempted.",
-      "Inferred cable diameter from the requested opening and clip width."
+      "Used default bracket dimensions where the request did not provide a complete length x width x height set."
     ]
   },
   "last_classification": {
     "status": "ready",
-    "family_key": "cable_clip",
-    "matched_alias": "clip",
+    "family_key": "bracket",
+    "matched_alias": "bracket",
     "confidence": 0.99,
     "message": ""
   },
   "last_saved_model_entry": {
-    "id": "model-20260408171821-a0eba2",
-    "generation_id": "gen-20260408171815-8343708f",
-    "created_at": "2026-04-08T17:18:21",
-    "prompt": "a desk clip",
-    "family": "cable_clip",
-    "family_label": "cable clip",
+    "id": "model-20260408205538-c60efc",
+    "generation_id": "gen-20260408205533-2dbd6219",
+    "created_at": "2026-04-08T20:55:38",
+    "prompt": "Wall bracket with four holes",
+    "family": "bracket",
+    "family_label": "bracket",
     "plan": {
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "recipe": "cable_clip",
-      "request_text": "a desk clip",
+      "family": "bracket",
+      "family_label": "bracket",
+      "recipe": "bracket",
+      "request_text": "Wall bracket with four holes",
       "dimensions": {
-        "clip_width_mm": 28.0,
-        "opening_mm": 15.400000000000002,
-        "depth_mm": 16.0,
-        "thickness_mm": 4.0
+        "base_length_mm": 100.0,
+        "flange_width_mm": 30.0,
+        "vertical_height_mm": 80.0,
+        "thickness_mm": 6.0
       },
       "features": {
-        "cable_diameter_mm": 13.400000000000002,
-        "base_length_mm": 28.0,
-        "mount_hole_mm": 0.0,
-        "closed_ring": false
+        "hole_diameter_mm": 0.0,
+        "mounting_holes": false,
+        "hole_count": 4,
+        "bracket_angle_deg": 90.0,
+        "gusset": false
       },
       "assumptions": [
-        "Inferred cable diameter from the requested opening and clip width."
+        "Used default bracket dimensions where the request did not provide a complete length x width x height set."
       ],
       "warnings": [],
       "limitations": [],
       "classification": {
-        "matched_alias": "clip",
-        "family_summary": "Open clip for holding a cable or wire bundle."
+        "matched_alias": "bracket",
+        "family_summary": "Simple L-style support bracket blockout."
       }
     },
-    "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
+    "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
     "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-    "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171815-8343708f.glb",
+    "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408205533-2dbd6219.glb",
     "preview_export_status": "ready"
   },
   "last_run_status": "ready"

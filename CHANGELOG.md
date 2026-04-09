@@ -66,6 +66,476 @@ Every future backend-focused Codex pass should record, either in the changelog o
 
 ## Entries
 
+## 2026-04-08 - 0.7.27-alpha - viewer-control-overlay-and-teal-polish-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Added restrained teal accents to the four-column instrument strip by shifting headings and row labels slightly toward Geomancer teal while keeping values dark and readable.
+- Moved the Orbit / Pan / Zoom controls into the viewer as a left-side overlay stack and returned the XYZ gizmo to the conventional lower-right corner inside the viewer.
+- Added a lower-left Play / Pause viewer button that controls slow auto-orbit around the model, with the default state paused.
+- Manual viewer interaction now disables auto-orbit so the camera never fights the user.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Auto-orbit is still a lightweight camera convenience built on top of orbit controls rather than a richer cinematic viewer mode.
+- The overlay controls use text labels rather than custom icon artwork in this pass.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the overlay control placement, teal strip polish, and auto-orbit behavior are one coordinated viewer pass.
+
+## 2026-04-08 - 0.7.26-alpha - info-strip-instrument-panel-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Simplified the four strip headings to `System`, `Dimensions`, `Generation`, and `Review`.
+- Reworked the strip content into cleaner label-value rows, replaced the weaker volume/wall placeholder rows with more useful generation facts, and reduced repeated `Unavailable` style wording in favor of `Pending`, `N/A`, and concrete generation/review states.
+- Softened the visual separation so the strip reads as one compact instrument band with lighter headings, subtler separators, tighter spacing, and stronger value emphasis.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Generation facts still come from currently available plan metadata and lightweight UI derivation rather than a richer backend summary object.
+- Triangles remain `Not measured yet` because the viewer still does not compute mesh triangle counts for the instrument strip.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the new strip wording and hierarchy depend on the markup, styling, and data wiring changing as one pass.
+
+## 2026-04-08 - 0.7.25-alpha - viewer-status-footer-consolidation-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Removed the separate top generation-status strip above the viewer to return that vertical space to the preview area.
+- Rebuilt the bottom viewer footer as the single compact meta band, with generation status, concise summary text, and a lighter inline `View plan` action on the left, plus right-aligned version text on the right.
+- Kept the existing viewer controls row, info strip, and surrounding panel layout intact while tightening footer summary text for one-line footer use.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- `View plan` remains a lightweight placeholder action and is still disabled until a fuller plan surface is introduced.
+- Footer summaries are shortened conservatively for layout fit rather than semantically rewritten from richer generation metadata.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the footer consolidation depends on the markup move, lighter footer styling, and retained status bindings working together.
+
+## 2026-04-08 - 0.7.24-alpha - viewer-corner-gizmo-offset-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/styles.css`
+
+### Summary
+- Moved the viewer's bottom-right XYZ gizmo upward by increasing the lower HUD offset so the bars no longer clip against the bottom edge of the viewer.
+- Kept the gizmo styling, behavior, and viewer layout unchanged aside from the vertical repositioning.
+
+### Verification
+- `python -m compileall app desktop tests`
+
+### Known Limitations
+- This pass only changes the gizmo offset; it does not change gizmo size, rendering, or camera coupling.
+- Final visual fit is still best checked in the live desktop shell.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` only; this is a single-position adjustment for the viewer HUD anchor.
+
+## 2026-04-08 - 0.7.23-alpha - stacked-session-header-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+
+### Summary
+- Reworked the conversation header into a stacked two-line treatment with `Session` on the first line and the dynamic session title on the second line.
+- Added single-line truncation behavior with ellipsis for both the session label and title so long project names no longer force width pressure in the left rail.
+- Reduced the visual weight of the stacked title treatment and added a faint divider beneath the header to separate it from the conversation thread without changing the rest of the panel.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The title still derives directly from prompt text rather than richer generation metadata.
+- This pass only changes the visual header arrangement; it does not change title-generation logic or session behavior.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html` and `desktop/ui/styles.css` together; this is a contained presentation pass on the conversation header block.
+
+## 2026-04-08 - 0.7.22-alpha - dynamic-session-title-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the static conversation header title with the new `Session • <dynamic title>` treatment.
+- Added a lightweight session-title generator that strips common measurement prefixes, normalizes whitespace, limits length, converts to title case, and falls back to `Untitled` when there is no usable prompt.
+- Stored the active session title in memory and updated it on prompt submission, active-session application, and session reset so the header stays aligned with the current generation flow.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Session titles are derived from prompt text only and do not yet use richer backend plan/family information for refinement.
+- Long prompts are truncated conservatively rather than semantically summarized.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the visual header treatment and title-generation logic are one connected pass.
+
+## 2026-04-08 - 0.7.21-alpha - composer-toolbelt-and-prompt-improver-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Added a compact composer toolbelt beneath the existing prompt input without changing the established textarea-plus-Go layout.
+- Introduced three left-side tool buttons: disabled image-to-model and voice-prompt placeholders with coming-soon tooltips, plus an active improve-prompt control.
+- Added a lightweight prompt-improver modal that reads the current prompt, generates a clearer suggested Geomancer prompt, and lets the user use the suggestion or keep the original text.
+- Added a right-side quick settings menu with clear conversation, auto-scroll, and timestamp toggles while preserving the existing thread-only scrolling behavior.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The prompt improver currently uses a local UI-side suggestion builder rather than a backend-powered prompt-quality model.
+- Image and microphone actions are presentation placeholders only and remain disabled for this alpha pass.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the toolbelt, prompt-improver modal, and quick menu are one coordinated composer pass.
+
+## 2026-04-08 - 0.7.20-alpha - conversation-thread-scroll-fix
+
+### Files Changed
+- `CHANGELOG.md`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+
+### Summary
+- Added a dedicated `conversation-thread-region` wrapper so the message history owns the only vertical scrollable region inside the left rail.
+- Reinforced flex sizing and `min-height: 0` behavior between the fixed header, flexible thread region, and fixed composer so the chat history shrinks and scrolls instead of overflowing visually.
+- Removed row-level overflow clipping and kept normal vertical message stacking so bubbles no longer cut off or appear to overlap after longer generation runs.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass only fixes thread containment and scrolling behavior; it does not add virtualized chat rendering or deep history management.
+- Live desktop confirmation is still the final check for exact scroll feel and long-thread behavior.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html` and `desktop/ui/styles.css` together; the fix depends on the new wrapper and the corresponding flex/overflow rules landing as one change.
+
+## 2026-04-08 - 0.7.20-alpha - chat-bubble-shadow-tightening-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/styles.css`
+
+### Summary
+- Tightened the chat bubble shadow treatment so assistant and user bubbles read crisper and less diffuse without changing the conversation layout, spacing, or input structure.
+- Kept the polish isolated to the bubble surface itself instead of altering the broader panel or card shadow system.
+
+### Verification
+- Visual CSS refinement only
+
+### Known Limitations
+- This pass does not change chat behavior, layout, or avatar sizing.
+- Final perception of the shadow still depends on the live desktop shell and monitor contrast.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` only; this is a small isolated presentation pass on the chat bubble shadow stack.
+
+## 2026-04-08 - 0.7.19-alpha - chat-ui-polish-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the placeholder Geomancer text avatar with the real chat icon asset and kept assistant bubbles top-aligned so the avatar reads as the speaker anchor at the upper-left of the message.
+- Tightened the conversation thread for vertical-only scrolling, added stronger line wrapping safeguards, and blocked horizontal overflow so the left panel behaves like a clean product chat surface.
+- Upgraded the new-conversation header control from a plain circular plus button to a more deliberate premium action button while preserving its position and behavior.
+- Kept the restored composer structure unchanged from the previous pass and left the example prompts embedded in Geomancer's opening message rather than reintroducing chips near the input area.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass improves the visual polish of the conversation rail but does not add richer chat behaviors such as resend, editing, or contextual message menus.
+- Live desktop confirmation of the final avatar sizing and overflow behavior still depends on launching the Qt shell; the automated checks here only verify static assets and script integrity.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the header polish, avatar rendering, and overflow behavior are one coordinated chat UI pass.
+
+## 2026-04-08 - 0.7.18-alpha - conversation-polish-and-input-restore-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Kept the new chat-style left rail but corrected the Geomancer speaker presentation so the avatar now anchors to the top-left of each Geomancer bubble instead of reading like a footer attachment.
+- Removed the lower composer suggestion chips and restored the prompt area to the simpler stable input-plus-Go layout so the tool zone remains familiar and compact.
+- Moved the example prompts into Geomancer's second startup message using the requested opening copy, and rendered those examples as clickable chips directly inside the message bubble.
+- Kept timestamps, left/right message alignment, and auto-scroll-to-latest behavior intact while switching prompt-chip interaction over to the conversation thread itself.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The conversation thread is still an alpha UI surface and does not yet support richer message actions beyond prompt-chip insertion.
+- Prompt chips currently populate the composer and focus it; they do not auto-submit or branch into a deeper guided prompt flow yet.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the composer restore, avatar alignment, and embedded startup chips are one coordinated UI pass.
+
+## 2026-04-08 - 0.7.17-alpha - conversation-panel-chat-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the static left-rail workflow cards with a real conversation thread that renders timestamped Geomancer and user messages as compact bubbles while keeping the existing workspace layout intact.
+- Seeded the thread with startup readiness messages when runtime health is complete, moved prompt examples down beside the composer, and kept the prompt composer pinned to the bottom of the panel.
+- Routed existing setup actions, user submissions, family detection, normalization summaries, AI setup progress, and final generation outcomes into the chat thread so the left rail now behaves like a live product conversation instead of a stack of static cards.
+- Added automatic scroll-to-latest behavior for new messages and escaped rendered message content so user prompts and system text are safe to display in the bubble renderer.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The conversation rail is still an alpha presentation surface; it does not yet support clarifying follow-up turns, message actions, or persistent multi-session chat history.
+- System logs remain separate in the modal and are not yet summarized into structured conversation events beyond the setup and generation milestones already wired.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the new conversation panel depends on the markup, bubble styling, and message/event routing changing as one pass.
+
+## 2026-04-08 - 0.7.16-alpha - dominant-face-frame-pose-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the PCA-first candidate-basis generation with a dominant-face-frame approach for the generic preview pose solver.
+- Triangle normals are now sampled across the mesh, weighted by face area, and clustered by sign-insensitive directional similarity so the viewer can recover the major planar directions present in engineered geometry.
+- The pose solver constructs a stable orthogonal presentation frame from the strongest dominant face directions and uses that as the primary candidate basis, while falling back to PCA when face evidence is too weak or not sufficiently orthogonal.
+- Candidate scoring now includes structural readability terms that reward strong axis alignment, orthogonal face structure, and broad dominant-face coverage alongside the existing grounding and balance terms.
+- The downstream pipeline remains intact after candidate selection: grounding, support/contact centering, conservative leveling, shadow placement, and framing still run as before.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Dominant-face clustering is still a lightweight viewer-side heuristic based on sampled triangle normals rather than exact semantic surface classification.
+- Highly organic or weakly planar meshes may still fall back to PCA and therefore retain more generic presentation behavior.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` together; face clustering, frame construction, PCA fallback, and structural readability scoring are one connected policy change.
+
+## 2026-04-08 - 0.7.15-alpha - conservative-leveling-and-dominant-face-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+
+### Summary
+- Removed the aggressive full support-plane snap introduced in `0.7.14-alpha` and replaced it with a conservative final leveling pass.
+- Dominant resting surfaces are now detected from near-bottom mesh triangles using a blend of area, near-horizontal normal alignment, and proximity to the grounded bottom band.
+- Final leveling only runs when the dominant surface evidence is strong and the required correction is already small; otherwise the generic PCA/candidate pose is left unchanged.
+- Added explicit guardrails that discard a proposed correction if it exceeds the maximum allowed angle or materially worsens height, footprint, or support balance.
+- Kept the generic pose solver, grounding, support/contact centering, shadow placement, framing, and corner gizmo architecture intact.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Dominant-surface detection is still a lightweight viewer heuristic based on sampled triangles near the bottom of the mesh rather than exact semantic face classification.
+- This pass only affects viewer presentation and does not change backend geometry generation or Blender output.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` as one unit; the rollback from hard plane snap to guarded dominant-surface leveling depends on the scoring, correction, and rejection logic working together.
+
+## 2026-04-08 - 0.7.14-alpha - support-plane-snap-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the previous timid micro floor-squaring behavior with a true support-plane snap after generic pose selection.
+- Tightened support-point selection so the fitted support plane is derived from a stricter dominant low-contact band instead of a broad noisy lower slice, which better matches planar-bottom parts such as plates and panels.
+- After snapping the support plane normal to world up, the viewer now re-grounds by bounding-box minimum Y and re-centers from the refreshed support/contact footprint before shadow placement and framing continue.
+- Removed the large in-scene `AxesHelper`, leaving the fixed corner XYZ gizmo as the single orientation aid.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Support-plane snap is still based on sampled support geometry rather than exact mesh-face semantics, so unusual bottoms can still need later refinement.
+- The corner gizmo remains a DOM/CSS overlay driven by camera orientation, not a 3D inset scene.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` as one cohesive change; support-point selection, plane fitting, snap rotation, and helper cleanup all contribute to the final planted look.
+
+## 2026-04-08 - 0.7.13-alpha - floor-squaring-and-axis-gizmo-fix
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Kept the generic principal-axis pose solver and added a tightly clamped post-pose floor-squaring correction so previews lose small residual pitch/roll lean without entering a new pose-selection loop.
+- Floor squaring now fits a lightweight support plane from the grounded support slice, applies a tiny corrective rotation only for micro-tilt, then re-grounds and re-centers the preview before shadow and framing continue.
+- Rebuilt the corner orientation aid as a clearer fixed XYZ-line gizmo with a shared origin marker and larger desktop-readable sizing instead of the previous undersized corner treatment.
+- Preserved the existing layout, viewer size, and generic pose-selection architecture.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Floor squaring is still a lightweight presentation correction derived from sampled support geometry rather than a full contact solver.
+- The corner gizmo remains a DOM/CSS overlay driven by camera orientation, not a separate 3D inset scene.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js`, `desktop/ui/styles.css`, and `desktop/ui/index.html` together; the lean correction and gizmo clarity rely on the logic and markup changes working together.
+
+## 2026-04-08 - 0.7.12-alpha - contact-weight-and-axis-helper-polish
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+- `desktop/ui/styles.css`
+
+### Summary
+- Kept the generic principal-axis preview pose solver from `0.7.11-alpha` and added a small post-pose settling pass so the visible support region reads more flush with the floor.
+- Tightened contact-shadow sizing and opacity so grounded parts feel slightly more planted without making the viewer heavier or more dramatic.
+- Removed the old circular corner-axis badge styling and replaced it with a cleaner fixed XYZ-line helper that still rotates with camera motion.
+- Preserved the existing layout, generic pose-selection architecture, and final grounding/contact/shadow/framing pipeline.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The final settling pass is still a lightweight presentation correction driven by support-slice metrics rather than a physically accurate contact solver.
+- The corner orientation aid remains a CSS/DOM overlay driven from camera orientation, not a separate inset 3D scene.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` and `desktop/ui/styles.css` together; the final contact read depends on both the settling/shadow logic and the lighter axis-helper presentation.
+
 ## 2026-04-08 - 0.7.11-alpha - generic-preview-pose-solver-pass
 
 ### Files Changed

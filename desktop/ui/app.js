@@ -5,6 +5,21 @@ let GLTFLoader = null;
 
 const promptInput = document.getElementById("prompt-input");
 const generateButton = document.getElementById("generate-button");
+const toolbeltImageButton = document.getElementById("toolbelt-image");
+const toolbeltMicButton = document.getElementById("toolbelt-mic");
+const toolbeltImproveButton = document.getElementById("toolbelt-improve");
+const toolbeltSettingsButton = document.getElementById("toolbelt-settings");
+const composerQuickMenu = document.getElementById("composer-quick-menu");
+const quickClearConversationButton = document.getElementById("quick-clear-conversation");
+const quickToggleAutoscrollButton = document.getElementById("quick-toggle-autoscroll");
+const quickToggleTimestampsButton = document.getElementById("quick-toggle-timestamps");
+const promptImproverModal = document.getElementById("prompt-improver-modal");
+const promptImproverBackdrop = document.getElementById("prompt-improver-backdrop");
+const closePromptImproverButton = document.getElementById("close-prompt-improver");
+const promptImproverOriginal = document.getElementById("prompt-improver-original");
+const promptImproverSuggestion = document.getElementById("prompt-improver-suggestion");
+const usePromptSuggestionButton = document.getElementById("use-prompt-suggestion");
+const keepOriginalPromptButton = document.getElementById("keep-original-prompt");
 const openBlenderButton = document.getElementById("open-blender-button");
 const backendStatus = document.getElementById("backend-status");
 const lastRunStatus = document.getElementById("last-run-status");
@@ -17,18 +32,17 @@ const logsBackdrop = document.getElementById("logs-backdrop");
 const showLogsButton = document.getElementById("show-logs-button");
 const closeLogsButton = document.getElementById("close-logs-button");
 const footerVersion = document.getElementById("footer-version");
+const sessionTitle = document.getElementById("sessionTitle");
 const metricLength = document.getElementById("metric-length");
 const metricWidth = document.getElementById("metric-width");
 const metricHeight = document.getElementById("metric-height");
-const metricVolume = document.getElementById("metric-volume");
-const metricWall = document.getElementById("metric-wall");
 const metricTriangles = document.getElementById("metric-triangles");
-const metricQuality = document.getElementById("metric-quality");
-const historyUserPrompt = document.getElementById("history-user-prompt");
-const historyPlanState = document.getElementById("history-plan-state");
-const historySummaryList = document.getElementById("history-summary-list");
-const historyResultTitle = document.getElementById("history-result-title");
-const historyResultText = document.getElementById("history-result-text");
+const generationFamily = document.getElementById("generation-family");
+const generationRecipe = document.getElementById("generation-recipe");
+const generationFeatures = document.getElementById("generation-features");
+const reviewConfidence = document.getElementById("review-confidence");
+const reviewStatus = document.getElementById("review-status");
+const conversationThread = document.getElementById("conversation-thread");
 const generationStatus = document.getElementById("generation-status");
 const readinessState = document.getElementById("readiness-state");
 const currentModelDimensions = document.getElementById("current-model-dimensions");
@@ -44,8 +58,7 @@ const setupPullButton = document.getElementById("setup-pull-button");
 const setupSmokeButton = document.getElementById("setup-smoke-button");
 const setupRefreshButton = document.getElementById("setup-refresh-button");
 const setupHelpText = document.getElementById("setup-help-text");
-const footerRuntimePrimary = document.getElementById("footer-runtime-primary");
-const footerRuntimeSecondary = document.getElementById("footer-runtime-secondary");
+const viewPlanButton = document.getElementById("view-plan-button");
 
 const viewerRenderSurface = document.getElementById("viewer-render-surface");
 const viewerOverlay = document.getElementById("viewer-overlay");
@@ -62,6 +75,7 @@ const viewerToolZoom = document.getElementById("viewer-tool-zoom");
 const viewerOrbitControl = document.getElementById("viewer-orbit-control");
 const viewerOrbitThumb = document.getElementById("viewer-orbit-thumb");
 const viewerAxisScene = document.getElementById("viewer-axis-scene");
+const viewerAutoOrbitToggle = document.getElementById("viewer-auto-orbit-toggle");
 const newConversationButton = document.getElementById("new-conversation-button");
 const topnavTabs = Array.from(document.querySelectorAll(".topnav-tab"));
 let generationInFlight = false;
@@ -70,6 +84,18 @@ let librarySummary = { saved_model_count: 0, recent_saved_models: [], project_co
 let hasLoadedInitialState = false;
 let runtimeHealth = null;
 let runtimeSetupFlow = [];
+let chatMessages = [];
+let hasSeededStartupConversation = false;
+let autoScrollEnabled = true;
+let timestampsEnabled = true;
+let currentPromptSuggestion = "";
+let currentSessionTitle = "Untitled";
+const STARTUP_EXAMPLE_PROMPTS = [
+  "Wall bracket with four holes",
+  "Desk cable clip",
+  "Small electronics enclosure",
+  "Planter with 3 mm walls",
+];
 
 const TAB_INTENTS = {
   chat: "Active generation workspace",
@@ -83,6 +109,202 @@ function appendLog(message) {
   const line = `[${timestamp}] ${message}`;
   logOutput.textContent = `${logOutput.textContent}\n${line}`.trim();
   logOutput.scrollTop = logOutput.scrollHeight;
+}
+
+function makeTimestamp() {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function scrollConversationToBottom() {
+  if (!conversationThread || !autoScrollEnabled) {
+    return;
+  }
+  conversationThread.scrollTop = conversationThread.scrollHeight;
+}
+
+function setComposerQuickMenuOpen(isOpen) {
+  if (!composerQuickMenu) {
+    return;
+  }
+  composerQuickMenu.hidden = !isOpen;
+}
+
+function setPromptImproverOpen(isOpen) {
+  if (!promptImproverModal) {
+    return;
+  }
+  promptImproverModal.hidden = !isOpen;
+}
+
+function updateConversationMenuLabels() {
+  if (quickToggleAutoscrollButton) {
+    quickToggleAutoscrollButton.textContent = `Auto-scroll: ${autoScrollEnabled ? "On" : "Off"}`;
+  }
+  if (quickToggleTimestampsButton) {
+    quickToggleTimestampsButton.textContent = `Timestamps: ${timestampsEnabled ? "On" : "Off"}`;
+  }
+}
+
+function buildPromptSuggestion(promptText) {
+  const basePrompt = String(promptText || "").trim();
+  if (!basePrompt) {
+    return "Create a deterministic part with explicit overall dimensions, wall thickness if needed, and named features such as holes, cutouts, or mounting points.";
+  }
+  const normalized = basePrompt.replace(/\s+/g, " ").trim().replace(/[.]+$/, "");
+  return `Create a deterministic part: ${normalized}. Include explicit overall dimensions in mm and call out any holes, cutouts, wall thicknesses, or mounting features needed for the geometry.`;
+}
+
+function setSessionTitle(title) {
+  currentSessionTitle = title || "Untitled";
+  if (sessionTitle) {
+    sessionTitle.textContent = currentSessionTitle;
+  }
+}
+
+function shortenFooterSummary(text) {
+  const rawText = String(text || "").replace(/\s+/g, " ").trim();
+  if (!rawText) {
+    return "Ready for review.";
+  }
+
+  const normalized = rawText
+    .replace(/^Prepared deterministic /i, "")
+    .replace(/^Preparing /i, "")
+    .replace(/^Review the current model here, then /i, "")
+    .replace(/^Finish setup or /i, "");
+
+  if (normalized.length <= 72) {
+    return normalized;
+  }
+  return `${normalized.substring(0, 69).trim().replace(/[,:;.-]+$/, "")}...`;
+}
+
+function setReadinessStateText(text) {
+  const fullText = String(text || "").trim() || "Ready for review.";
+  readinessState.textContent = shortenFooterSummary(fullText);
+  readinessState.title = fullText;
+}
+
+function setGenerationStatusText(text) {
+  generationStatus.textContent = text || "Ready";
+}
+
+function generateSessionTitle(prompt) {
+  const rawPrompt = String(prompt || "").trim();
+  if (!rawPrompt) {
+    return "Untitled";
+  }
+
+  let cleaned = rawPrompt.toLowerCase();
+  cleaned = cleaned.replace(/\b\d+(\.\d+)?\s?(mm|cm|in|inch|inches)\b/g, " ");
+  cleaned = cleaned.replace(/^[\s,.-]+/, "");
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+  if (!cleaned) {
+    return "Untitled";
+  }
+
+  const words = cleaned.split(" ").filter(Boolean);
+  while (words.length && /^[\d.-]+$/.test(words[0])) {
+    words.shift();
+  }
+
+  let normalized = words.join(" ").trim();
+  if (!normalized) {
+    return "Untitled";
+  }
+
+  if (normalized.length > 50) {
+    normalized = normalized.substring(0, 50).trim().replace(/[,:;.-]+$/, "");
+  }
+
+  return normalized.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function renderConversationThread() {
+  if (!conversationThread) {
+    return;
+  }
+  conversationThread.innerHTML = chatMessages.map((message) => {
+    const checklist = Array.isArray(message.checklist) && message.checklist.length
+      ? `<ul class="chat-checklist">${message.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+      : "";
+    const examples = Array.isArray(message.examples) && message.examples.length
+      ? `<div class="chat-example-row">${message.examples.map((item) => (
+        `<button class="chat-example-chip" type="button" data-example-prompt="${escapeHtml(item)}">${escapeHtml(item)}</button>`
+      )).join("")}</div>`
+      : "";
+    const title = message.title ? `<p class="chat-bubble-title">${escapeHtml(message.title)}</p>` : "";
+    const avatar = message.role === "assistant"
+      ? '<img class="chat-message-avatar chat-avatar" src="assets/chat/geo-chat-avatar.png" alt="Geomancer">'
+      : "";
+    return `
+      <article class="chat-message chat-row is-${message.role}">
+        ${avatar}
+        <div class="chat-message-meta">
+          <div class="chat-bubble">
+            ${title}
+            <p class="chat-bubble-text">${escapeHtml(message.text)}</p>
+            ${checklist}
+            ${examples}
+          </div>
+          ${timestampsEnabled ? `<span class="chat-message-time">${escapeHtml(message.timestamp)}</span>` : ""}
+        </div>
+      </article>
+    `;
+  }).join("");
+  scrollConversationToBottom();
+}
+
+function addChatMessage(role, text, options = {}) {
+  chatMessages.push({
+    id: options.id || `${role}-${Date.now()}-${chatMessages.length}`,
+    role,
+    text,
+    title: options.title || "",
+    checklist: options.checklist || [],
+    examples: options.examples || [],
+    timestamp: options.timestamp || makeTimestamp(),
+  });
+  renderConversationThread();
+}
+
+function replaceLastAssistantMessage(text, options = {}) {
+  for (let index = chatMessages.length - 1; index >= 0; index -= 1) {
+    if (chatMessages[index].role === "assistant") {
+      chatMessages[index] = {
+        ...chatMessages[index],
+        text,
+        title: options.title ?? chatMessages[index].title,
+        checklist: options.checklist ?? chatMessages[index].checklist,
+        examples: options.examples ?? chatMessages[index].examples,
+        timestamp: options.timestamp || makeTimestamp(),
+      };
+      renderConversationThread();
+      return;
+    }
+  }
+  addChatMessage("assistant", text, options);
+}
+
+function seedStartupConversationIfReady() {
+  if (!runtimeReady() || hasSeededStartupConversation || chatMessages.length) {
+    return;
+  }
+  hasSeededStartupConversation = true;
+  addChatMessage("assistant", "Geomancer systems check completed. Local AI and Blender are ready.");
+  addChatMessage("assistant", "Hello! What would you like to create today?\nNeed a starting point? Try one of these:", {
+    examples: STARTUP_EXAMPLE_PROMPTS,
+  });
 }
 
 function normalizeRuntimeHealth(rawHealth = {}) {
@@ -244,34 +466,50 @@ function estimateVolumeCm3(plan) {
   return null;
 }
 
-function wallMetricFromPlan(plan) {
-  const features = plan?.features || {};
-  const keys = ["wall_thickness_mm", "base_thickness_mm", "thickness_mm"];
-  for (const key of keys) {
-    if (typeof features[key] === "number") {
-      return formatMm(features[key]);
-    }
+function formatInstrumentMm(value, hasPlan = false) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return hasPlan ? "N/A" : "Pending";
   }
-  return "Unavailable";
+  return formatMm(value);
+}
+
+function generationFeatureSummary(plan) {
+  if (!plan) {
+    return "Pending";
+  }
+  const featureCount = featureEntries(plan).filter(([key]) => !key.includes("thickness") && !key.includes("wall") && !key.includes("base")).length;
+  if (featureCount > 0) {
+    return `${featureCount} normalized`;
+  }
+  const dimensionCount = Object.values(plan.dimensions || {}).filter((value) => typeof value === "number" && !Number.isNaN(value)).length;
+  if (dimensionCount > 0) {
+    return `${dimensionCount} dimensions`;
+  }
+  return "Pending";
 }
 
 function updateMetricsFromPlan(plan, validation, generationText) {
   const dims = plan?.dimensions || {};
-  metricLength.textContent = formatMm(
-    dims.length_mm || dims.width_mm || dims.base_length_mm || dims.large_diameter_mm || dims.outer_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null
+  const hasPlan = Boolean(plan);
+  metricLength.textContent = formatInstrumentMm(
+    dims.length_mm || dims.base_length_mm || dims.outer_diameter_mm || dims.large_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null,
+    hasPlan
   );
-  metricWidth.textContent = formatMm(
-    dims.width_mm || dims.depth_mm || dims.flange_width_mm || dims.small_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null
+  metricWidth.textContent = formatInstrumentMm(
+    dims.width_mm || dims.depth_mm || dims.flange_width_mm || dims.small_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null,
+    hasPlan
   );
-  metricHeight.textContent = formatMm(
-    dims.height_mm || dims.vertical_height_mm || dims.length_mm || dims.base_height_mm || null
+  metricHeight.textContent = formatInstrumentMm(
+    dims.height_mm || dims.vertical_height_mm || dims.base_height_mm || null,
+    hasPlan
   );
-  const volume = estimateVolumeCm3(plan);
-  metricVolume.innerHTML = volume ? `Approx. ${Number(volume.toFixed(1)).toString()} cm&sup3;` : "Unavailable";
-  metricWall.textContent = wallMetricFromPlan(plan);
-  metricTriangles.textContent = "Not measured";
-  metricQuality.textContent = validation?.warnings?.length ? "Needs review" : (plan ? "Structured" : "Review needed");
-  generationStatus.textContent = generationText || "Ready";
+  generationFamily.textContent = plan?.family_label || plan?.family || "Pending";
+  generationRecipe.textContent = hasPlan ? "Deterministic" : "Pending";
+  generationFeatures.textContent = generationFeatureSummary(plan);
+  reviewConfidence.textContent = validation?.warnings?.length ? "Needs review" : (hasPlan ? "Structured" : "Pending");
+  reviewStatus.textContent = validation?.warnings?.length ? "Pending" : (hasPlan ? "Ready" : "Pending");
+  metricTriangles.textContent = hasPlan ? "Not measured yet" : "Pending";
+  setGenerationStatusText(generationText || "Ready");
 }
 
 function renderListRows(container, items, formatter, emptyText = "Unavailable") {
@@ -317,27 +555,17 @@ function updateRightPanel(plan) {
 }
 
 function updateHistoryPanel({ promptText = "", plan = null, validation = null, classification = null, resultStatus = "", message = "", previewStatus = "" }) {
-  historyUserPrompt.textContent = promptText || "No prompt yet. Describe a supported part to start a generation.";
-  historyPlanState.textContent = validation?.summary
-    || message
-    || "Geomancer is waiting for a prompt.";
-
   const summaryLines = toSummaryLines(plan, validation, classification, resultStatus, previewStatus);
-  historySummaryList.innerHTML = summaryLines.length
-    ? summaryLines.map((item) => `<li>${item}</li>`).join("")
-    : "<li>No geometry summary is available yet.</li>";
-
-  historyResultTitle.textContent = resultStatus === "ready" ? "Latest result" : "Status";
-  historyResultText.textContent = resultStatus === "ready"
-    ? (validation?.summary || "Generation finished. Review the parsed dimensions and features before Blender handoff.")
-    : (message || "Generation results will appear here.");
+  if (!promptText && !summaryLines.length && !message) {
+    seedStartupConversationIfReady();
+  }
 }
 
 function applyBackendSnapshot({ promptText = "", plan = null, validation = null, classification = null, resultStatus = "", message = "", previewStatus = "", previewMessage = "" }) {
   updateHistoryPanel({ promptText, plan, validation, classification, resultStatus, message, previewStatus });
   updateRightPanel(plan);
   updateMetricsFromPlan(plan, validation, resultStatus === "ready" ? "Generation complete" : (resultStatus || "Ready"));
-  readinessState.textContent = validation?.summary || message || previewMessage || "Review the current model here, then open it in Blender for local editing.";
+  setReadinessStateText(validation?.summary || message || previewMessage || "Review the current model here, then open it in Blender for local editing.");
 }
 
 function normalizeTerminalResult(result = {}) {
@@ -418,6 +646,16 @@ async function applyTerminalResult(rawResult) {
     previewKey: previewIdentity,
   });
   appendLog("[UI] final terminal UI applied");
+  const summaryLines = toSummaryLines(result.plan, result.validation, result.classification, result.status, result.previewStatus);
+  if (result.classification?.family_key || result.plan?.family_label) {
+    addChatMessage("assistant", `Detected family: ${result.plan?.family_label || result.classification.family_key}.`);
+  }
+  if (summaryLines.length) {
+    addChatMessage("assistant", result.validation?.summary || "Normalization complete.", {
+      title: "Generation update",
+      checklist: summaryLines.slice(0, 5),
+    });
+  }
   if (result.savedModelEntry?.id) {
     appendLog(`Saved model entry updated: ${result.savedModelEntry.id}`);
   }
@@ -443,22 +681,26 @@ async function applyTerminalResult(rawResult) {
         previewAssetVersion: "",
         previewKey: `${previewIdentity || result.generationId || "fallback"}-procedural`,
       });
-      readinessState.textContent = terminalViewerMessage(result);
+      setReadinessStateText(terminalViewerMessage(result));
     }
 
     if (result.previewStatus === "error") {
-      historyResultTitle.textContent = "Preview needs review";
-      historyResultText.textContent = terminalViewerMessage(result);
-      readinessState.textContent = terminalViewerMessage(result);
+      setReadinessStateText(terminalViewerMessage(result));
     }
+    addChatMessage("assistant", "Preview ready.", {
+      title: "Generation complete",
+      checklist: summaryLines.length ? summaryLines.slice(0, 4) : ["Viewer updated.", "Review the model before Blender handoff."],
+    });
     return;
   }
 
-  generationStatus.textContent = terminalStatusLabel(result.status);
-  historyResultTitle.textContent = terminalStatusLabel(result.status);
-  historyResultText.textContent = terminalViewerMessage(result);
-  readinessState.textContent = terminalViewerMessage(result);
+  setGenerationStatusText(terminalStatusLabel(result.status));
+  setReadinessStateText(terminalViewerMessage(result));
   viewer.setError(terminalViewerMessage(result));
+  addChatMessage("assistant", terminalViewerMessage(result), {
+    title: terminalStatusLabel(result.status),
+    checklist: summaryLines.slice(0, 4),
+  });
 }
 
 async function handleTerminalFailure(message, options = {}) {
@@ -481,28 +723,27 @@ async function handleTerminalFailure(message, options = {}) {
 }
 
 function setIdleSessionUI(reasonText = "Start a new generation when ready.") {
-  historyUserPrompt.textContent = "No active prompt.";
-  historyPlanState.textContent = reasonText;
-  historySummaryList.innerHTML = [
-    "No current generation",
-    "Viewer is waiting for a model",
-    "Prompt box is ready",
-    `Saved models available: ${librarySummary.saved_model_count || 0}`,
-  ].map((item) => `<li>${item}</li>`).join("");
-  historyResultTitle.textContent = "Latest result";
-  historyResultText.textContent = "Run a prompt to generate a model and fill the workspace with real dimensions and features.";
   updateRightPanel(null);
   updateMetricsFromPlan(null, null, "Idle");
-  readinessState.textContent = "Submit a dimensional prompt to start a new local generation.";
+  setReadinessStateText("Submit a dimensional prompt to start a new local generation.");
+  if (!chatMessages.length && runtimeReady()) {
+    seedStartupConversationIfReady();
+  } else if (!chatMessages.length && !runtimeReady()) {
+    addChatMessage("assistant", reasonText);
+  }
 }
 
 function resetActiveSession(options = {}) {
   const { reasonText = "Start a new generation when ready.", clearPrompt = true } = options;
   activeSession = createEmptySession();
+  setSessionTitle("Untitled");
   setGenerationInFlight(false);
   if (clearPrompt) {
     promptInput.value = "";
   }
+  chatMessages = [];
+  hasSeededStartupConversation = false;
+  renderConversationThread();
   setIdleSessionUI(reasonText);
   if (viewer.initialized) {
     viewer.setEmpty();
@@ -515,6 +756,7 @@ function applyActiveSession(sessionUpdate) {
     ...activeSession,
     ...sessionUpdate,
   };
+  setSessionTitle(generateSessionTitle(activeSession.promptText || activeSession.requestText || ""));
   applyBackendSnapshot(activeSession);
 }
 
@@ -563,19 +805,18 @@ function applyRuntimeGate(state = {}) {
   generateButton.textContent = generationInFlight ? "..." : "Go";
 
   if (!ready) {
-    readinessState.textContent = normalizedHealth.runtimeHealthMessage || "Finish local setup before generating.";
-    generationStatus.textContent = "Setup required";
+    setReadinessStateText(normalizedHealth.runtimeHealthMessage || "Finish local setup before generating.");
+    setGenerationStatusText("Setup required");
   }
 
-  backendStatus.textContent = ready ? "Ready" : sentenceCaseStatus(normalizedHealth.runtimeHealthStatus || "setup_required");
+  if (backendStatus) {
+    backendStatus.textContent = ready ? "Ready" : sentenceCaseStatus(normalizedHealth.runtimeHealthStatus || "setup_required");
+  }
   systemAiStatus.textContent = aiReady ? "Ready" : (normalizedHealth.ollamaInstalled ? "Setup needed" : "Not ready");
   systemBlenderStatus.textContent = blenderReady ? "Detected" : "Not configured";
-  footerRuntimePrimary.textContent = aiReady
-    ? `AI ready: ${normalizedHealth.ollamaModelName || normalizedHealth.recommendedModel || "configured"}`
-    : (normalizedHealth.ollamaInstalled ? "AI setup in progress" : "AI not set up");
-  footerRuntimeSecondary.textContent = blenderReady
-    ? (ready ? "Blender ready for handoff" : "Blender detected")
-    : "Blender not configured";
+  if (ready) {
+    seedStartupConversationIfReady();
+  }
 }
 
 function updatePassiveShellState(state) {
@@ -675,6 +916,7 @@ class GeomancerViewer {
     this.initialized = false;
     this.renderMode = "solid";
     this.interactionMode = "orbit";
+    this.autoOrbitEnabled = false;
     this.renderer = null;
     this.scene = null;
     this.camera = null;
@@ -727,9 +969,16 @@ class GeomancerViewer {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.enablePan = true;
+    this.controls.autoRotate = false;
+    this.controls.autoRotateSpeed = 0.6;
     this.controls.minDistance = 1.2;
     this.controls.maxDistance = 30;
     this.controls.target.set(0, 0.78, 0);
+    this.controls.addEventListener("start", () => {
+      if (this.autoOrbitEnabled) {
+        this.setAutoOrbit(false);
+      }
+    });
 
     this.rootGroup = new THREE.Group();
     this.scene.add(this.rootGroup);
@@ -802,10 +1051,6 @@ class GeomancerViewer {
     this.contactShadow.visible = false;
     this.rootGroup.add(this.contactShadow);
 
-    const axes = new THREE.AxesHelper(1.35);
-    axes.position.set(-4.95, 0.03, 4.55);
-    this.rootGroup.add(axes);
-
     this.bindControls();
     this.bindOrbitPad();
     this.setInteractionMode("orbit");
@@ -830,11 +1075,13 @@ class GeomancerViewer {
     viewerToolZoom.addEventListener("click", () => this.setInteractionMode("zoom"));
     viewerFocusButton.addEventListener("click", () => this.focusObject());
     viewerResetButton.addEventListener("click", () => this.resetView());
+    viewerAutoOrbitToggle.addEventListener("click", () => this.setAutoOrbit(!this.autoOrbitEnabled));
   }
 
   animate() {
     this.animationFrame = window.requestAnimationFrame(() => this.animate());
     if (this.controls) {
+      this.controls.autoRotate = this.autoOrbitEnabled;
       this.controls.update();
     }
     this.updateAxisIndicator();
@@ -868,6 +1115,9 @@ class GeomancerViewer {
       const offsetX = Math.max(-28, Math.min(28, event.clientX - centerX));
       const offsetY = Math.max(-28, Math.min(28, event.clientY - centerY));
       viewerOrbitThumb.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+      if (this.autoOrbitEnabled) {
+        this.setAutoOrbit(false);
+      }
       this.rotateCameraBy(offsetX / 180, offsetY / 180);
     });
 
@@ -918,9 +1168,9 @@ class GeomancerViewer {
       const projected = vector.clone().applyQuaternion(quaternion);
       const angle = Math.atan2(projected.y, projected.x);
       const depthWeight = (projected.z + 1) / 2;
-      const length = 18 + depthWeight * 10;
-      axis.style.transform = `rotate(${angle}rad) scaleX(${length / 30})`;
-      axis.style.opacity = `${0.38 + depthWeight * 0.58}`;
+      const length = 24 + depthWeight * 14;
+      axis.style.transform = `rotate(${angle}rad) scaleX(${length / 34})`;
+      axis.style.opacity = `${0.52 + depthWeight * 0.42}`;
       axis.style.zIndex = `${Math.round(depthWeight * 10)}`;
     });
   }
@@ -957,6 +1207,15 @@ class GeomancerViewer {
     viewerToolOrbit.classList.toggle("is-active", mode === "orbit");
     viewerToolPan.classList.toggle("is-active", mode === "pan");
     viewerToolZoom.classList.toggle("is-active", mode === "zoom");
+  }
+
+  setAutoOrbit(enabled) {
+    this.autoOrbitEnabled = Boolean(enabled);
+    if (this.controls) {
+      this.controls.autoRotate = this.autoOrbitEnabled;
+    }
+    viewerAutoOrbitToggle.textContent = this.autoOrbitEnabled ? "Pause" : "Play";
+    viewerAutoOrbitToggle.setAttribute("aria-pressed", this.autoOrbitEnabled ? "true" : "false");
   }
 
   setRenderMode(mode) {
@@ -1311,12 +1570,153 @@ class GeomancerViewer {
     };
   }
 
-  buildPoseCandidateFromPrincipalFrame(principalFrame, baseQuaternion, upIndex, upSign, label) {
-    const axes = principalFrame.axes.map((axis) => axis.clone());
+  collectDominantFaceClusters(object3D, maxTriangles = 1200) {
+    if (!object3D || !THREE) {
+      return [];
+    }
+    const clusters = [];
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    const c = new THREE.Vector3();
+    const edgeAB = new THREE.Vector3();
+    const edgeAC = new THREE.Vector3();
+
+    object3D.updateWorldMatrix(true, true);
+    object3D.traverse((child) => {
+      if (!child.isMesh || !child.geometry?.attributes?.position) {
+        return;
+      }
+      const position = child.geometry.attributes.position;
+      const indexArray = child.geometry.index?.array || null;
+      const triangleCount = indexArray ? Math.floor(indexArray.length / 3) : Math.floor(position.count / 3);
+      const step = Math.max(1, Math.ceil(triangleCount / maxTriangles));
+
+      for (let triangleIndex = 0; triangleIndex < triangleCount; triangleIndex += step) {
+        const i0 = indexArray ? indexArray[triangleIndex * 3] : triangleIndex * 3;
+        const i1 = indexArray ? indexArray[(triangleIndex * 3) + 1] : (triangleIndex * 3) + 1;
+        const i2 = indexArray ? indexArray[(triangleIndex * 3) + 2] : (triangleIndex * 3) + 2;
+        a.fromBufferAttribute(position, i0).applyMatrix4(child.matrixWorld);
+        b.fromBufferAttribute(position, i1).applyMatrix4(child.matrixWorld);
+        c.fromBufferAttribute(position, i2).applyMatrix4(child.matrixWorld);
+
+        edgeAB.subVectors(b, a);
+        edgeAC.subVectors(c, a);
+        const normal = new THREE.Vector3().crossVectors(edgeAB, edgeAC);
+        const twiceArea = normal.length();
+        if (twiceArea < 1e-6) {
+          continue;
+        }
+        normal.normalize();
+        const area = twiceArea * 0.5;
+
+        let bestCluster = null;
+        let bestDot = 0.92;
+        clusters.forEach((cluster) => {
+          const dot = Math.abs(normal.dot(cluster.normal));
+          if (dot > bestDot) {
+            bestDot = dot;
+            bestCluster = cluster;
+          }
+        });
+
+        if (!bestCluster) {
+          clusters.push({
+            normal: normal.clone(),
+            weightedNormal: normal.clone().multiplyScalar(area),
+            totalArea: area,
+          });
+          continue;
+        }
+
+        const alignedNormal = normal.dot(bestCluster.normal) >= 0 ? normal : normal.clone().negate();
+        bestCluster.weightedNormal.addScaledVector(alignedNormal, area);
+        bestCluster.totalArea += area;
+        bestCluster.normal.copy(bestCluster.weightedNormal).normalize();
+      }
+    });
+
+    return clusters
+      .map((cluster) => ({
+        normal: cluster.normal.clone().normalize(),
+        totalArea: cluster.totalArea,
+      }))
+      .sort((left, right) => right.totalArea - left.totalArea);
+  }
+
+  orientAxisDeterministically(axis) {
+    const normalized = axis.clone().normalize();
+    const components = [Math.abs(normalized.x), Math.abs(normalized.y), Math.abs(normalized.z)];
+    const dominantIndex = components.indexOf(Math.max(...components));
+    if (normalized.getComponent(dominantIndex) < 0) {
+      normalized.negate();
+    }
+    return normalized;
+  }
+
+  computeDominantFaceFrame(object3D) {
+    const clusters = this.collectDominantFaceClusters(object3D);
+    if (clusters.length < 2) {
+      return null;
+    }
+
+    const primary = this.orientAxisDeterministically(clusters[0].normal);
+    const secondaryCluster = clusters.find((cluster, index) => index > 0 && Math.abs(cluster.normal.dot(primary)) < 0.82 && cluster.totalArea >= clusters[0].totalArea * 0.08);
+    if (!secondaryCluster) {
+      return null;
+    }
+
+    const secondary = secondaryCluster.normal.clone().sub(primary.clone().multiplyScalar(secondaryCluster.normal.dot(primary)));
+    if (secondary.lengthSq() < 1e-6) {
+      return null;
+    }
+    secondary.normalize();
+    const tertiary = new THREE.Vector3().crossVectors(primary, secondary).normalize();
+    if (tertiary.lengthSq() < 1e-6) {
+      return null;
+    }
+
+    const axes = [
+      this.orientAxisDeterministically(primary),
+      this.orientAxisDeterministically(secondary),
+      this.orientAxisDeterministically(tertiary),
+    ];
+    if (new THREE.Vector3().crossVectors(axes[0], axes[1]).dot(axes[2]) < 0) {
+      axes[2].negate();
+    }
+
+    const totalArea = clusters.reduce((sum, cluster) => sum + cluster.totalArea, 0);
+    const confidence = totalArea > 0
+      ? THREE.MathUtils.clamp(
+        (clusters[0].totalArea / totalArea) * 0.55
+        + (secondaryCluster.totalArea / totalArea) * 0.25
+        + (1 - Math.abs(clusters[0].normal.dot(secondaryCluster.normal))) * 0.3,
+        0,
+        1
+      )
+      : 0;
+
+    if (confidence < 0.42) {
+      return null;
+    }
+
+    return {
+      axes,
+      values: [
+        clusters[0].totalArea,
+        secondaryCluster.totalArea,
+        Math.max(totalArea - clusters[0].totalArea - secondaryCluster.totalArea, secondaryCluster.totalArea * 0.5),
+      ],
+      confidence,
+      source: "dominant-face",
+    };
+  }
+
+  buildPoseCandidateFromFrame(frame, baseQuaternion, upIndex, upSign, label) {
+    const axes = frame.axes.map((axis) => axis.clone());
     const up = axes[upIndex].multiplyScalar(upSign).normalize();
     const remaining = [0, 1, 2]
       .filter((index) => index !== upIndex)
-      .sort((left, right) => principalFrame.values[right] - principalFrame.values[left]);
+      .sort((left, right) => frame.values[right] - frame.values[left]);
     let forward = axes[remaining[0]].clone().normalize();
     const side = axes[remaining[1]].clone().normalize();
     let right = new THREE.Vector3().crossVectors(forward, up).normalize();
@@ -1335,15 +1735,45 @@ class GeomancerViewer {
 
   getGenericPoseCandidates(object3D) {
     const baseQuaternion = object3D.quaternion.clone();
-    const principalFrame = this.computePrincipalAxesFrame(object3D);
+    const frame = this.computeDominantFaceFrame(object3D) || {
+      ...this.computePrincipalAxesFrame(object3D),
+      source: "pca",
+      confidence: 0,
+    };
     return [
-      this.buildPoseCandidateFromPrincipalFrame(principalFrame, baseQuaternion, 0, 1, "+X up"),
-      this.buildPoseCandidateFromPrincipalFrame(principalFrame, baseQuaternion, 0, -1, "-X up"),
-      this.buildPoseCandidateFromPrincipalFrame(principalFrame, baseQuaternion, 1, 1, "+Y up"),
-      this.buildPoseCandidateFromPrincipalFrame(principalFrame, baseQuaternion, 1, -1, "-Y up"),
-      this.buildPoseCandidateFromPrincipalFrame(principalFrame, baseQuaternion, 2, 1, "+Z up"),
-      this.buildPoseCandidateFromPrincipalFrame(principalFrame, baseQuaternion, 2, -1, "-Z up"),
-    ];
+      this.buildPoseCandidateFromFrame(frame, baseQuaternion, 0, 1, "+X up"),
+      this.buildPoseCandidateFromFrame(frame, baseQuaternion, 0, -1, "-X up"),
+      this.buildPoseCandidateFromFrame(frame, baseQuaternion, 1, 1, "+Y up"),
+      this.buildPoseCandidateFromFrame(frame, baseQuaternion, 1, -1, "-Y up"),
+      this.buildPoseCandidateFromFrame(frame, baseQuaternion, 2, 1, "+Z up"),
+      this.buildPoseCandidateFromFrame(frame, baseQuaternion, 2, -1, "-Z up"),
+    ].map((candidate) => ({
+      ...candidate,
+      basisSource: frame.source,
+      basisConfidence: frame.confidence,
+    }));
+  }
+
+  computeStructuralReadability(object3D) {
+    const clusters = this.collectDominantFaceClusters(object3D, 800);
+    if (!clusters.length) {
+      return { alignment: 0, orthogonality: 0, coverage: 0 };
+    }
+    const totalArea = clusters.reduce((sum, cluster) => sum + cluster.totalArea, 0) || 1;
+    const topClusters = clusters.slice(0, 3);
+    let alignment = 0;
+    let coverage = 0;
+    topClusters.forEach((cluster) => {
+      const axisAlignment = Math.max(Math.abs(cluster.normal.x), Math.abs(cluster.normal.y), Math.abs(cluster.normal.z));
+      const weight = cluster.totalArea / totalArea;
+      alignment += axisAlignment * weight;
+      coverage += weight;
+    });
+    let orthogonality = 0;
+    if (topClusters.length >= 2) {
+      orthogonality = 1 - Math.abs(topClusters[0].normal.dot(topClusters[1].normal));
+    }
+    return { alignment, orthogonality, coverage };
   }
 
   evaluateGenericPoseCandidate(object3D, candidate, basePosition) {
@@ -1385,8 +1815,12 @@ class GeomancerViewer {
     const silhouetteSpread = Math.min(size.x, size.z) / Math.max(Math.max(size.x, size.z), 0.001);
     const maxDimension = Math.max(size.x, size.y, size.z, 0.001);
     const horizontalOccupancy = THREE.MathUtils.clamp((size.x * size.z) / (maxDimension * maxDimension), 0, 1.2);
-    const score = (supportRatio * 1.8)
-      + (footprintBalance * 1.2)
+    const structural = this.computeStructuralReadability(object3D);
+    const score = (structural.alignment * 2.0)
+      + (structural.orthogonality * 1.15)
+      + (structural.coverage * 0.9)
+      + (supportRatio * 1.05)
+      + (footprintBalance * 0.92)
       + (heightReadability * 0.95)
       + (silhouetteSpread * 0.55)
       + (horizontalOccupancy * 0.45);
@@ -1396,6 +1830,7 @@ class GeomancerViewer {
       quaternion: candidate.quaternion.clone(),
       box: groundedBox.clone(),
       supportFootprint: footprint,
+      structuralReadability: structural,
       score,
     };
   }
@@ -1444,8 +1879,10 @@ class GeomancerViewer {
 
     const placedBox = new THREE.Box3().setFromObject(object3D);
     const placedSupportFootprint = this.computeSupportFootprint(object3D, placedBox);
-    this.updateContactShadow(placedSupportFootprint || placedBox, placedBox);
-    return { box: placedBox, supportFootprint: placedSupportFootprint };
+    const settled = this.applyFinalSettlingPass(object3D, placedBox, placedSupportFootprint);
+    const squared = this.applyConservativeLeveling(object3D, settled.box, settled.supportFootprint);
+    this.updateContactShadow(squared.supportFootprint || squared.box, squared.box);
+    return squared;
   }
 
   computeSupportFootprint(object3D, box = null) {
@@ -1457,16 +1894,9 @@ class GeomancerViewer {
       return null;
     }
     const size = measuredBox.getSize(new THREE.Vector3());
-    const sliceHeight = THREE.MathUtils.clamp(size.y * 0.14, 0.05, 0.24);
+    const sliceHeight = THREE.MathUtils.clamp(size.y * 0.1, 0.025, 0.14);
     const supportCeiling = measuredBox.min.y + sliceHeight;
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minZ = Infinity;
-    let maxZ = -Infinity;
-    let weightedX = 0;
-    let weightedZ = 0;
-    let weightTotal = 0;
-    let samples = 0;
+    const supportCandidates = [];
     const worldVertex = new THREE.Vector3();
 
     object3D.updateWorldMatrix(true, true);
@@ -1478,20 +1908,49 @@ class GeomancerViewer {
       const step = Math.max(1, Math.ceil(positions.count / 1500));
       for (let index = 0; index < positions.count; index += step) {
         worldVertex.fromBufferAttribute(positions, index).applyMatrix4(child.matrixWorld);
-        if (worldVertex.y > supportCeiling + 1e-4) {
-          continue;
+        if (worldVertex.y <= supportCeiling + 1e-4) {
+          supportCandidates.push(worldVertex.clone());
         }
-        const normalizedHeight = Math.max(0, Math.min(1, (worldVertex.y - measuredBox.min.y) / sliceHeight));
-        const weight = 1 - normalizedHeight * 0.72;
-        minX = Math.min(minX, worldVertex.x);
-        maxX = Math.max(maxX, worldVertex.x);
-        minZ = Math.min(minZ, worldVertex.z);
-        maxZ = Math.max(maxZ, worldVertex.z);
-        weightedX += worldVertex.x * weight;
-        weightedZ += worldVertex.z * weight;
-        weightTotal += weight;
-        samples += 1;
       }
+    });
+
+    if (!supportCandidates.length) {
+      return null;
+    }
+
+    let candidateMinY = Infinity;
+    supportCandidates.forEach((point) => {
+      candidateMinY = Math.min(candidateMinY, point.y);
+    });
+    const dominantSupportCeiling = candidateMinY + Math.min(sliceHeight * 0.35, 0.018);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    let weightedX = 0;
+    let weightedZ = 0;
+    let weightedY = 0;
+    let weightTotal = 0;
+    let samples = 0;
+    let minSampleY = Infinity;
+    let maxSampleY = -Infinity;
+    supportCandidates.forEach((point) => {
+      if (point.y > dominantSupportCeiling + 1e-4) {
+        return;
+      }
+      const normalizedHeight = Math.max(0, Math.min(1, (point.y - candidateMinY) / Math.max(dominantSupportCeiling - candidateMinY, 1e-4)));
+      const weight = 1 - normalizedHeight * 0.82;
+      minX = Math.min(minX, point.x);
+      maxX = Math.max(maxX, point.x);
+      minZ = Math.min(minZ, point.z);
+      maxZ = Math.max(maxZ, point.z);
+      minSampleY = Math.min(minSampleY, point.y);
+      maxSampleY = Math.max(maxSampleY, point.y);
+      weightedX += point.x * weight;
+      weightedZ += point.z * weight;
+      weightedY += point.y * weight;
+      weightTotal += weight;
+      samples += 1;
     });
 
     if (!samples || !Number.isFinite(minX) || !Number.isFinite(minZ) || !weightTotal) {
@@ -1504,8 +1963,208 @@ class GeomancerViewer {
       maxX,
       minZ,
       maxZ,
+      minSampleY,
+      maxSampleY,
+      meanSampleY: weightTotal ? (weightedY / weightTotal) : measuredBox.min.y,
+      dominantSupportCeiling,
       samples,
     };
+  }
+
+  applyFinalSettlingPass(object3D, currentBox, currentSupportFootprint) {
+    if (!object3D || !THREE) {
+      return { box: currentBox, supportFootprint: currentSupportFootprint };
+    }
+    if (!currentSupportFootprint || !currentSupportFootprint.samples) {
+      return { box: currentBox, supportFootprint: currentSupportFootprint };
+    }
+
+    const supportHeightSpread = Math.max(0, (currentSupportFootprint.maxSampleY ?? currentBox.min.y) - (currentSupportFootprint.minSampleY ?? currentBox.min.y));
+    const supportMeanLift = Math.max(0, (currentSupportFootprint.meanSampleY ?? currentBox.min.y) - currentBox.min.y);
+    const settleAmount = THREE.MathUtils.clamp((supportMeanLift * 0.6) + (supportHeightSpread * 0.2), 0, 0.014);
+    if (settleAmount <= 1e-4) {
+      return { box: currentBox, supportFootprint: currentSupportFootprint };
+    }
+
+    object3D.position.y -= settleAmount;
+    object3D.updateWorldMatrix(true, true);
+    const settledBox = new THREE.Box3().setFromObject(object3D);
+    const settledSupportFootprint = this.computeSupportFootprint(object3D, settledBox);
+    return { box: settledBox, supportFootprint: settledSupportFootprint };
+  }
+
+  detectDominantRestingSurface(object3D, currentBox) {
+    if (!object3D || !THREE || !currentBox || currentBox.isEmpty()) {
+      return null;
+    }
+
+    const size = currentBox.getSize(new THREE.Vector3());
+    const bottomY = currentBox.min.y;
+    const surfaceBand = Math.min(Math.max(size.y * 0.08, 0.012), 0.05);
+    const triangleThreshold = bottomY + surfaceBand;
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    const c = new THREE.Vector3();
+    const edgeAB = new THREE.Vector3();
+    const edgeAC = new THREE.Vector3();
+    let weightedNormal = new THREE.Vector3();
+    let weightedCenter = new THREE.Vector3();
+    let totalWeight = 0;
+    let matchedTriangles = 0;
+    let maxTriangleArea = 0;
+
+    object3D.updateWorldMatrix(true, true);
+    object3D.traverse((child) => {
+      if (!child.isMesh || !child.geometry?.attributes?.position) {
+        return;
+      }
+      const position = child.geometry.attributes.position;
+      const indexArray = child.geometry.index?.array || null;
+      const triangleCount = indexArray ? Math.floor(indexArray.length / 3) : Math.floor(position.count / 3);
+      const step = Math.max(1, Math.ceil(triangleCount / 700));
+      for (let triangleIndex = 0; triangleIndex < triangleCount; triangleIndex += step) {
+        const i0 = indexArray ? indexArray[triangleIndex * 3] : triangleIndex * 3;
+        const i1 = indexArray ? indexArray[(triangleIndex * 3) + 1] : (triangleIndex * 3) + 1;
+        const i2 = indexArray ? indexArray[(triangleIndex * 3) + 2] : (triangleIndex * 3) + 2;
+        a.fromBufferAttribute(position, i0).applyMatrix4(child.matrixWorld);
+        b.fromBufferAttribute(position, i1).applyMatrix4(child.matrixWorld);
+        c.fromBufferAttribute(position, i2).applyMatrix4(child.matrixWorld);
+        const triangleMinY = Math.min(a.y, b.y, c.y);
+        const triangleAvgY = (a.y + b.y + c.y) / 3;
+        if (triangleMinY > triangleThreshold || triangleAvgY > triangleThreshold + surfaceBand * 0.25) {
+          continue;
+        }
+
+        edgeAB.subVectors(b, a);
+        edgeAC.subVectors(c, a);
+        const triangleNormal = new THREE.Vector3().crossVectors(edgeAB, edgeAC);
+        const twiceArea = triangleNormal.length();
+        if (twiceArea < 1e-6) {
+          continue;
+        }
+        triangleNormal.normalize();
+        const upness = Math.abs(triangleNormal.y);
+        if (upness < 0.88) {
+          continue;
+        }
+        const area = twiceArea * 0.5;
+        const proximityWeight = 1 - THREE.MathUtils.clamp((triangleAvgY - bottomY) / Math.max(surfaceBand, 1e-4), 0, 1);
+        const weight = area * upness * (0.65 + proximityWeight * 0.7);
+        const triangleCenter = new THREE.Vector3(
+          (a.x + b.x + c.x) / 3,
+          (a.y + b.y + c.y) / 3,
+          (a.z + b.z + c.z) / 3
+        );
+        weightedNormal.addScaledVector(triangleNormal, weight);
+        weightedCenter.addScaledVector(triangleCenter, weight);
+        totalWeight += weight;
+        matchedTriangles += 1;
+        maxTriangleArea = Math.max(maxTriangleArea, area);
+      }
+    });
+
+    if (!matchedTriangles || totalWeight <= 1e-6 || weightedNormal.lengthSq() <= 1e-8) {
+      return null;
+    }
+
+    const normal = weightedNormal.normalize();
+    const center = weightedCenter.divideScalar(totalWeight);
+    const confidence = Math.min(1, (matchedTriangles / 18) * 0.45 + (Math.abs(normal.y) * 0.4) + (Math.min(maxTriangleArea, 0.35) * 0.4));
+    return {
+      normal,
+      center,
+      confidence,
+      matchedTriangles,
+    };
+  }
+
+  applyConservativeLeveling(object3D, currentBox, currentSupportFootprint) {
+    if (!object3D || !THREE || !currentBox || currentBox.isEmpty()) {
+      return { box: currentBox, supportFootprint: currentSupportFootprint };
+    }
+
+    const surface = this.detectDominantRestingSurface(object3D, currentBox);
+    if (!surface || surface.confidence < 0.74 || surface.matchedTriangles < 4) {
+      return { box: currentBox, supportFootprint: currentSupportFootprint };
+    }
+
+    const planeNormal = surface.normal.clone();
+    const worldUp = new THREE.Vector3(0, 1, 0);
+    const tiltAxis = new THREE.Vector3().crossVectors(planeNormal, worldUp);
+    const tiltMagnitude = tiltAxis.length();
+    if (tiltMagnitude < 1e-4) {
+      return { box: currentBox, supportFootprint: currentSupportFootprint };
+    }
+
+    const tiltAngle = Math.acos(THREE.MathUtils.clamp(planeNormal.dot(worldUp), -1, 1));
+    const maxCorrectionAngle = 0.105;
+    if (tiltAngle < 0.012 || tiltAngle > maxCorrectionAngle) {
+      return { box: currentBox, supportFootprint: currentSupportFootprint };
+    }
+
+    tiltAxis.normalize();
+    const correctionAngle = THREE.MathUtils.clamp(tiltAngle * 0.9, 0, maxCorrectionAngle);
+    const correction = new THREE.Quaternion().setFromAxisAngle(tiltAxis, correctionAngle);
+    const originalPosition = object3D.position.clone();
+    const originalQuaternion = object3D.quaternion.clone();
+    object3D.quaternion.premultiply(correction);
+    object3D.updateWorldMatrix(true, true);
+
+    const correctedBox = new THREE.Box3().setFromObject(object3D);
+    object3D.position.y -= correctedBox.min.y;
+    object3D.updateWorldMatrix(true, true);
+
+    const groundedBox = new THREE.Box3().setFromObject(object3D);
+    const supportFootprint = this.computeSupportFootprint(object3D, groundedBox);
+    const fallbackCenter = groundedBox.getCenter(new THREE.Vector3());
+    const contactCenter = supportFootprint?.center || fallbackCenter;
+    object3D.position.x -= contactCenter.x;
+    object3D.position.z -= contactCenter.z;
+    object3D.updateWorldMatrix(true, true);
+
+    const finalBox = new THREE.Box3().setFromObject(object3D);
+    const finalSupportFootprint = this.computeSupportFootprint(object3D, finalBox);
+    const originalSize = currentBox.getSize(new THREE.Vector3());
+    const finalSize = finalBox.getSize(new THREE.Vector3());
+    const originalFootprint = currentSupportFootprint
+      ? Math.max((currentSupportFootprint.maxX - currentSupportFootprint.minX) * (currentSupportFootprint.maxZ - currentSupportFootprint.minZ), 0)
+      : 0;
+    const finalFootprint = finalSupportFootprint
+      ? Math.max((finalSupportFootprint.maxX - finalSupportFootprint.minX) * (finalSupportFootprint.maxZ - finalSupportFootprint.minZ), 0)
+      : 0;
+    const originalBalance = currentSupportFootprint
+      ? 1 - THREE.MathUtils.clamp(
+        Math.hypot(
+          currentSupportFootprint.center.x - currentBox.getCenter(new THREE.Vector3()).x,
+          currentSupportFootprint.center.z - currentBox.getCenter(new THREE.Vector3()).z
+        ) / Math.max(Math.max(originalSize.x, originalSize.z), 0.001),
+        0,
+        1
+      )
+      : 0;
+    const finalBalance = finalSupportFootprint
+      ? 1 - THREE.MathUtils.clamp(
+        Math.hypot(
+          finalSupportFootprint.center.x - finalBox.getCenter(new THREE.Vector3()).x,
+          finalSupportFootprint.center.z - finalBox.getCenter(new THREE.Vector3()).z
+        ) / Math.max(Math.max(finalSize.x, finalSize.z), 0.001),
+        0,
+        1
+      )
+      : 0;
+
+    if (
+      finalSize.y > originalSize.y * 1.08
+      || finalBalance < originalBalance - 0.1
+      || finalFootprint < originalFootprint * 0.78
+    ) {
+      object3D.position.copy(originalPosition);
+      object3D.quaternion.copy(originalQuaternion);
+      object3D.updateWorldMatrix(true, true);
+      return { box: currentBox, supportFootprint: currentSupportFootprint };
+    }
+
+    return { box: finalBox, supportFootprint: finalSupportFootprint };
   }
 
   updateContactShadow(footprintOrBox, fullBox = null) {
@@ -1525,11 +2184,11 @@ class GeomancerViewer {
     const baseFootprintX = Math.max(bounds.maxX - bounds.minX, 0.36);
     const baseFootprintZ = Math.max(bounds.maxZ - bounds.minZ, 0.36);
     const boxSize = box ? box.getSize(new THREE.Vector3()) : new THREE.Vector3(baseFootprintX, 0, baseFootprintZ);
-    const footprintX = Math.max(baseFootprintX, boxSize.x * 0.16);
-    const footprintZ = Math.max(baseFootprintZ, boxSize.z * 0.16);
-    this.contactShadow.scale.set(footprintX * 0.5, footprintZ * 0.5, 1);
-    this.contactShadow.material.opacity = THREE.MathUtils.clamp(0.085 + Math.min(footprintX, footprintZ) * 0.02, 0.085, 0.17);
-    this.contactShadow.position.set((bounds.minX + bounds.maxX) / 2, 0.0025, (bounds.minZ + bounds.maxZ) / 2);
+    const footprintX = Math.max(baseFootprintX, boxSize.x * 0.14);
+    const footprintZ = Math.max(baseFootprintZ, boxSize.z * 0.14);
+    this.contactShadow.scale.set(footprintX * 0.44, footprintZ * 0.44, 1);
+    this.contactShadow.material.opacity = THREE.MathUtils.clamp(0.1 + Math.min(footprintX, footprintZ) * 0.018, 0.1, 0.18);
+    this.contactShadow.position.set((bounds.minX + bounds.maxX) / 2, 0.0018, (bounds.minZ + bounds.maxZ) / 2);
     this.contactShadow.visible = true;
   }
 
@@ -1749,6 +2408,9 @@ function connectBridge() {
         const suffix = percent === null ? "" : ` (${percent}%)`;
         appendLog(`AI setup: ${event.status || "working"}${suffix}`);
         setupStatusText.textContent = `Setting up local AI ${event.model || runtimeHealth?.ollamaModelName || ""}${suffix}`;
+        replaceLastAssistantMessage(`Setting up local AI ${event.model || runtimeHealth?.ollamaModelName || "runtime"}${suffix}.`, {
+          title: "System update",
+        });
       })().catch((error) => {
         appendLog(`Failed to apply model pull progress: ${error}`);
       });
@@ -1757,6 +2419,9 @@ function connectBridge() {
       void (async () => {
         const result = await resolveBridgeJson(payload, "modelPullCompleted");
         appendLog(`AI setup completed for ${result.pull_result?.model_name || "the configured model"}.`);
+        addChatMessage("assistant", `Local AI is ready for ${result.pull_result?.model_name || "the configured model"}.`, {
+          title: "System update",
+        });
         if (result.runtime_health) {
           applyRuntimeGate({ runtimeHealth: result.runtime_health, setupFlow: runtimeSetupFlow });
         }
@@ -1768,6 +2433,9 @@ function connectBridge() {
       void (async () => {
         const result = await resolveBridgeJson(payload, "modelPullFailed");
         appendLog(result.message || "AI setup failed.");
+        addChatMessage("assistant", result.message || "Local AI setup failed.", {
+          title: "System update",
+        });
       })().catch((error) => {
         appendLog(`Failed to apply model pull failure: ${error}`);
       });
@@ -1824,6 +2492,9 @@ setupDetectButton.addEventListener("click", async () => {
   }
   try {
     appendLog("Refreshing environment detection.");
+    addChatMessage("assistant", "Checking this PC for local AI and Blender.", {
+      title: "System update",
+    });
     const health = await resolveBridgeJson(bridge.maybeDetectOrRepairEnvironment(), "maybeDetectOrRepairEnvironment");
     applyRuntimeGate({ runtimeHealth: health, setupFlow: runtimeSetupFlow });
   } catch (error) {
@@ -1838,9 +2509,15 @@ setupPullButton.addEventListener("click", async () => {
   }
   const modelName = runtimeHealth?.ollamaModelName || runtimeHealth?.recommendedModel || "";
   try {
+    addChatMessage("assistant", `Starting local AI setup for ${modelName || "the configured model"}.`, {
+      title: "System update",
+    });
     const result = await resolveBridgeJson(bridge.startModelPull(modelName), "startModelPull");
     if (!result.started) {
       appendLog(result.message || "AI setup could not be started.");
+      addChatMessage("assistant", result.message || "Local AI setup could not be started.", {
+        title: "System update",
+      });
       return;
     }
     appendLog(`Starting AI setup for ${result.model_name}.`);
@@ -1856,8 +2533,14 @@ setupSmokeButton.addEventListener("click", async () => {
   }
   try {
     appendLog("Running setup smoke test.");
+    addChatMessage("assistant", "Running a quick local system check.", {
+      title: "System update",
+    });
     const result = await resolveBridgeJson(bridge.runSetupSmokeTest(), "runSetupSmokeTest");
     appendLog(result.message || "Smoke test finished.");
+    addChatMessage("assistant", result.message || "Quick local check finished.", {
+      title: "System update",
+    });
     if (result.runtime_health) {
       applyRuntimeGate({ runtimeHealth: result.runtime_health, setupFlow: runtimeSetupFlow });
     }
@@ -1873,6 +2556,9 @@ setupRefreshButton.addEventListener("click", async () => {
   }
   try {
     appendLog("Refreshing system status.");
+    addChatMessage("assistant", "Refreshing system status.", {
+      title: "System update",
+    });
     const health = await resolveBridgeJson(bridge.getRuntimeHealth(), "getRuntimeHealth");
     applyRuntimeGate({ runtimeHealth: health, setupFlow: runtimeSetupFlow });
     bridge.refreshState();
@@ -1909,6 +2595,19 @@ generateButton.addEventListener("click", () => {
   appendLog(`Debug: prompt submit -> ${promptText}`);
   appendLog("Debug: generation start.");
   appendLog(`Prompt submitted: ${promptText}`);
+  setSessionTitle(generateSessionTitle(promptText));
+  addChatMessage("user", promptText);
+  addChatMessage("assistant", "Understanding your request...");
+  addChatMessage("assistant", "Preparing deterministic geometry...", {
+    title: "Generation in progress",
+    checklist: [
+      "Understanding your request",
+      "Classifying the geometry family",
+      "Normalizing dimensions and features",
+      "Preparing deterministic geometry",
+      "Updating the preview",
+    ],
+  });
   activeSession = {
     ...createEmptySession(),
     requestText: promptText,
@@ -1923,16 +2622,10 @@ generateButton.addEventListener("click", () => {
     message: "Interpreting the request, classifying the family, and preparing deterministic geometry.",
     previewStatus: "pending",
   });
-  generationStatus.textContent = "Generating...";
-  readinessState.textContent = "Generating the current model for review.";
+  setGenerationStatusText("Generating...");
+  setReadinessStateText("Generating the current model for review.");
   updateRightPanel(null);
   updateMetricsFromPlan(null, null, "Generating...");
-  historySummaryList.innerHTML = [
-    "Prompt received",
-    "Family selection in progress",
-    "Dimensions and features pending",
-    "Viewer update pending",
-  ].map((item) => `<li>${item}</li>`).join("");
   viewer.setLoading("Preparing the current model preview.");
   appendLog("Debug: bridge generateModel call start.");
   appendLog(`[UI] typeof bridge.generateModel = ${typeof bridge.generateModel}`);
@@ -1980,6 +2673,62 @@ promptInput.addEventListener("keydown", (event) => {
   }
 });
 
+toolbeltImproveButton.addEventListener("click", () => {
+  const currentPrompt = promptInput.value.trim();
+  currentPromptSuggestion = buildPromptSuggestion(currentPrompt);
+  promptImproverOriginal.textContent = currentPrompt || "No prompt entered yet.";
+  promptImproverSuggestion.textContent = currentPromptSuggestion;
+  setComposerQuickMenuOpen(false);
+  setPromptImproverOpen(true);
+});
+
+toolbeltSettingsButton.addEventListener("click", (event) => {
+  event.stopPropagation();
+  setComposerQuickMenuOpen(composerQuickMenu.hidden);
+});
+
+quickClearConversationButton.addEventListener("click", () => {
+  setComposerQuickMenuOpen(false);
+  startNewChat();
+});
+
+quickToggleAutoscrollButton.addEventListener("click", () => {
+  autoScrollEnabled = !autoScrollEnabled;
+  updateConversationMenuLabels();
+  if (autoScrollEnabled) {
+    scrollConversationToBottom();
+  }
+});
+
+quickToggleTimestampsButton.addEventListener("click", () => {
+  timestampsEnabled = !timestampsEnabled;
+  updateConversationMenuLabels();
+  renderConversationThread();
+});
+
+usePromptSuggestionButton.addEventListener("click", () => {
+  promptInput.value = currentPromptSuggestion || buildPromptSuggestion(promptInput.value.trim());
+  setPromptImproverOpen(false);
+  promptInput.focus();
+});
+
+keepOriginalPromptButton.addEventListener("click", () => {
+  setPromptImproverOpen(false);
+  promptInput.focus();
+});
+
+closePromptImproverButton.addEventListener("click", () => setPromptImproverOpen(false));
+promptImproverBackdrop.addEventListener("click", () => setPromptImproverOpen(false));
+
+conversationThread.addEventListener("click", (event) => {
+  const exampleButton = event.target.closest("[data-example-prompt]");
+  if (!exampleButton) {
+    return;
+  }
+  promptInput.value = exampleButton.dataset.examplePrompt || "";
+    promptInput.focus();
+});
+
 function startNewChat() {
   if (generationInFlight) {
     appendLog("Debug: new chat blocked -> generation already in flight.");
@@ -2003,12 +2752,21 @@ showLogsButton.addEventListener("click", () => setLogsModalOpen(true));
 closeLogsButton.addEventListener("click", () => setLogsModalOpen(false));
 logsBackdrop.addEventListener("click", () => setLogsModalOpen(false));
 
+document.addEventListener("click", (event) => {
+  if (!composerQuickMenu.hidden && !event.target.closest(".composer-toolbelt-group-right")) {
+    setComposerQuickMenuOpen(false);
+  }
+});
+
 async function bootstrap() {
   await viewer.init();
   if (viewer.initialized) {
     viewer.setEmpty();
   }
   setLogsModalOpen(false);
+  setPromptImproverOpen(false);
+  setComposerQuickMenuOpen(false);
+  updateConversationMenuLabels();
   setActiveTab("chat");
   connectBridge();
 }
