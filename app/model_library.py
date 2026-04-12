@@ -119,3 +119,28 @@ def get_library_summary() -> dict:
         "template_count": len(library.get("templates", [])),
         "templates": library.get("templates", []),
     }
+
+
+def list_saved_models(limit: int | None = None) -> list[dict]:
+    """Return saved model entries in persisted order."""
+    library = load_model_library()
+    saved_models = library.get("saved_models", [])
+    if limit is None:
+        return list(saved_models)
+    return list(saved_models[: max(limit, 0)])
+
+
+def delete_saved_model_entry(model_id: str) -> bool:
+    """Delete one saved model entry by id."""
+    if not model_id:
+        return False
+
+    library = load_model_library()
+    saved_models = library.get("saved_models", [])
+    filtered_models = [entry for entry in saved_models if entry.get("id") != model_id]
+    if len(filtered_models) == len(saved_models):
+        return False
+
+    library["saved_models"] = filtered_models
+    save_model_library(library)
+    return True

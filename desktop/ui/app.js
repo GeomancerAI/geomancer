@@ -22,7 +22,6 @@ const usePromptSuggestionButton = document.getElementById("use-prompt-suggestion
 const keepOriginalPromptButton = document.getElementById("keep-original-prompt");
 const openBlenderButton = document.getElementById("open-blender-button");
 const backendStatus = document.getElementById("backend-status");
-const lastRunStatus = document.getElementById("last-run-status");
 const systemAiStatus = document.getElementById("system-ai-status");
 const systemBlenderStatus = document.getElementById("system-blender-status");
 const scriptPath = document.getElementById("script-path");
@@ -36,19 +35,23 @@ const sessionTitle = document.getElementById("sessionTitle");
 const metricLength = document.getElementById("metric-length");
 const metricWidth = document.getElementById("metric-width");
 const metricHeight = document.getElementById("metric-height");
-const metricTriangles = document.getElementById("metric-triangles");
-const generationFamily = document.getElementById("generation-family");
-const generationRecipe = document.getElementById("generation-recipe");
-const generationFeatures = document.getElementById("generation-features");
-const reviewConfidence = document.getElementById("review-confidence");
 const reviewStatus = document.getElementById("review-status");
+const metricModelFamily = document.getElementById("metric-model-family");
+const printabilityBase = document.getElementById("printability-base");
+const printabilityOverhang = document.getElementById("printability-overhang");
+const meshPreview = document.getElementById("mesh-preview");
+const meshExport = document.getElementById("mesh-export");
+const meshQuality = document.getElementById("mesh-quality");
 const conversationThread = document.getElementById("conversation-thread");
 const generationStatus = document.getElementById("generation-status");
 const readinessState = document.getElementById("readiness-state");
+const propertiesEmptyState = document.getElementById("properties-empty-state");
+const propertiesDimensionsSection = document.getElementById("properties-dimensions-section");
+const propertiesWallsSection = document.getElementById("properties-walls-section");
+const propertiesFeaturesSection = document.getElementById("properties-features-section");
 const currentModelDimensions = document.getElementById("current-model-dimensions");
-const currentModelShell = document.getElementById("current-model-shell");
+const currentModelWalls = document.getElementById("current-model-walls");
 const currentModelFeatures = document.getElementById("current-model-features");
-const currentModelCutouts = document.getElementById("current-model-cutouts");
 const setupWizard = document.getElementById("setup-wizard");
 const setupStatusTitle = document.getElementById("setup-status-title");
 const setupStatusText = document.getElementById("setup-status-text");
@@ -78,9 +81,26 @@ const viewerAxisScene = document.getElementById("viewer-axis-scene");
 const viewerAutoOrbitToggle = document.getElementById("viewer-auto-orbit-toggle");
 const newConversationButton = document.getElementById("new-conversation-button");
 const topnavTabs = Array.from(document.querySelectorAll(".topnav-tab"));
+const modeWorkspace = document.getElementById("mode-workspace");
+const modeModels = document.getElementById("mode-models");
+const modeProjects = document.getElementById("mode-projects");
+const modeTemplates = document.getElementById("mode-templates");
+const modelsSearchInput = document.getElementById("models-search-input");
+const modelsSortSelect = document.getElementById("models-sort-select");
+const modelsTotalCount = document.getElementById("models-total-count");
+const modelsFamilyFilters = document.getElementById("models-family-filters");
+const modelsSidebarList = document.getElementById("models-sidebar-list");
+const modelsGrid = document.getElementById("models-grid");
+const modelsEmptyState = document.getElementById("models-empty-state");
+const modelsEmptyCta = document.getElementById("models-empty-cta");
+const modelsGoWorkspace = document.getElementById("models-go-workspace");
+const modelsSelectionSummary = document.getElementById("models-selection-summary");
+const modelsSelectionOpen = document.getElementById("models-selection-open");
+const modelsSelectionDelete = document.getElementById("models-selection-delete");
 let generationInFlight = false;
 let activeSession = createEmptySession();
 let librarySummary = { saved_model_count: 0, recent_saved_models: [], project_count: 0, template_count: 0, templates: [] };
+let savedModels = [];
 let hasLoadedInitialState = false;
 let runtimeHealth = null;
 let runtimeSetupFlow = [];
@@ -90,6 +110,13 @@ let autoScrollEnabled = true;
 let timestampsEnabled = true;
 let currentPromptSuggestion = "";
 let currentSessionTitle = "Untitled";
+let generationAnimationInterval = 0;
+let generationAnimationFrame = 0;
+let currentAppMode = "workspace";
+let selectedSavedModelId = "";
+let modelsSearchQuery = "";
+let modelsSortMode = "newest";
+let activeModelFamilyFilter = "all";
 const STARTUP_EXAMPLE_PROMPTS = [
   "Wall bracket with four holes",
   "Desk cable clip",
@@ -98,10 +125,17 @@ const STARTUP_EXAMPLE_PROMPTS = [
 ];
 
 const TAB_INTENTS = {
-  chat: "Active generation workspace",
+  workspace: "Active generation workspace",
   models: "Saved generated model library",
   projects: "Grouped model organization",
   templates: "Starter creations and capability examples",
+};
+
+const modeScreens = {
+  workspace: modeWorkspace,
+  models: modeModels,
+  projects: modeProjects,
+  templates: modeTemplates,
 };
 
 function appendLog(message) {
@@ -198,6 +232,12 @@ function setGenerationStatusText(text) {
   generationStatus.textContent = text || "Ready";
 }
 
+function bindClick(element, handler) {
+  if (element) {
+    element.addEventListener("click", handler);
+  }
+}
+
 function generateSessionTitle(prompt) {
   const rawPrompt = String(prompt || "").trim();
   if (!rawPrompt) {
@@ -228,6 +268,211 @@ function generateSessionTitle(prompt) {
   }
 
   return normalized.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatLibraryTimestamp(value) {
+  if (!value) {
+    return "Unknown date";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown date";
+  }
+  return parsed.toLocaleString([], {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function modelLibraryName(entry = {}) {
+  return generateSessionTitle(entry.prompt || entry.plan?.request_text || entry.family_label || entry.family || "Untitled");
+}
+
+function modelLibraryFamily(entry = {}) {
+  return sentenceCaseLabel(entry.family_label || entry.family || entry.plan?.family_label || entry.plan?.family || "Model");
+}
+
+function modelLibraryDimensions(entry = {}) {
+  const dims = entry.plan?.dimensions || {};
+  const lengthValue = dims.length_mm || dims.base_length_mm || dims.outer_diameter_mm || dims.large_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null;
+  const widthValue = dims.width_mm || dims.depth_mm || dims.flange_width_mm || dims.small_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null;
+  const heightValue = dims.height_mm || dims.vertical_height_mm || dims.base_height_mm || null;
+  const formatted = [lengthValue, widthValue, heightValue]
+    .filter((value) => typeof value === "number" && !Number.isNaN(value))
+    .map((value) => Number(value.toFixed(2)).toString());
+  return formatted.length ? `${formatted.join(" × ")} mm` : "Dimensions unavailable";
+}
+
+function normalizeSavedModelEntry(entry = {}) {
+  return {
+    ...entry,
+    id: entry.id || "",
+    name: modelLibraryName(entry),
+    familyDisplay: modelLibraryFamily(entry),
+    createdDisplay: formatLibraryTimestamp(entry.created_at),
+    dimensionsDisplay: modelLibraryDimensions(entry),
+    previewReady: entry.preview_export_status === "ready",
+  };
+}
+
+function compactModelSelectionSummary(model) {
+  if (!model) {
+    return "Select a saved model to open or delete it.";
+  }
+  return `${model.name} · ${model.familyDisplay} · ${model.createdDisplay}`;
+}
+
+function getNormalizedSavedModels() {
+  return savedModels.map((entry) => normalizeSavedModelEntry(entry));
+}
+
+function currentSelectedSavedModel() {
+  return getNormalizedSavedModels().find((entry) => entry.id === selectedSavedModelId) || null;
+}
+
+function familyFilterOptions(models = []) {
+  const uniqueFamilies = Array.from(new Set(models.map((entry) => entry.familyDisplay).filter(Boolean)));
+  return ["All", ...uniqueFamilies.sort((left, right) => left.localeCompare(right))];
+}
+
+function filteredSavedModels() {
+  const query = modelsSearchQuery.trim().toLowerCase();
+  const filterValue = activeModelFamilyFilter.toLowerCase();
+  const filtered = getNormalizedSavedModels().filter((entry) => {
+    const matchesQuery = !query || [
+      entry.name,
+      entry.familyDisplay,
+      entry.prompt || "",
+      entry.validation_summary || "",
+    ].some((value) => String(value).toLowerCase().includes(query));
+    const matchesFamily = filterValue === "all" || entry.familyDisplay.toLowerCase() === filterValue;
+    return matchesQuery && matchesFamily;
+  });
+
+  filtered.sort((left, right) => {
+    if (modelsSortMode === "oldest") {
+      return String(left.created_at || "").localeCompare(String(right.created_at || ""));
+    }
+    if (modelsSortMode === "name") {
+      return left.name.localeCompare(right.name);
+    }
+    if (modelsSortMode === "family") {
+      return left.familyDisplay.localeCompare(right.familyDisplay) || left.name.localeCompare(right.name);
+    }
+    return String(right.created_at || "").localeCompare(String(left.created_at || ""));
+  });
+
+  return filtered;
+}
+
+function ensureSelectedSavedModel(models = filteredSavedModels()) {
+  if (!models.length) {
+    selectedSavedModelId = "";
+    return;
+  }
+  const stillExists = models.some((entry) => entry.id === selectedSavedModelId);
+  if (!stillExists) {
+    selectedSavedModelId = models[0].id;
+  }
+}
+
+function renderModelsFamilyFilters(models = getNormalizedSavedModels()) {
+  if (!modelsFamilyFilters) {
+    return;
+  }
+  const options = familyFilterOptions(models);
+  modelsFamilyFilters.innerHTML = options.map((label) => {
+    const value = label.toLowerCase();
+    const isActive = (activeModelFamilyFilter || "all") === value;
+    return `<button class="models-filter-chip${isActive ? " is-active" : ""}" type="button" data-family-filter="${escapeHtml(value)}">${escapeHtml(label)}</button>`;
+  }).join("");
+}
+
+function renderModelsSidebarList(models = filteredSavedModels()) {
+  if (!modelsSidebarList) {
+    return;
+  }
+
+  if (!models.length) {
+    modelsSidebarList.innerHTML = '<p class="models-sidebar-empty">No models match the current view.</p>';
+    return;
+  }
+
+  modelsSidebarList.innerHTML = models.map((model) => `
+    <button
+      class="models-sidebar-item${model.id === selectedSavedModelId ? " is-selected" : ""}"
+      type="button"
+      data-model-select="${escapeHtml(model.id)}"
+      aria-label="Select ${escapeHtml(model.name)}"
+    >
+      <span class="models-sidebar-item-name">${escapeHtml(model.name)}</span>
+      <span class="models-sidebar-item-meta">${escapeHtml(model.familyDisplay)}</span>
+    </button>
+  `).join("");
+}
+
+function renderModelsSelection(model) {
+  if (!modelsSelectionSummary || !modelsSelectionOpen || !modelsSelectionDelete) {
+    return;
+  }
+  modelsSelectionSummary.textContent = compactModelSelectionSummary(model);
+  modelsSelectionSummary.title = model
+    ? `${model.name}\n${model.dimensionsDisplay}\n${model.validation_summary || "No validation summary available."}`
+    : "Select a saved model to open or delete it.";
+  modelsSelectionOpen.disabled = !model?.script_path;
+  modelsSelectionOpen.dataset.modelId = model?.id || "";
+  modelsSelectionDelete.disabled = !model?.id;
+  modelsSelectionDelete.dataset.modelId = model?.id || "";
+}
+
+function renderModelsGrid() {
+  if (!modelsGrid || !modelsEmptyState || !modelsTotalCount) {
+    return;
+  }
+  const normalizedModels = getNormalizedSavedModels();
+  renderModelsFamilyFilters(normalizedModels);
+  const visibleModels = filteredSavedModels();
+  ensureSelectedSavedModel(visibleModels);
+  const selectedModel = currentSelectedSavedModel();
+  const hasSavedModels = normalizedModels.length > 0;
+
+  modelsTotalCount.textContent = String(normalizedModels.length);
+  renderModelsSidebarList(visibleModels);
+  modelsEmptyState.toggleAttribute("hidden", hasSavedModels);
+  modelsGrid.toggleAttribute("hidden", !hasSavedModels);
+
+  if (!hasSavedModels) {
+    modelsGrid.innerHTML = "";
+    renderModelsSelection(null);
+    return;
+  }
+
+  modelsGrid.innerHTML = visibleModels.map((model) => `
+    <article class="model-card${model.id === selectedSavedModelId ? " is-selected" : ""}" data-model-id="${escapeHtml(model.id)}">
+      <button class="model-card-surface" type="button" data-model-select="${escapeHtml(model.id)}" aria-label="Select ${escapeHtml(model.name)}">
+        <div class="model-card-preview">
+          <span class="model-card-badge">${escapeHtml(model.familyDisplay)}</span>
+          <span class="model-card-glyph">&#9638;</span>
+        </div>
+        <div class="model-card-body">
+          <h3 class="model-card-title">${escapeHtml(model.name)}</h3>
+          <p class="model-card-meta">${escapeHtml(model.createdDisplay)}</p>
+          <p class="model-card-submeta">${escapeHtml(model.dimensionsDisplay)}</p>
+        </div>
+      </button>
+    </article>
+  `).join("");
+
+  if (!visibleModels.length) {
+    modelsGrid.innerHTML = '<div class="models-filter-empty">No models match the current search or filter.</div>';
+    renderModelsSelection(null);
+    return;
+  }
+
+  renderModelsSelection(selectedModel);
 }
 
 function renderConversationThread() {
@@ -334,6 +579,12 @@ function runtimeReady(health = runtimeHealth) {
 
 function setGenerationInFlight(isActive) {
   generationInFlight = isActive;
+  document.body.classList.toggle("is-generating", isActive);
+  if (isActive) {
+    startGenerationAnimation();
+  } else {
+    stopGenerationAnimation();
+  }
   setGenerating(isActive);
   if (runtimeHealth) {
     applyRuntimeGate({ runtimeHealth, setupFlow: runtimeSetupFlow });
@@ -468,47 +719,247 @@ function estimateVolumeCm3(plan) {
 
 function formatInstrumentMm(value, hasPlan = false) {
   if (typeof value !== "number" || Number.isNaN(value)) {
-    return hasPlan ? "N/A" : "Pending";
+    return hasPlan ? "N/A" : "—";
   }
   return formatMm(value);
 }
 
-function generationFeatureSummary(plan) {
-  if (!plan) {
-    return "Pending";
+function sentenceCaseLabel(text = "") {
+  if (!text) {
+    return "";
   }
-  const featureCount = featureEntries(plan).filter(([key]) => !key.includes("thickness") && !key.includes("wall") && !key.includes("base")).length;
-  if (featureCount > 0) {
-    return `${featureCount} normalized`;
+  const normalized = String(text).replace(/[_-]+/g, " ").trim();
+  if (!normalized) {
+    return "";
   }
-  const dimensionCount = Object.values(plan.dimensions || {}).filter((value) => typeof value === "number" && !Number.isNaN(value)).length;
-  if (dimensionCount > 0) {
-    return `${dimensionCount} dimensions`;
-  }
-  return "Pending";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
-function updateMetricsFromPlan(plan, validation, generationText) {
+function familyDisplayLabel(plan) {
+  if (!plan?.family) {
+    return "";
+  }
+  return sentenceCaseLabel(prettifyKey(plan.family));
+}
+
+function recipeDisplayLabel(plan) {
+  if (!plan?.recipe) {
+    return "";
+  }
+  return sentenceCaseLabel(String(plan.recipe).replace(/^deterministic[_\s-]*/i, "Deterministic "));
+}
+
+function describeCurrentModel(plan, validation = null, uiState = "idle") {
+  if (!plan) {
+    if (uiState === "generating") {
+      return `${animatedStateLabel("Generating")}\nPreparing the current model for review.`;
+    }
+    return "Ready to generate\nDescribe a part to begin.";
+  }
+
+  const family = familyDisplayLabel(plan) || "Model";
+  const featureItems = featureEntries(plan).filter(([key]) => !key.includes("thickness") && !key.includes("wall"));
+  const holeCount = featureItems.find(([key]) => key.includes("hole_count"))?.[1];
+  const opening = featureItems.find(([key]) => key.includes("opening") || key.includes("cutout"));
+  let summary = family;
+
+  if (holeCount) {
+    summary += ` with ${holeCount} mounting hole${Number(holeCount) === 1 ? "" : "s"}`;
+  } else if (opening) {
+    summary += ` with ${prettifyKey(opening[0]).toLowerCase()}`;
+  }
+
+  summary += validation?.warnings?.length ? " prepared for review." : " prepared for refinement.";
+  return summary;
+}
+
+function wallThicknessValue(plan) {
+  if (!plan) {
+    return null;
+  }
+  const directThickness = Number(plan.shell_thickness_mm);
+  if (directThickness > 0) {
+    return directThickness;
+  }
+  const fromFeatures = featureEntries(plan)
+    .find(([key, value]) => (key.includes("thickness") || key.includes("wall")) && Number(value) > 0);
+  return fromFeatures ? Number(fromFeatures[1]) : null;
+}
+
+function previewReadinessLabel(plan, previewStatus, uiState = "idle") {
+  if (!plan) {
+    return uiState === "generating" ? animatedStateLabel("Preparing") : "Waiting";
+  }
+  if (previewStatus === "error") {
+    return "Needs review";
+  }
+  if (previewStatus === "pending") {
+    return "Preparing";
+  }
+  return "Ready";
+}
+
+function exportReadinessLabel(plan, previewStatus) {
+  if (!plan) {
+    return "Waiting";
+  }
+  if (previewStatus === "error") {
+    return "Review in Blender";
+  }
+  return runtimeHealth?.blenderDetected ? "Ready in Blender" : "Blender needed";
+}
+
+function meshQualityLabel(plan, validation = null, uiState = "idle") {
+  if (!plan) {
+    return uiState === "generating" ? animatedStateLabel("Evaluating") : "Waiting";
+  }
+  return validation?.warnings?.length ? "Needs review" : "Structured";
+}
+
+function derivePrintabilityAssessment(plan, validation = null) {
+  if (!plan) {
+    return null;
+  }
+
+  const dims = plan.dimensions || {};
+  const featureItems = featureEntries(plan);
+  const warnings = validation?.warnings || [];
+
+  const baseSpan = Math.max(
+    Number(dims.base_width_mm) || 0,
+    Number(dims.width_mm) || 0,
+    Number(dims.depth_mm) || 0,
+    Number(dims.outer_diameter_mm) || 0,
+    Number(dims.diameter_mm) || 0,
+    Number(dims.large_diameter_mm) || 0
+  );
+  const height = Math.max(
+    Number(dims.height_mm) || 0,
+    Number(dims.vertical_height_mm) || 0,
+    Number(dims.base_height_mm) || 0
+  );
+  const aspectRatio = baseSpan > 0 ? height / baseSpan : null;
+
+  let baseContact = "Review recommended";
+  if (baseSpan > 0 && aspectRatio !== null) {
+    if (aspectRatio <= 1.45) {
+      baseContact = "Stable";
+    } else if (aspectRatio <= 2.35) {
+      baseContact = "Review recommended";
+    } else {
+      baseContact = "Needs support review";
+    }
+  }
+
+  const overhangSignals = featureItems.filter(([key]) => key.includes("opening") || key.includes("cutout") || key.includes("hook") || key.includes("clip")).length;
+  let overhangRisk = "Review recommended";
+  if (warnings.length >= 2 || overhangSignals >= 2) {
+    overhangRisk = "Needs support review";
+  } else if (!warnings.length && !overhangSignals) {
+    overhangRisk = "Likely manageable";
+  }
+
+  const thicknessValues = [
+    Number(plan.shell_thickness_mm) || 0,
+    ...featureItems
+      .filter(([key]) => key.includes("thickness") || key.includes("wall"))
+      .map(([, value]) => Number(value) || 0),
+  ].filter((value) => value > 0);
+  const thinnestFeature = thicknessValues.length ? Math.min(...thicknessValues) : null;
+
+  let thinFeatures = "None detected";
+  if (thinnestFeature !== null) {
+    if (thinnestFeature < 1.6) {
+      thinFeatures = "Review recommended";
+    } else if (thinnestFeature < 2.4) {
+      thinFeatures = "Fine detail present";
+    }
+  }
+
+  let status = "Likely printable";
+  if (warnings.length >= 2 || baseContact === "Needs support review" || overhangRisk === "Needs support review") {
+    status = "Needs support review";
+  } else if (warnings.length || baseContact === "Review recommended" || overhangRisk === "Review recommended" || thinFeatures === "Review recommended") {
+    status = "Review recommended";
+  }
+
+  const note = status === "Likely printable"
+    ? "Verify in Blender before export"
+    : "Review orientation and support in Blender";
+
+  return { status, baseContact, overhangRisk, thinFeatures, note, warnings };
+}
+
+function animatedStateLabel(base) {
+  const dots = ".".repeat((generationAnimationFrame % 3) + 1);
+  return `${base}${dots.padEnd(3, "\u00A0")}`;
+}
+
+function compactBottomPrintabilityLabel(value, fallback = "Waiting") {
+  const text = String(value || "").trim();
+  if (!text) {
+    return fallback;
+  }
+  if (text === "Review recommended") {
+    return "Needs review";
+  }
+  if (text === "Likely manageable") {
+    return "Manageable";
+  }
+  return text;
+}
+
+function stopGenerationAnimation() {
+  if (generationAnimationInterval) {
+    window.clearInterval(generationAnimationInterval);
+    generationAnimationInterval = 0;
+  }
+  generationAnimationFrame = 0;
+}
+
+function refreshGeneratingUI() {
+  if (!generationInFlight) {
+    return;
+  }
+  updateMetricsFromPlan(null, null, animatedStateLabel("Generating"), "generating");
+  updateRightPanel(null, null, "generating");
+  setGenerationStatusText(animatedStateLabel("Generating"));
+}
+
+function startGenerationAnimation() {
+  stopGenerationAnimation();
+  refreshGeneratingUI();
+  generationAnimationInterval = window.setInterval(() => {
+    generationAnimationFrame = (generationAnimationFrame + 1) % 3;
+    refreshGeneratingUI();
+  }, 420);
+}
+
+function updateMetricsFromPlan(plan, validation, generationText, uiState = "ready") {
   const dims = plan?.dimensions || {};
   const hasPlan = Boolean(plan);
-  metricLength.textContent = formatInstrumentMm(
-    dims.length_mm || dims.base_length_mm || dims.outer_diameter_mm || dims.large_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null,
-    hasPlan
-  );
-  metricWidth.textContent = formatInstrumentMm(
-    dims.width_mm || dims.depth_mm || dims.flange_width_mm || dims.small_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null,
-    hasPlan
-  );
-  metricHeight.textContent = formatInstrumentMm(
-    dims.height_mm || dims.vertical_height_mm || dims.base_height_mm || null,
-    hasPlan
-  );
-  generationFamily.textContent = plan?.family_label || plan?.family || "Pending";
-  generationRecipe.textContent = hasPlan ? "Deterministic" : "Pending";
-  generationFeatures.textContent = generationFeatureSummary(plan);
-  reviewConfidence.textContent = validation?.warnings?.length ? "Needs review" : (hasPlan ? "Structured" : "Pending");
-  reviewStatus.textContent = validation?.warnings?.length ? "Pending" : (hasPlan ? "Ready" : "Pending");
-  metricTriangles.textContent = hasPlan ? "Not measured yet" : "Pending";
+  const printability = derivePrintabilityAssessment(plan, validation);
+  const lengthValue = dims.length_mm || dims.base_length_mm || dims.outer_diameter_mm || dims.large_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null;
+  const widthValue = dims.width_mm || dims.depth_mm || dims.flange_width_mm || dims.small_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null;
+  const heightValue = dims.height_mm || dims.vertical_height_mm || dims.base_height_mm || null;
+  metricLength.textContent = formatInstrumentMm(lengthValue, hasPlan);
+  metricWidth.textContent = formatInstrumentMm(widthValue, hasPlan);
+  metricHeight.textContent = formatInstrumentMm(heightValue, hasPlan);
+  metricModelFamily.textContent = hasPlan
+    ? (familyDisplayLabel(plan) || "Waiting")
+    : (uiState === "generating" ? animatedStateLabel("Classifying") : "Waiting");
+  reviewStatus.textContent = hasPlan
+    ? compactBottomPrintabilityLabel(printability?.status, "Needs review")
+    : (uiState === "generating" ? animatedStateLabel("Reviewing") : "Waiting");
+  printabilityBase.textContent = hasPlan
+    ? compactBottomPrintabilityLabel(printability?.baseContact, "Needs review")
+    : (uiState === "generating" ? animatedStateLabel("Checking") : "Waiting");
+  printabilityOverhang.textContent = hasPlan
+    ? compactBottomPrintabilityLabel(printability?.overhangRisk, "Needs review")
+    : (uiState === "generating" ? animatedStateLabel("Checking") : "Waiting");
+  meshPreview.textContent = previewReadinessLabel(plan, activeSession.previewStatus, uiState);
+  meshExport.textContent = exportReadinessLabel(plan, activeSession.previewStatus);
+  meshQuality.textContent = meshQualityLabel(plan, validation, uiState);
   setGenerationStatusText(generationText || "Ready");
 }
 
@@ -520,38 +971,112 @@ function renderListRows(container, items, formatter, emptyText = "Unavailable") 
   container.innerHTML = items.map(formatter).join("");
 }
 
-function updateRightPanel(plan) {
-  const dimensions = dimensionEntries(plan);
-  renderListRows(
-    currentModelDimensions,
-    dimensions,
-    ([label, value]) => `<div class="check-row"><span class="checkmark">&#9672;</span><span>${label}: ${formatMm(value)}</span></div>`,
-    "Unavailable until a generation completes"
-  );
+function renderDetailRows(container, items) {
+  if (!container) {
+    return;
+  }
+  container.innerHTML = items.map(([label, value]) => (
+    `<div class="detail-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`
+  )).join("");
+}
 
-  const shellItems = featureEntries(plan).filter(([key]) => key.includes("thickness") || key.includes("wall") || key.includes("base"));
-  renderListRows(
-    currentModelShell,
-    shellItems,
-    ([key, value]) => `<div class="check-row"><span class="checkmark">&#9672;</span><span>${prettifyKey(key)}: ${key.endsWith("_mm") ? formatMm(value) : formatTextValue(value)}</span></div>`,
-    "No shell information yet"
-  );
+function detailValueForEntry([key, value]) {
+  return key.endsWith("_mm") ? formatMm(value) : formatTextValue(value);
+}
 
-  const featureItems = featureEntries(plan).filter(([key]) => !key.includes("thickness") && !key.includes("wall") && !key.includes("base") && !key.includes("hole"));
-  renderListRows(
-    currentModelFeatures,
-    featureItems,
-    ([key, value]) => `<div class="check-row"><span class="checkmark">&#9672;</span><span>${prettifyKey(key)}: ${key.endsWith("_mm") ? formatMm(value) : formatTextValue(value)}</span></div>`,
-    "No feature details yet"
-  );
+function keyFeatureRowsForPlan(plan) {
+  if (!plan) {
+    return [];
+  }
 
-  const cutoutItems = featureEntries(plan).filter(([key]) => key.includes("hole") || key.includes("opening") || key.includes("cutout"));
-  renderListRows(
-    currentModelCutouts,
-    cutoutItems,
-    ([key, value]) => `<div class="check-row"><span class="checkmark">&#10003;</span><span>${prettifyKey(key)}: ${key.endsWith("_mm") ? formatMm(value) : formatTextValue(value)}</span></div>`,
-    "No openings or holes recorded yet"
-  );
+  const featureItems = featureEntries(plan);
+  const preferredFeatures = [];
+  const pushIfPresent = (predicate, labelOverride = null) => {
+    featureItems.forEach(([key, value]) => {
+      if (predicate(key) && !preferredFeatures.find(([label]) => label === (labelOverride || prettifyKey(key)))) {
+        preferredFeatures.push([labelOverride || prettifyKey(key), detailValueForEntry([key, value])]);
+      }
+    });
+  };
+
+  pushIfPresent((key) => key.includes("hole_count"), "Holes");
+  pushIfPresent((key) => key.includes("opening") || key.includes("cutout"), "Openings");
+  pushIfPresent((key) => key.includes("shell") || key.includes("wall") || key.includes("thickness"), "Wall");
+  pushIfPresent((key) => key.includes("flange"), "Flange");
+  pushIfPresent((key) => key.includes("angle"), "Angle");
+
+  const dimensions = Object.entries(plan.dimensions || {});
+  dimensions.forEach(([key, value]) => {
+    if ((key.includes("flange") || key.includes("angle") || key.includes("slot")) && !preferredFeatures.find(([label]) => label === prettifyKey(key))) {
+      preferredFeatures.push([prettifyKey(key), detailValueForEntry([key, value])]);
+    }
+  });
+
+  if (!preferredFeatures.length) {
+    const fallbackCount = featureItems.length;
+    if (fallbackCount > 0) {
+      preferredFeatures.push(["Feature count", `${fallbackCount} features`]);
+    }
+  }
+
+  return preferredFeatures.slice(0, 4);
+}
+
+function updateRightPanel(plan, validation = null, uiState = "idle") {
+  const hasPlan = Boolean(plan);
+  const dims = plan?.dimensions || {};
+  const lengthValue = dims.length_mm || dims.base_length_mm || dims.outer_diameter_mm || dims.large_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null;
+  const widthValue = dims.width_mm || dims.depth_mm || dims.flange_width_mm || dims.small_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null;
+  const heightValue = dims.height_mm || dims.vertical_height_mm || dims.base_height_mm || null;
+  const wallValue = wallThicknessValue(plan);
+  const featureRows = keyFeatureRowsForPlan(plan).slice(0, 6);
+
+  if (propertiesEmptyState) {
+    propertiesEmptyState.dataset.state = hasPlan ? "ready" : uiState;
+    propertiesEmptyState.hidden = hasPlan || uiState === "generating";
+    propertiesEmptyState.textContent = "Generate a model to see dimensions, features, and print guidance.";
+  }
+
+  if (propertiesDimensionsSection) {
+    propertiesDimensionsSection.hidden = !hasPlan;
+  }
+  if (propertiesWallsSection) {
+    propertiesWallsSection.hidden = !hasPlan || !wallValue;
+  }
+  if (propertiesFeaturesSection) {
+    propertiesFeaturesSection.hidden = !hasPlan || !featureRows.length;
+  }
+
+  if (!hasPlan) {
+    if (propertiesEmptyState && uiState === "generating") {
+      propertiesEmptyState.hidden = false;
+      propertiesEmptyState.textContent = "Refreshing properties while the current model is prepared.";
+    }
+    if (currentModelDimensions) {
+      currentModelDimensions.innerHTML = "";
+    }
+    if (currentModelWalls) {
+      currentModelWalls.innerHTML = "";
+    }
+    if (currentModelFeatures) {
+      currentModelFeatures.innerHTML = "";
+    }
+    return;
+  }
+
+  renderDetailRows(currentModelDimensions, [
+    ["Length", formatInstrumentMm(lengthValue, true)],
+    ["Width", formatInstrumentMm(widthValue, true)],
+    ["Height", formatInstrumentMm(heightValue, true)],
+  ]);
+
+  if (wallValue && currentModelWalls) {
+    renderDetailRows(currentModelWalls, [["Thickness", formatMm(Number(wallValue))]]);
+  }
+
+  if (currentModelFeatures) {
+    renderDetailRows(currentModelFeatures, featureRows.map(([label, value]) => [label, value || "Yes"]));
+  }
 }
 
 function updateHistoryPanel({ promptText = "", plan = null, validation = null, classification = null, resultStatus = "", message = "", previewStatus = "" }) {
@@ -563,8 +1088,9 @@ function updateHistoryPanel({ promptText = "", plan = null, validation = null, c
 
 function applyBackendSnapshot({ promptText = "", plan = null, validation = null, classification = null, resultStatus = "", message = "", previewStatus = "", previewMessage = "" }) {
   updateHistoryPanel({ promptText, plan, validation, classification, resultStatus, message, previewStatus });
-  updateRightPanel(plan);
-  updateMetricsFromPlan(plan, validation, resultStatus === "ready" ? "Generation complete" : (resultStatus || "Ready"));
+  const uiState = resultStatus === "generating" ? "generating" : (plan ? "ready" : "idle");
+  updateRightPanel(plan, validation, uiState);
+  updateMetricsFromPlan(plan, validation, resultStatus === "ready" ? "Generation complete" : (resultStatus || "Ready"), uiState);
   setReadinessStateText(validation?.summary || message || previewMessage || "Review the current model here, then open it in Blender for local editing.");
 }
 
@@ -724,7 +1250,7 @@ async function handleTerminalFailure(message, options = {}) {
 
 function setIdleSessionUI(reasonText = "Start a new generation when ready.") {
   updateRightPanel(null);
-  updateMetricsFromPlan(null, null, "Idle");
+  updateMetricsFromPlan(null, null, "Waiting", "idle");
   setReadinessStateText("Submit a dimensional prompt to start a new local generation.");
   if (!chatMessages.length && runtimeReady()) {
     seedStartupConversationIfReady();
@@ -813,7 +1339,7 @@ function applyRuntimeGate(state = {}) {
     backendStatus.textContent = ready ? "Ready" : sentenceCaseStatus(normalizedHealth.runtimeHealthStatus || "setup_required");
   }
   systemAiStatus.textContent = aiReady ? "Ready" : (normalizedHealth.ollamaInstalled ? "Setup needed" : "Not ready");
-  systemBlenderStatus.textContent = blenderReady ? "Detected" : "Not configured";
+  systemBlenderStatus.textContent = blenderReady ? "Connected" : "Not configured";
   if (ready) {
     seedStartupConversationIfReady();
   }
@@ -821,21 +1347,36 @@ function applyRuntimeGate(state = {}) {
 
 function updatePassiveShellState(state) {
   librarySummary = state.librarySummary || librarySummary;
-  lastRunStatus.textContent = sentenceCaseStatus(state.lastRunStatus || "Idle");
+  savedModels = Array.isArray(state.savedModels) ? state.savedModels : savedModels;
   scriptPath.textContent = state.generatedScriptPath || "Unavailable";
   footerVersion.textContent = `v${state.version}`;
+  renderModelsGrid();
   applyRuntimeGate(state);
 }
 
 function setActiveTab(tabName) {
+  currentAppMode = tabName;
   topnavTabs.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.tab === tabName);
   });
+  Object.entries(modeScreens).forEach(([modeName, screen]) => {
+    if (!screen) {
+      return;
+    }
+    const isActive = modeName === tabName;
+    screen.hidden = !isActive;
+    screen.classList.toggle("is-active", isActive);
+  });
+  if (tabName === "models") {
+    renderModelsGrid();
+  }
+  if (tabName === "workspace" && viewer?.initialized) {
+    viewer.resize();
+  }
   appendLog(`Tab selected: ${tabName} -> ${TAB_INTENTS[tabName] || "Unknown role"}`);
 }
 
 function setViewerOverlay(mode, title, text) {
-  viewerOverlay.classList.toggle("is-visible", mode !== "ready");
   viewerOverlay.dataset.state = mode;
   viewerOverlayTitle.textContent = title;
   viewerOverlayText.textContent = text;
@@ -924,6 +1465,10 @@ class GeomancerViewer {
     this.rootGroup = null;
     this.previewObject = null;
     this.contactShadow = null;
+    this.gizmoRenderer = null;
+    this.gizmoScene = null;
+    this.gizmoCamera = null;
+    this.gizmoCube = null;
     this.animationFrame = 0;
     this.resizeObserver = null;
     this.lastPreviewKey = "";
@@ -1051,6 +1596,8 @@ class GeomancerViewer {
     this.contactShadow.visible = false;
     this.rootGroup.add(this.contactShadow);
 
+    this.initOrientationGizmo();
+
     this.bindControls();
     this.bindOrbitPad();
     this.setInteractionMode("orbit");
@@ -1068,14 +1615,14 @@ class GeomancerViewer {
   }
 
   bindControls() {
-    viewerModeSolid.addEventListener("click", () => this.setRenderMode("solid"));
-    viewerModeWireframe.addEventListener("click", () => this.setRenderMode("wireframe"));
-    viewerToolOrbit.addEventListener("click", () => this.setInteractionMode("orbit"));
-    viewerToolPan.addEventListener("click", () => this.setInteractionMode("pan"));
-    viewerToolZoom.addEventListener("click", () => this.setInteractionMode("zoom"));
-    viewerFocusButton.addEventListener("click", () => this.focusObject());
-    viewerResetButton.addEventListener("click", () => this.resetView());
-    viewerAutoOrbitToggle.addEventListener("click", () => this.setAutoOrbit(!this.autoOrbitEnabled));
+    bindClick(viewerModeSolid, () => this.setRenderMode("solid"));
+    bindClick(viewerModeWireframe, () => this.setRenderMode("wireframe"));
+    bindClick(viewerToolOrbit, () => this.setInteractionMode("orbit"));
+    bindClick(viewerToolPan, () => this.setInteractionMode("pan"));
+    bindClick(viewerToolZoom, () => this.setInteractionMode("zoom"));
+    bindClick(viewerFocusButton, () => this.focusObject());
+    bindClick(viewerResetButton, () => this.resetView());
+    bindClick(viewerAutoOrbitToggle, () => this.setAutoOrbit(!this.autoOrbitEnabled));
   }
 
   animate() {
@@ -1088,6 +1635,97 @@ class GeomancerViewer {
     if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
     }
+    if (this.gizmoRenderer && this.gizmoScene && this.gizmoCamera) {
+      this.gizmoRenderer.render(this.gizmoScene, this.gizmoCamera);
+    }
+  }
+
+  initOrientationGizmo() {
+    if (!viewerAxisScene || !THREE) {
+      return;
+    }
+
+    this.gizmoScene = new THREE.Scene();
+    this.gizmoCamera = new THREE.PerspectiveCamera(24, 1, 0.1, 10);
+    this.gizmoCamera.position.set(2.1, 1.82, 2.45);
+    this.gizmoCamera.lookAt(0, 0, 0);
+
+    this.gizmoRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    this.gizmoRenderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.gizmoRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.gizmoRenderer.setClearColor(0x000000, 0);
+    this.gizmoRenderer.domElement.className = "viewer-axis-canvas";
+    viewerAxisScene.replaceChildren(this.gizmoRenderer.domElement);
+
+    this.gizmoScene.add(new THREE.AmbientLight(0xf4fbfb, 1.95));
+
+    const gizmoKeyLight = new THREE.DirectionalLight(0xffffff, 1.6);
+    gizmoKeyLight.position.set(2.65, 3.4, 3.1);
+    this.gizmoScene.add(gizmoKeyLight);
+
+    const gizmoFillLight = new THREE.DirectionalLight(0xe0f5f4, 0.82);
+    gizmoFillLight.position.set(-2.25, 1.95, -1.8);
+    this.gizmoScene.add(gizmoFillLight);
+
+    const gizmoRimLight = new THREE.PointLight(0x93e1de, 0.5, 8, 2);
+    gizmoRimLight.position.set(0, 1.8, 2.2);
+    this.gizmoScene.add(gizmoRimLight);
+
+    const faceMaterials = [
+      new THREE.MeshStandardMaterial({
+        color: 0xd7eceb,
+        emissive: 0x0f2d2f,
+        emissiveIntensity: 0.035,
+        roughness: 0.42,
+        metalness: 0.08,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0xd7eceb,
+        emissive: 0x0f2d2f,
+        emissiveIntensity: 0.035,
+        roughness: 0.42,
+        metalness: 0.08,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0xe3f1f1,
+        emissive: 0x123234,
+        emissiveIntensity: 0.028,
+        roughness: 0.38,
+        metalness: 0.07,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0xe3f1f1,
+        emissive: 0x123234,
+        emissiveIntensity: 0.028,
+        roughness: 0.38,
+        metalness: 0.07,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0x9fe1dd,
+        emissive: 0x5ebdbc,
+        emissiveIntensity: 0.13,
+        roughness: 0.3,
+        metalness: 0.12,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0xcfdcde,
+        emissive: 0x112628,
+        emissiveIntensity: 0.022,
+        roughness: 0.46,
+        metalness: 0.06,
+      }),
+    ];
+
+    this.gizmoCube = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), faceMaterials);
+    this.gizmoScene.add(this.gizmoCube);
+
+    const cubeEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(1.015, 1.015, 1.015)),
+      new THREE.LineBasicMaterial({ color: 0x86ccc8, transparent: true, opacity: 0.82 })
+    );
+    this.gizmoCube.add(cubeEdges);
+
+    this.resizeOrientationGizmo();
   }
 
   bindOrbitPad() {
@@ -1151,28 +1789,16 @@ class GeomancerViewer {
   }
 
   updateAxisIndicator() {
-    if (!viewerAxisScene || !this.camera || !THREE) {
+    if (!this.gizmoCube || !this.camera || !this.gizmoCamera || !THREE) {
       return;
     }
-    const quaternion = this.camera.quaternion.clone().invert();
-    const directions = [
-      { selector: ".axis-x", vector: new THREE.Vector3(1, 0, 0) },
-      { selector: ".axis-y", vector: new THREE.Vector3(0, 1, 0) },
-      { selector: ".axis-z", vector: new THREE.Vector3(0, 0, 1) },
-    ];
-    directions.forEach(({ selector, vector }) => {
-      const axis = viewerAxisScene.querySelector(selector);
-      if (!axis) {
-        return;
-      }
-      const projected = vector.clone().applyQuaternion(quaternion);
-      const angle = Math.atan2(projected.y, projected.x);
-      const depthWeight = (projected.z + 1) / 2;
-      const length = 24 + depthWeight * 14;
-      axis.style.transform = `rotate(${angle}rad) scaleX(${length / 34})`;
-      axis.style.opacity = `${0.52 + depthWeight * 0.42}`;
-      axis.style.zIndex = `${Math.round(depthWeight * 10)}`;
-    });
+    // Match the main viewer's effective basis inside the gizmo's own camera space.
+    // Using only inverse(mainCamera) ignores the fact that the gizmo itself is rendered
+    // through a separate, already-rotated camera, which produces a visible basis mismatch.
+    this.gizmoCube.quaternion
+      .copy(this.gizmoCamera.quaternion)
+      .multiply(this.camera.quaternion.clone().invert())
+      .normalize();
   }
 
   resize() {
@@ -1186,6 +1812,18 @@ class GeomancerViewer {
     this.camera.aspect = clientWidth / clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(clientWidth, clientHeight, false);
+    this.resizeOrientationGizmo();
+  }
+
+  resizeOrientationGizmo() {
+    if (!this.gizmoRenderer || !this.gizmoCamera || !viewerAxisScene) {
+      return;
+    }
+    const baseSize = Math.min(viewerAxisScene.clientWidth || 102, viewerAxisScene.clientHeight || 102);
+    const size = Math.max(62, Math.round(baseSize * 0.76));
+    this.gizmoCamera.aspect = 1;
+    this.gizmoCamera.updateProjectionMatrix();
+    this.gizmoRenderer.setSize(size, size, false);
   }
 
   setInteractionMode(mode) {
@@ -1214,8 +1852,12 @@ class GeomancerViewer {
     if (this.controls) {
       this.controls.autoRotate = this.autoOrbitEnabled;
     }
-    viewerAutoOrbitToggle.textContent = this.autoOrbitEnabled ? "Pause" : "Play";
+    const icon = this.autoOrbitEnabled ? "⏸" : "▶";
+    const label = this.autoOrbitEnabled ? "Pause auto-orbit" : "Start auto-orbit";
+    viewerAutoOrbitToggle.textContent = icon;
     viewerAutoOrbitToggle.setAttribute("aria-pressed", this.autoOrbitEnabled ? "true" : "false");
+    viewerAutoOrbitToggle.setAttribute("aria-label", label);
+    viewerAutoOrbitToggle.setAttribute("title", label);
   }
 
   setRenderMode(mode) {
@@ -2304,7 +2946,7 @@ class GeomancerViewer {
       return;
     }
 
-    setViewerOverlay("loading", "Building preview", "Setting the current model in place.");
+    setViewerOverlay("loading", "Generating model", "Setting the current model in place.");
     this.clearPreview();
 
     let loadedObject = null;
@@ -2324,7 +2966,7 @@ class GeomancerViewer {
     this.setRenderMode(this.renderMode);
     this.fitCameraToObject(this.previewObject, previewKind, placement);
     this.lastPreviewKey = previewKey;
-    setViewerOverlay("ready", "", "");
+    setViewerOverlay("ready", "Preview ready", "Review available.");
   }
 
   setError(message) {
@@ -2485,7 +3127,7 @@ function connectBridge() {
   });
 }
 
-setupDetectButton.addEventListener("click", async () => {
+bindClick(setupDetectButton, async () => {
   if (!bridge) {
     appendLog("Desktop bridge is not ready.");
     return;
@@ -2502,7 +3144,7 @@ setupDetectButton.addEventListener("click", async () => {
   }
 });
 
-setupPullButton.addEventListener("click", async () => {
+bindClick(setupPullButton, async () => {
   if (!bridge) {
     appendLog("Desktop bridge is not ready.");
     return;
@@ -2526,7 +3168,7 @@ setupPullButton.addEventListener("click", async () => {
   }
 });
 
-setupSmokeButton.addEventListener("click", async () => {
+bindClick(setupSmokeButton, async () => {
   if (!bridge) {
     appendLog("Desktop bridge is not ready.");
     return;
@@ -2549,7 +3191,7 @@ setupSmokeButton.addEventListener("click", async () => {
   }
 });
 
-setupRefreshButton.addEventListener("click", async () => {
+bindClick(setupRefreshButton, async () => {
   if (!bridge) {
     appendLog("Desktop bridge is not ready.");
     return;
@@ -2567,7 +3209,7 @@ setupRefreshButton.addEventListener("click", async () => {
   }
 });
 
-generateButton.addEventListener("click", () => {
+bindClick(generateButton, () => {
   appendLog("[UI] generationStarted path entered");
   const promptText = promptInput.value.trim();
   if (!bridge) {
@@ -2624,8 +3266,8 @@ generateButton.addEventListener("click", () => {
   });
   setGenerationStatusText("Generating...");
   setReadinessStateText("Generating the current model for review.");
-  updateRightPanel(null);
-  updateMetricsFromPlan(null, null, "Generating...");
+  updateRightPanel(null, null, "generating");
+  updateMetricsFromPlan(null, null, animatedStateLabel("Generating"), "generating");
   viewer.setLoading("Preparing the current model preview.");
   appendLog("Debug: bridge generateModel call start.");
   appendLog(`[UI] typeof bridge.generateModel = ${typeof bridge.generateModel}`);
@@ -2654,7 +3296,7 @@ generateButton.addEventListener("click", () => {
   }
 });
 
-openBlenderButton.addEventListener("click", async () => {
+bindClick(openBlenderButton, async () => {
   if (!bridge) {
     appendLog("Desktop bridge is not ready.");
     return;
@@ -2667,13 +3309,48 @@ openBlenderButton.addEventListener("click", async () => {
   }
 });
 
-promptInput.addEventListener("keydown", (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-    generateButton.click();
+bindClick(modelsGoWorkspace, () => setActiveTab("workspace"));
+bindClick(modelsEmptyCta, () => setActiveTab("workspace"));
+
+bindClick(modelsSelectionOpen, async () => {
+  if (!bridge || !modelsSelectionOpen?.dataset.modelId) {
+    appendLog("Desktop bridge is not ready.");
+    return;
+  }
+  try {
+    const result = await resolveBridgeJson(bridge.openSavedModelInBlender(modelsSelectionOpen.dataset.modelId), "openSavedModelInBlender");
+    appendLog(result.message || "Saved model opened in Blender.");
+  } catch (error) {
+    appendLog(`Failed to open saved model in Blender: ${error}`);
   }
 });
 
-toolbeltImproveButton.addEventListener("click", () => {
+bindClick(modelsSelectionDelete, async () => {
+  if (!bridge || !modelsSelectionDelete?.dataset.modelId) {
+    appendLog("Desktop bridge is not ready.");
+    return;
+  }
+  const model = currentSelectedSavedModel();
+  if (!window.confirm(`Delete ${model?.name || "this saved model"} from the local library?`)) {
+    return;
+  }
+  try {
+    const result = await resolveBridgeJson(bridge.deleteSavedModel(modelsSelectionDelete.dataset.modelId), "deleteSavedModel");
+    appendLog(result.message || "Saved model deleted.");
+  } catch (error) {
+    appendLog(`Failed to delete saved model: ${error}`);
+  }
+});
+
+if (promptInput) {
+  promptInput.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      generateButton.click();
+    }
+  });
+}
+
+bindClick(toolbeltImproveButton, () => {
   const currentPrompt = promptInput.value.trim();
   currentPromptSuggestion = buildPromptSuggestion(currentPrompt);
   promptImproverOriginal.textContent = currentPrompt || "No prompt entered yet.";
@@ -2682,17 +3359,17 @@ toolbeltImproveButton.addEventListener("click", () => {
   setPromptImproverOpen(true);
 });
 
-toolbeltSettingsButton.addEventListener("click", (event) => {
+bindClick(toolbeltSettingsButton, (event) => {
   event.stopPropagation();
   setComposerQuickMenuOpen(composerQuickMenu.hidden);
 });
 
-quickClearConversationButton.addEventListener("click", () => {
+bindClick(quickClearConversationButton, () => {
   setComposerQuickMenuOpen(false);
   startNewChat();
 });
 
-quickToggleAutoscrollButton.addEventListener("click", () => {
+bindClick(quickToggleAutoscrollButton, () => {
   autoScrollEnabled = !autoScrollEnabled;
   updateConversationMenuLabels();
   if (autoScrollEnabled) {
@@ -2700,34 +3377,106 @@ quickToggleAutoscrollButton.addEventListener("click", () => {
   }
 });
 
-quickToggleTimestampsButton.addEventListener("click", () => {
+bindClick(quickToggleTimestampsButton, () => {
   timestampsEnabled = !timestampsEnabled;
   updateConversationMenuLabels();
   renderConversationThread();
 });
 
-usePromptSuggestionButton.addEventListener("click", () => {
+bindClick(usePromptSuggestionButton, () => {
   promptInput.value = currentPromptSuggestion || buildPromptSuggestion(promptInput.value.trim());
   setPromptImproverOpen(false);
   promptInput.focus();
 });
 
-keepOriginalPromptButton.addEventListener("click", () => {
+bindClick(keepOriginalPromptButton, () => {
   setPromptImproverOpen(false);
   promptInput.focus();
 });
 
-closePromptImproverButton.addEventListener("click", () => setPromptImproverOpen(false));
-promptImproverBackdrop.addEventListener("click", () => setPromptImproverOpen(false));
+bindClick(closePromptImproverButton, () => setPromptImproverOpen(false));
+bindClick(promptImproverBackdrop, () => setPromptImproverOpen(false));
 
-conversationThread.addEventListener("click", (event) => {
-  const exampleButton = event.target.closest("[data-example-prompt]");
-  if (!exampleButton) {
-    return;
-  }
-  promptInput.value = exampleButton.dataset.examplePrompt || "";
+if (conversationThread) {
+  conversationThread.addEventListener("click", (event) => {
+    const exampleButton = event.target.closest("[data-example-prompt]");
+    if (!exampleButton) {
+      return;
+    }
+    promptInput.value = exampleButton.dataset.examplePrompt || "";
     promptInput.focus();
-});
+  });
+}
+
+if (modelsSearchInput) {
+  modelsSearchInput.addEventListener("input", (event) => {
+    modelsSearchQuery = event.target.value || "";
+    renderModelsGrid();
+  });
+}
+
+if (modelsSortSelect) {
+  modelsSortSelect.addEventListener("change", (event) => {
+    modelsSortMode = event.target.value || "newest";
+    renderModelsGrid();
+  });
+}
+
+if (modelsFamilyFilters) {
+  modelsFamilyFilters.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-family-filter]");
+    if (!button) {
+      return;
+    }
+    activeModelFamilyFilter = button.dataset.familyFilter || "all";
+    renderModelsGrid();
+  });
+}
+
+if (modelsGrid) {
+  modelsGrid.addEventListener("click", async (event) => {
+    const selectButton = event.target.closest("[data-model-select]");
+    if (selectButton) {
+      selectedSavedModelId = selectButton.dataset.modelSelect || "";
+      renderModelsGrid();
+      return;
+    }
+
+    const deleteButton = event.target.closest("[data-model-delete]");
+    if (!deleteButton) {
+      return;
+    }
+
+    if (!bridge) {
+      appendLog("Desktop bridge is not ready.");
+      return;
+    }
+
+    const modelId = deleteButton.dataset.modelDelete || "";
+    const model = getNormalizedSavedModels().find((entry) => entry.id === modelId);
+    if (!window.confirm(`Delete ${model?.name || "this saved model"} from the local library?`)) {
+      return;
+    }
+
+    try {
+      const result = await resolveBridgeJson(bridge.deleteSavedModel(modelId), "deleteSavedModel");
+      appendLog(result.message || "Saved model deleted.");
+    } catch (error) {
+      appendLog(`Failed to delete saved model: ${error}`);
+    }
+  });
+}
+
+if (modelsSidebarList) {
+  modelsSidebarList.addEventListener("click", (event) => {
+    const selectButton = event.target.closest("[data-model-select]");
+    if (!selectButton) {
+      return;
+    }
+    selectedSavedModelId = selectButton.dataset.modelSelect || "";
+    renderModelsGrid();
+  });
+}
 
 function startNewChat() {
   if (generationInFlight) {
@@ -2741,16 +3490,16 @@ function startNewChat() {
   });
 }
 
-newConversationButton.addEventListener("click", startNewChat);
+bindClick(newConversationButton, startNewChat);
 topnavTabs.forEach((button) => {
   button.addEventListener("click", () => {
-    setActiveTab(button.dataset.tab || "chat");
+    setActiveTab(button.dataset.tab || "workspace");
   });
 });
 
-showLogsButton.addEventListener("click", () => setLogsModalOpen(true));
-closeLogsButton.addEventListener("click", () => setLogsModalOpen(false));
-logsBackdrop.addEventListener("click", () => setLogsModalOpen(false));
+bindClick(showLogsButton, () => setLogsModalOpen(true));
+bindClick(closeLogsButton, () => setLogsModalOpen(false));
+bindClick(logsBackdrop, () => setLogsModalOpen(false));
 
 document.addEventListener("click", (event) => {
   if (!composerQuickMenu.hidden && !event.target.closest(".composer-toolbelt-group-right")) {
@@ -2767,7 +3516,8 @@ async function bootstrap() {
   setPromptImproverOpen(false);
   setComposerQuickMenuOpen(false);
   updateConversationMenuLabels();
-  setActiveTab("chat");
+  renderModelsGrid();
+  setActiveTab("workspace");
   connectBridge();
 }
 

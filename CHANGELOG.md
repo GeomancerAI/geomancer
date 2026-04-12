@@ -66,6 +66,580 @@ Every future backend-focused Codex pass should record, either in the changelog o
 
 ## Entries
 
+## 2026-04-11 - 0.7.47-alpha - models-empty-state-and-sidebar-sync-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Fixed the Models empty-state bug by making the empty panel and the populated grid explicitly mutually exclusive based on real saved-model count.
+- Added a compact sidebar list browser beneath the existing Models sidebar controls so the otherwise unused vertical space now supports fast scanning and selection.
+- Kept selection unified between sidebar and grid by driving both from the same filtered model set and shared selected-model id.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The sidebar browser is intentionally compact and text-light; the main grid remains the primary visual browsing surface.
+- This pass does not add new model actions or change Projects/Templates placeholders.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` first for the explicit empty-state visibility logic and shared selection handling, then `desktop/ui/index.html` and `desktop/ui/styles.css` for the sidebar browser structure and styling.
+
+## 2026-04-11 - 0.7.46-alpha - models-cleanup-and-hierarchy-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+
+### Summary
+- Removed the remaining Models-only management framing by collapsing the old selection toolbar structure into the main library header and keeping actions compact and contextual.
+- Tightened the library grid hierarchy so tiles read more like browseable files: larger preview anchors, quieter metadata, clamped names, wider gutters, and a stronger but still restrained selected state.
+- Kept the sidebar, real model data, and existing model actions intact while making the overall Models screen read as one coherent visual library view.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Models still use branded placeholder preview tiles when no dedicated thumbnail asset exists.
+- This pass does not add new model actions or change Projects/Templates placeholders.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html` and `desktop/ui/styles.css` together; the cleanup is intentionally local to Models-mode structure and tile hierarchy.
+
+## 2026-04-11 - 0.7.45-alpha - models-library-browser-refinement-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Reworked Models from a management-first screen into a content-first visual library by removing the dominant selected-model strip and promoting the saved-model tile grid to the main focus.
+- Moved real model actions into a lighter contextual toolbar above the grid, where `Open in Blender` and `Delete model` now act on the current selection without dominating the screen.
+- Refined model tiles into cleaner browser-style cards with stronger preview-area emphasis, quieter metadata, and a more natural single-click selection feel.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Models still use a branded placeholder preview tile when no persisted thumbnail exists because the library does not yet store thumbnail assets.
+- Projects and Templates remain placeholders; this pass only refines Models presentation.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the refinement depends on the lighter toolbar, revised tile markup, and selection/action behavior staying aligned.
+
+## 2026-04-11 - 0.7.44-alpha - workspace-models-mode-expansion-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `app/model_library.py`
+- `desktop/backend_controller.py`
+- `desktop/bridge.py`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Added a shell-level mode system so the persistent top navigation now switches between the existing Workspace and a new in-app Models view without leaving the desktop shell.
+- Implemented a real Models mode backed by persisted saved-model entries, with search, sorting, family filters, selection, empty-state handling, deletion, and Blender-open support for selected saved entries.
+- Kept Workspace mounted and behavior-stable while adding only light placeholder screens for Projects and Templates to establish the multi-mode pattern for later passes.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Models currently use tasteful placeholder tiles rather than generated thumbnails because the existing desktop library does not yet persist thumbnail assets.
+- Projects and Templates remain placeholders in this pass; only Workspace and Models are real modes.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together for mode switching, then `app/model_library.py`, `desktop/backend_controller.py`, and `desktop/bridge.py` for the minimal saved-model data path additions.
+
+## 2026-04-11 - 0.7.43-alpha - bottom-printability-and-footer-spacing-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Removed the one-off stacked treatment from the bottom `Printability` status row so all three rows now follow the same left-label/right-value layout.
+- Shortened only the bottom printability wording where needed for fit, mapping `Review recommended` to `Needs review` and `Likely manageable` to `Manageable`.
+- Opened the footer left cluster slightly by increasing chip-to-summary spacing and softening the summary text footprint so the status chip and sentence no longer read as visually glued together.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass is intentionally tiny and does not change loading behavior, summary content structure, or any other workspace surface.
+- Wording compaction is scoped to the bottom printability group only.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/app.js`, and `desktop/ui/styles.css` together; the cleanup depends on the status row no longer using the stacked class and the shorter labels landing in the same normalized row layout.
+
+## 2026-04-11 - 0.7.42-alpha - workspace-fit-and-loading-polish-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Tightened the lower three-group summary band with cleaner internal alignment, more resilient label/value layout, and calmer spacing so longer values no longer crowd adjacent content.
+- Refined the viewer footer/meta row with a clearer split between primary status and runtime/version metadata, fixed-width runtime/version footprints, and more deliberate spacing.
+- Added restrained real generation-state polish driven only by the existing in-flight generation flag, including stable animated labels, a body-level generating state, and subtle in-place loading treatment across the viewer status, properties empty state, summary band, and footer.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass is presentation-only; it does not introduce richer backend progress phases or any new interactivity.
+- Loading treatment remains intentionally lightweight and tied to the existing desktop generation lifecycle rather than granular backend progress events.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` first and `desktop/ui/app.js` second; the pass is intentionally localized to layout stability and real generation-state presentation.
+
+## 2026-04-11 - 0.7.41-alpha - orientation-cube-basis-correction-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+
+### Summary
+- Fixed the orientation cube basis mapping so it now reflects the main viewer orientation inside the gizmo's own camera space instead of using only inverse(main camera) and ignoring the gizmo camera basis.
+- Removed the trust-breaking mismatch where the cube could appear out of alignment with the staged model and stage orientation even though the main viewer camera itself was correct.
+- Kept viewer interaction, generation flow, and the rest of the workspace unchanged.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass fixes orientation correctness only; it does not redesign the gizmo visuals or add new gizmo interactivity.
+- The cube remains a passive orientation aid rendered through its own overlay scene.
+
+### Rollback / Review Notes
+- Review `desktop/ui/app.js` first; the fix is isolated to the cube quaternion mapping in `updateAxisIndicator()`.
+
+## 2026-04-11 - 0.7.40-alpha - right-rail-actions-separation-and-hierarchy-polish
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/styles.css`
+
+### Summary
+- Restored the right-rail `Actions` area as its own soft visual container so next-step controls read separately from the read-only `Properties` content.
+- Tightened right-rail hierarchy with smaller section labels, denser property rows, slightly reduced padding, and cleaner value alignment.
+- Lightly refined lower-band hierarchy by giving `Printability` slightly stronger emphasis and keeping `Mesh` more muted without changing the existing grouped content structure.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass is styling-only; it does not change any data bindings, interaction flow, or action availability.
+- The properties rail remains read-only except for the existing working action button.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` first; the pass is intentionally CSS-first so behavior stays unchanged.
+
+## 2026-04-10 - 0.7.39-alpha - truthful-properties-and-bottom-band-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Reworked the right rail into a truthful read-only `Properties` panel that only shows real generated dimensions, wall thickness, and feature rows when that information exists.
+- Replaced the lower four-part operational strip with three more user-facing groups for `Model info`, `Printability`, and `Mesh`, removing internal-only fields such as recipe and confidence from the primary summary surface.
+- Moved runtime emphasis into the footer by relocating AI/Blender status and logs access there while preserving the existing working actions and generation flow.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The properties panel remains read-only in this pass; no editing affordances were introduced because those controls are not yet real.
+- Mesh/export guidance is still alpha-level and derived from current preview and Blender readiness signals rather than a full export pipeline model.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the properties layout, conditional rendering, and lower-band data landing are designed to ship as one coherent UI pass.
+
+## 2026-04-10 - 0.7.38-alpha - safe-ui-styling-polish-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/styles.css`
+
+### Summary
+- Softened the lower four-part rail so it feels like a lighter integrated workspace band instead of a heavy dashboard strip.
+- Tightened the right rail with smaller type, reduced padding, softer dividers, and stronger overflow protection while keeping the same `Model`, `Key features`, `Printability`, and `Actions` structure.
+- Fixed footer status jitter by giving the animated generation chip a true fixed footprint so dot animation no longer shifts adjacent text.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- This pass is styling-only; it does not change data bindings, interaction design, or the right rail content model.
+- Viewer, chat, runtime setup, and generation flows remain unchanged by design.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` first; the pass is intentionally concentrated in styling so behavior can be preserved.
+
+## 2026-04-10 - 0.7.37-alpha - ui-semantics-and-hierarchy-refinement-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/app.js`
+
+### Summary
+- Refined the lower strip semantics so it behaves more clearly as a fast operational glance surface, with `Readiness`, `Dimensions`, `Model`, and `Attention` replacing muddier telemetry-like wording.
+- Tightened the right rail into a more user-facing model-understanding panel by improving the model description tone, reducing feature dump behavior, and keeping printability advisory rather than overconfident.
+- Lightened the actions section language so it feels more intentional and less weighed down by passive future-state phrasing.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Model descriptions and feature prioritization are still driven by lightweight heuristics over the current normalized plan rather than a richer authored summary object.
+- The lower strip still surfaces some technical readiness signals because the desktop shell remains a local-first alpha product.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html` and `desktop/ui/app.js` together; the stronger responsibility split depends on the lower-strip labels, right-rail wording, and shared printability/review summaries moving in the same direction.
+
+## 2026-04-09 - 0.7.36-alpha - ui-state-language-and-animation-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced repeated placeholder wording such as `Pending` with clearer idle-state language like `Waiting` and `—` across the lower telemetry strip and right rail.
+- Added a lightweight animated ellipsis loop during generation so generation, analysis, normalization, feature extraction, and printability evaluation states feel active without adding heavy loaders.
+- Refined idle and generating copy in the right rail so the model, key-features, and printability sections read more intentionally before and during generation.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The animation is intentionally text-only and subtle; it does not attempt richer progress estimation or phase tracking from the backend.
+- Some backend-driven phrases such as family detection chat updates remain factual/log-like rather than fully product-polished copy.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the updated wording and animated ellipsis behavior depend on the fallback HTML copy, multiline description styling, and generation-state animation loop working together.
+
+## 2026-04-09 - 0.7.35-alpha - right-rail-printability-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/app.js`
+
+### Summary
+- Added a new `Printability` section to the right rail between `Key features` and `Actions`.
+- Derived lightweight advisory printability rows from current normalized plan and validation signals, including `Status`, `Base contact`, `Overhang risk`, `Thin features`, and `Note`.
+- Kept the wording intentionally advisory, using phrases like `Likely printable`, `Review recommended`, and `Needs support review` instead of absolute fabrication claims.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Printability guidance is still a heuristic alpha estimate, not a slicer, structural analysis, or manufacturing validator.
+- The section depends on currently available plan keys and validation warnings, so richer fabrication guidance will improve as model metadata grows.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html` and `desktop/ui/app.js` together; the new right-rail printability section depends on the inserted section markup and the heuristic row generation landing together.
+
+## 2026-04-09 - 0.7.34-alpha - right-rail-deduplication-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Removed duplicated telemetry fields from the right rail so family, recipe, state, confidence, and repeated dimensions remain exclusive to the lower system strip.
+- Replaced the old model-overview rows with a short human-readable model description derived from the current normalized plan.
+- Merged the upper inspection content into a single `Key features` section that only shows meaningful non-duplicated model attributes.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The descriptive summary remains heuristic and depends on whichever normalized feature keys are currently available in the plan.
+- The right rail still does not offer editing controls; it remains a read-only understanding and inspection surface.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the deduplicated right-rail behavior depends on the new summary markup, compact feature row styling, and description/key-feature mapping working as one pass.
+
+## 2026-04-09 - 0.7.34-alpha - right-rail-model-details-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Reworked the right rail from a dimensions-first facts panel into a model-details panel led by model overview, conditional details, and openings/holes.
+- Replaced the repeated top dimensions section with overview fields for family, recipe, state, and confidence so the rail answers what Geomancer made before listing deeper inspection data.
+- Reduced weak placeholder noise by only surfacing family-specific detail rows when they are meaningful and leaving the lower actions area intact.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Detail rows still depend on currently available normalized plan keys, so richer family-specific inspection data will improve as backend plan structure grows.
+- The right rail remains read-only in this pass; it is a clearer inspection surface, not yet an editable model-properties panel.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the improved right-rail content model depends on the markup, compact row styling, and plan-to-panel mapping changing as one pass.
+
+## 2026-04-09 - 0.7.33-alpha - orientation-cube-framing-and-teal-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Prevented lower-right orientation cube clipping by widening the gizmo slot slightly, increasing the render size, and pulling the mini-scene camera back with a slightly wider field of view.
+- Shifted the cube's materials toward Geomancer teal with a softer cyan top face, lightly teal-influenced neutral side faces, and brighter teal edge lines.
+- Added a restrained halo treatment through a slightly richer CSS glow plus a subtle teal rim light inside the gizmo scene.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The orientation cube remains a passive viewer aid and still does not expose click-to-snap view controls.
+- Glow treatment stays intentionally subtle, so the premium halo is still dependent on the live renderer rather than strong post-processing.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` and `desktop/ui/app.js` together; the clipping fix depends on the CSS slot sizing, mini-scene camera framing, and material/light tuning changing as one pass.
+
+## 2026-04-09 - 0.7.32-alpha - real-3d-orientation-cube-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Removed the flat DOM-style orientation cube implementation and replaced it with a real miniature Three.js scene rendered in the lower-right viewer corner.
+- Built the new gizmo as an actual shaded cube mesh with crisp edge lines, premium neutral materials, and a restrained teal-accented top face so it reads as a true 3D object instead of a rotating sticker.
+- Kept the background tile removed and synchronized the gizmo cube directly from the main viewer camera quaternion so the orientation aid reflects the active view correctly.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The real 3D cube remains passive in this pass and still does not support interactive click-to-snap view changes.
+- The mini-scene uses lightweight shading and edge lines rather than labeled faces to keep the gizmo compact.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the old DOM cube was intentionally removed and replaced with a separate renderer, scene, camera, and cube mesh.
+
+## 2026-04-09 - 0.7.31-alpha - orientation-cube-depth-restoration-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/styles.css`
+
+### Summary
+- Restored the lower-right orientation cube's dimensional read by increasing its size slightly, deepening the face offsets, and strengthening top/side face separation.
+- Kept the cube freestanding with no visible background tile while using only a subtle ambient glow and shadow to support the 3D read.
+- Increased edge and face contrast so the top, front, and side planes remain legible at the cube's small viewer-corner size.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The cube remains a passive orientation aid and still does not expose click-to-snap camera controls.
+- Labeling is still intentionally minimal, so the 3D read depends mostly on face contrast and camera-linked rotation.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` alongside the existing cube markup and rotation behavior in `desktop/ui/index.html` and `desktop/ui/app.js`; this pass is a styling-only refinement of the freestanding cube.
+
+## 2026-04-09 - 0.7.30-alpha - geomancer-orientation-cube-refinement-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/styles.css`
+
+### Summary
+- Removed the visible square plate behind the lower-right orientation cube so the gizmo stands on its own instead of reading like a floating dice button.
+- Restyled the cube with sharper edges, tighter radii, subtler neutral faces, and restrained teal emphasis on the front and top faces so it better matches Geomancer's geometric brand language.
+- Kept the same placement, compact footprint, and camera-linked rotation while making the orientation aid feel more precise and less playful.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The cube remains display-only and still does not provide click-to-snap camera interactions.
+- Face labels are still present, just lighter and more restrained than the previous pass.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` together with the existing cube markup and rotation logic in `desktop/ui/index.html` and `desktop/ui/app.js`; this pass is intentionally a styling-only refinement of the new orientation cube.
+
+## 2026-04-09 - 0.7.29-alpha - orientation-cube-gizmo-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the lower-right line-based XYZ widget with a compact orientation cube that better matches Geomancer's geometric brand language.
+- Rebuilt the gizmo styling around a softer frosted corner pad, translucent cube faces, restrained teal accents, and calmer shading instead of primary RGB axis bars.
+- Kept the orientation aid linked to camera movement by rotating the cube from the active camera quaternion each frame.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The orientation cube is display-only in this pass; it does not yet support click-to-snap view interactions.
+- Face labels are intentionally minimal and remain small to keep the cube unobtrusive.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the lower-right gizmo replacement depends on the markup, cube styling, and camera-linked transform logic changing as one pass.
+
+## 2026-04-09 - 0.7.28-alpha - viewer-overlay-premium-polish-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Kept the top-left viewer status card permanently visible and updated the ready state so it continues to provide guidance instead of disappearing after preview load.
+- Replaced the lower-left Play / Pause text control with a compact icon-based auto-orbit toggle while preserving paused-by-default behavior and manual-interaction suppression.
+- Refined the orbit puck, left-side viewer controls, and corner XYZ gizmo with calmer frosted materials, tighter shadows, and cleaner overlay styling.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- The auto-orbit toggle still uses simple glyph icons rather than custom product artwork.
+- Overlay polish in this pass is visual and behavioral only; it does not change viewer generation, framing, or geometry logic.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the persistent status surface, icon toggle behavior, and overlay material polish are one coordinated viewer pass.
+
 ## 2026-04-08 - 0.7.27-alpha - viewer-control-overlay-and-teal-polish-pass
 
 ### Files Changed

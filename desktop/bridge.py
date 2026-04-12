@@ -128,6 +128,7 @@ class GeomancerBridge(QObject):
                 "lastClassification": status.get("last_classification", {}),
                 "lastSavedModelEntry": status.get("last_saved_model_entry", {}),
                 "librarySummary": status.get("library_summary", {}),
+                "savedModels": status.get("saved_models", []),
                 "lastRunStatus": status.get("last_run_status", "idle"),
                 "viewerStatus": status.get("preview_export_status", "") or "idle",
                 "setupCompleted": status.get("setup_completed", False),
@@ -174,6 +175,7 @@ class GeomancerBridge(QObject):
                 "lastClassification": {},
                 "lastSavedModelEntry": {},
                 "librarySummary": {"saved_model_count": 0, "recent_saved_models": [], "project_count": 0, "template_count": 0, "templates": []},
+                "savedModels": [],
                 "lastRunStatus": "error",
                 "viewerStatus": "error",
                 "setupCompleted": False,
@@ -280,6 +282,20 @@ class GeomancerBridge(QObject):
         success, message = self._controller.open_in_blender(interactive=True)
         self.refreshState()
         return json.dumps({"success": success, "message": message})
+
+    @Slot(str, result=str)
+    def openSavedModelInBlender(self, model_id: str) -> str:
+        """Launch Blender for a selected saved model entry."""
+        result = self._controller.open_saved_model_in_blender(model_id.strip())
+        self.refreshState()
+        return self._safe_json_dumps(result)
+
+    @Slot(str, result=str)
+    def deleteSavedModel(self, model_id: str) -> str:
+        """Delete a saved model entry from the local library."""
+        result = self._controller.delete_saved_model(model_id.strip())
+        self.refreshState()
+        return self._safe_json_dumps(result)
 
     def _on_generation_future_done(self, future: Future) -> None:
         try:

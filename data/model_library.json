@@ -1,6 +1,798 @@
 {
   "saved_models": [
     {
+      "id": "model-20260411184244-b84132",
+      "generation_id": "gen-20260411184229-e90be972",
+      "created_at": "2026-04-11T18:42:44",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260411184229-e90be972.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260410195818-e111e6",
+      "generation_id": "gen-20260410195812-dc052a23",
+      "created_at": "2026-04-10T19:58:18",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260410195812-dc052a23.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260410195604-4ace7e",
+      "generation_id": "gen-20260410195556-4d07f6a2",
+      "created_at": "2026-04-10T19:56:04",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260410195556-4d07f6a2.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260410193825-5919a6",
+      "generation_id": "gen-20260410193819-31b7ee68",
+      "created_at": "2026-04-10T19:38:25",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260410193819-31b7ee68.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260410192637-2806a7",
+      "generation_id": "gen-20260410192630-f0dfd0d5",
+      "created_at": "2026-04-10T19:26:37",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260410192630-f0dfd0d5.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260410190053-775c90",
+      "generation_id": "gen-20260410190040-1e70fe87",
+      "created_at": "2026-04-10T19:00:53",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260410190040-1e70fe87.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409215641-4e9fb9",
+      "generation_id": "gen-20260409215635-da29068a",
+      "created_at": "2026-04-09T21:56:41",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409215635-da29068a.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409213952-0d8673",
+      "generation_id": "gen-20260409213946-e4d2af75",
+      "created_at": "2026-04-09T21:39:52",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409213946-e4d2af75.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409213410-33a5d8",
+      "generation_id": "gen-20260409213403-7c30f0b1",
+      "created_at": "2026-04-09T21:34:10",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409213403-7c30f0b1.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409211450-1c3ef0",
+      "generation_id": "gen-20260409211442-7d88a473",
+      "created_at": "2026-04-09T21:14:50",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409211442-7d88a473.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409210047-6f8466",
+      "generation_id": "gen-20260409210041-c83d6255",
+      "created_at": "2026-04-09T21:00:47",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409210041-c83d6255.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409205953-69b856",
+      "generation_id": "gen-20260409205945-133dc3a3",
+      "created_at": "2026-04-09T20:59:53",
+      "prompt": "Planter with 3 mm walls",
+      "family": "planter_vessel",
+      "family_label": "planter / vessel",
+      "plan": {
+        "family": "planter_vessel",
+        "family_label": "planter / vessel",
+        "recipe": "vessel",
+        "request_text": "Planter with 3 mm walls",
+        "dimensions": {
+          "diameter_mm": 3.0,
+          "height_mm": 90.0
+        },
+        "features": {
+          "wall_thickness_mm": 3.0,
+          "drain_hole_mm": 0.0
+        },
+        "assumptions": [],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "planter",
+          "family_summary": "Round open-top vessel or planter blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic planter / vessel blockout with 2 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409205945-133dc3a3.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409204316-58dc4d",
+      "generation_id": "gen-20260409204304-57cba64c",
+      "created_at": "2026-04-09T20:43:16",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409204304-57cba64c.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409183944-6dbb07",
+      "generation_id": "gen-20260409183938-9d9e19ef",
+      "created_at": "2026-04-09T18:39:44",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409183938-9d9e19ef.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409183335-2177fd",
+      "generation_id": "gen-20260409183329-a0d699fd",
+      "created_at": "2026-04-09T18:33:35",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409183329-a0d699fd.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409183259-c40789",
+      "generation_id": "gen-20260409183253-5afb9a86",
+      "created_at": "2026-04-09T18:32:59",
+      "prompt": "Small electronics enclosure",
+      "family": "enclosure",
+      "family_label": "enclosure",
+      "plan": {
+        "family": "enclosure",
+        "family_label": "enclosure",
+        "recipe": "box_shell",
+        "request_text": "Small electronics enclosure",
+        "dimensions": {
+          "width_mm": 120.0,
+          "depth_mm": 80.0,
+          "height_mm": 60.0
+        },
+        "features": {
+          "wall_thickness_mm": 3.0,
+          "base_thickness_mm": 3.0,
+          "open_top": false,
+          "front_opening": false,
+          "opening_width_mm": 66.0,
+          "opening_height_mm": 27.0
+        },
+        "assumptions": [
+          "Used fallback rectangular dimensions because the request did not provide explicit width/depth/height cues."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "enclosure",
+          "family_summary": "Rectangular shell or case blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic enclosure blockout with 3 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409183253-5afb9a86.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409183209-58535b",
+      "generation_id": "gen-20260409183202-238842e5",
+      "created_at": "2026-04-09T18:32:09",
+      "prompt": "Desk cable clip",
+      "family": "cable_clip",
+      "family_label": "cable clip",
+      "plan": {
+        "family": "cable_clip",
+        "family_label": "cable clip",
+        "recipe": "cable_clip",
+        "request_text": "Desk cable clip",
+        "dimensions": {
+          "clip_width_mm": 28.0,
+          "opening_mm": 15.400000000000002,
+          "depth_mm": 16.0,
+          "thickness_mm": 4.0
+        },
+        "features": {
+          "cable_diameter_mm": 13.400000000000002,
+          "base_length_mm": 28.0,
+          "mount_hole_mm": 0.0,
+          "closed_ring": false
+        },
+        "assumptions": [
+          "Inferred cable diameter from the requested opening and clip width."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "cable clip",
+          "family_summary": "Open clip for holding a cable or wire bundle."
+        }
+      },
+      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409183202-238842e5.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409174627-34a4e3",
+      "generation_id": "gen-20260409174620-53fb1ffc",
+      "created_at": "2026-04-09T17:46:27",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409174620-53fb1ffc.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409174159-58f96e",
+      "generation_id": "gen-20260409174153-b195b9f4",
+      "created_at": "2026-04-09T17:41:59",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409174153-b195b9f4.glb",
+      "preview_export_status": "ready"
+    },
+    {
+      "id": "model-20260409173724-136b42",
+      "generation_id": "gen-20260409173716-5e44da27",
+      "created_at": "2026-04-09T17:37:24",
+      "prompt": "Wall bracket with four holes",
+      "family": "bracket",
+      "family_label": "bracket",
+      "plan": {
+        "family": "bracket",
+        "family_label": "bracket",
+        "recipe": "bracket",
+        "request_text": "Wall bracket with four holes",
+        "dimensions": {
+          "base_length_mm": 100.0,
+          "flange_width_mm": 30.0,
+          "vertical_height_mm": 80.0,
+          "thickness_mm": 6.0
+        },
+        "features": {
+          "hole_diameter_mm": 0.0,
+          "mounting_holes": false,
+          "hole_count": 4,
+          "bracket_angle_deg": 90.0,
+          "gusset": false
+        },
+        "assumptions": [
+          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
+        ],
+        "warnings": [],
+        "limitations": [],
+        "classification": {
+          "matched_alias": "bracket",
+          "family_summary": "Simple L-style support bracket blockout."
+        }
+      },
+      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
+      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
+      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260409173716-5e44da27.glb",
+      "preview_export_status": "ready"
+    },
+    {
       "id": "model-20260408205538-c60efc",
       "generation_id": "gen-20260408205533-2dbd6219",
       "created_at": "2026-04-08T20:55:38",
@@ -916,1037 +1708,6 @@
       "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
       "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
       "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408181826-2cdd4df5.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408181807-1ad490",
-      "generation_id": "gen-20260408181802-cba2b29f",
-      "created_at": "2026-04-08T18:18:07",
-      "prompt": "Planter with 3 mm walls",
-      "family": "planter_vessel",
-      "family_label": "planter / vessel",
-      "plan": {
-        "family": "planter_vessel",
-        "family_label": "planter / vessel",
-        "recipe": "vessel",
-        "request_text": "Planter with 3 mm walls",
-        "dimensions": {
-          "diameter_mm": 3.0,
-          "height_mm": 90.0
-        },
-        "features": {
-          "wall_thickness_mm": 3.0,
-          "drain_hole_mm": 0.0
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "planter",
-          "family_summary": "Round open-top vessel or planter blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic planter / vessel blockout with 2 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408181802-cba2b29f.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408180959-337dca",
-      "generation_id": "gen-20260408180953-5a754552",
-      "created_at": "2026-04-08T18:09:59",
-      "prompt": "Wall bracket with four holes",
-      "family": "bracket",
-      "family_label": "bracket",
-      "plan": {
-        "family": "bracket",
-        "family_label": "bracket",
-        "recipe": "bracket",
-        "request_text": "Wall bracket with four holes",
-        "dimensions": {
-          "base_length_mm": 100.0,
-          "flange_width_mm": 30.0,
-          "vertical_height_mm": 80.0,
-          "thickness_mm": 6.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "mounting_holes": false,
-          "hole_count": 4,
-          "bracket_angle_deg": 90.0,
-          "gusset": false
-        },
-        "assumptions": [
-          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "bracket",
-          "family_summary": "Simple L-style support bracket blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408180953-5a754552.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408180407-8c4f6c",
-      "generation_id": "gen-20260408180400-14361f7b",
-      "created_at": "2026-04-08T18:04:07",
-      "prompt": "120mm plate with 2 holes",
-      "family": "panel_plate",
-      "family_label": "panel / plate",
-      "plan": {
-        "family": "panel_plate",
-        "family_label": "panel / plate",
-        "recipe": "panel_plate",
-        "request_text": "120mm plate with 2 holes",
-        "dimensions": {
-          "width_mm": 120.0,
-          "height_mm": 60.0,
-          "thickness_mm": 120.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "hole_spacing_mm": 0.0,
-          "hole_pattern": "pair_horizontal",
-          "corner_holes": false
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "plate",
-          "family_summary": "Flat plate or panel with optional mounting holes."
-        }
-      },
-      "validation_summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408180400-14361f7b.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408180317-5f99a6",
-      "generation_id": "gen-20260408180311-bded8637",
-      "created_at": "2026-04-08T18:03:17",
-      "prompt": "Planter with 3 mm walls",
-      "family": "planter_vessel",
-      "family_label": "planter / vessel",
-      "plan": {
-        "family": "planter_vessel",
-        "family_label": "planter / vessel",
-        "recipe": "vessel",
-        "request_text": "Planter with 3 mm walls",
-        "dimensions": {
-          "diameter_mm": 3.0,
-          "height_mm": 90.0
-        },
-        "features": {
-          "wall_thickness_mm": 3.0,
-          "drain_hole_mm": 0.0
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "planter",
-          "family_summary": "Round open-top vessel or planter blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic planter / vessel blockout with 2 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408180311-bded8637.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408175557-04df87",
-      "generation_id": "gen-20260408175540-1c37c9ca",
-      "created_at": "2026-04-08T17:55:57",
-      "prompt": "Wall bracket with four holes",
-      "family": "bracket",
-      "family_label": "bracket",
-      "plan": {
-        "family": "bracket",
-        "family_label": "bracket",
-        "recipe": "bracket",
-        "request_text": "Wall bracket with four holes",
-        "dimensions": {
-          "base_length_mm": 100.0,
-          "flange_width_mm": 30.0,
-          "vertical_height_mm": 80.0,
-          "thickness_mm": 6.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "mounting_holes": false,
-          "hole_count": 4,
-          "bracket_angle_deg": 90.0,
-          "gusset": false
-        },
-        "assumptions": [
-          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "bracket",
-          "family_summary": "Simple L-style support bracket blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408175540-1c37c9ca.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408173534-7f2506",
-      "generation_id": "gen-20260408173518-2900e86b",
-      "created_at": "2026-04-08T17:35:34",
-      "prompt": "Wall bracket with four holes",
-      "family": "bracket",
-      "family_label": "bracket",
-      "plan": {
-        "family": "bracket",
-        "family_label": "bracket",
-        "recipe": "bracket",
-        "request_text": "Wall bracket with four holes",
-        "dimensions": {
-          "base_length_mm": 100.0,
-          "flange_width_mm": 30.0,
-          "vertical_height_mm": 80.0,
-          "thickness_mm": 6.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "mounting_holes": false,
-          "hole_count": 4,
-          "bracket_angle_deg": 90.0,
-          "gusset": false
-        },
-        "assumptions": [
-          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "bracket",
-          "family_summary": "Simple L-style support bracket blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408173518-2900e86b.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408171821-a0eba2",
-      "generation_id": "gen-20260408171815-8343708f",
-      "created_at": "2026-04-08T17:18:21",
-      "prompt": "a desk clip",
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "plan": {
-        "family": "cable_clip",
-        "family_label": "cable clip",
-        "recipe": "cable_clip",
-        "request_text": "a desk clip",
-        "dimensions": {
-          "clip_width_mm": 28.0,
-          "opening_mm": 15.400000000000002,
-          "depth_mm": 16.0,
-          "thickness_mm": 4.0
-        },
-        "features": {
-          "cable_diameter_mm": 13.400000000000002,
-          "base_length_mm": 28.0,
-          "mount_hole_mm": 0.0,
-          "closed_ring": false
-        },
-        "assumptions": [
-          "Inferred cable diameter from the requested opening and clip width."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "clip",
-          "family_summary": "Open clip for holding a cable or wire bundle."
-        }
-      },
-      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171815-8343708f.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408171348-54b88f",
-      "generation_id": "gen-20260408171343-0eb5064e",
-      "created_at": "2026-04-08T17:13:48",
-      "prompt": "a desk clip",
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "plan": {
-        "family": "cable_clip",
-        "family_label": "cable clip",
-        "recipe": "cable_clip",
-        "request_text": "a desk clip",
-        "dimensions": {
-          "clip_width_mm": 28.0,
-          "opening_mm": 15.400000000000002,
-          "depth_mm": 16.0,
-          "thickness_mm": 4.0
-        },
-        "features": {
-          "cable_diameter_mm": 13.400000000000002,
-          "base_length_mm": 28.0,
-          "mount_hole_mm": 0.0,
-          "closed_ring": false
-        },
-        "assumptions": [
-          "Inferred cable diameter from the requested opening and clip width."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "clip",
-          "family_summary": "Open clip for holding a cable or wire bundle."
-        }
-      },
-      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171343-0eb5064e.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408171316-d93b19",
-      "generation_id": "gen-20260408171310-5d9023b1",
-      "created_at": "2026-04-08T17:13:16",
-      "prompt": "desk clip",
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "plan": {
-        "family": "cable_clip",
-        "family_label": "cable clip",
-        "recipe": "cable_clip",
-        "request_text": "desk clip",
-        "dimensions": {
-          "clip_width_mm": 28.0,
-          "opening_mm": 15.400000000000002,
-          "depth_mm": 16.0,
-          "thickness_mm": 4.0
-        },
-        "features": {
-          "cable_diameter_mm": 13.400000000000002,
-          "base_length_mm": 28.0,
-          "mount_hole_mm": 0.0,
-          "closed_ring": false
-        },
-        "assumptions": [
-          "Inferred cable diameter from the requested opening and clip width."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "clip",
-          "family_summary": "Open clip for holding a cable or wire bundle."
-        }
-      },
-      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408171310-5d9023b1.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408170856-b8f726",
-      "generation_id": "gen-20260408170850-ff6fc90a",
-      "created_at": "2026-04-08T17:08:56",
-      "prompt": "a cable clip",
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "plan": {
-        "family": "cable_clip",
-        "family_label": "cable clip",
-        "recipe": "cable_clip",
-        "request_text": "a cable clip",
-        "dimensions": {
-          "clip_width_mm": 28.0,
-          "opening_mm": 15.400000000000002,
-          "depth_mm": 16.0,
-          "thickness_mm": 4.0
-        },
-        "features": {
-          "cable_diameter_mm": 13.400000000000002,
-          "base_length_mm": 28.0,
-          "mount_hole_mm": 0.0,
-          "closed_ring": false
-        },
-        "assumptions": [
-          "Inferred cable diameter from the requested opening and clip width."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "cable clip",
-          "family_summary": "Open clip for holding a cable or wire bundle."
-        }
-      },
-      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408170850-ff6fc90a.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408170308-09b4a7",
-      "generation_id": "gen-20260408170302-37f8a001",
-      "created_at": "2026-04-08T17:03:08",
-      "prompt": "desk cable clip",
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "plan": {
-        "family": "cable_clip",
-        "family_label": "cable clip",
-        "recipe": "cable_clip",
-        "request_text": "desk cable clip",
-        "dimensions": {
-          "clip_width_mm": 28.0,
-          "opening_mm": 15.400000000000002,
-          "depth_mm": 16.0,
-          "thickness_mm": 4.0
-        },
-        "features": {
-          "cable_diameter_mm": 13.400000000000002,
-          "base_length_mm": 28.0,
-          "mount_hole_mm": 0.0,
-          "closed_ring": false
-        },
-        "assumptions": [
-          "Inferred cable diameter from the requested opening and clip width."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "cable clip",
-          "family_summary": "Open clip for holding a cable or wire bundle."
-        }
-      },
-      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408170302-37f8a001.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408170244-46efe0",
-      "generation_id": "gen-20260408170238-ed738260",
-      "created_at": "2026-04-08T17:02:44",
-      "prompt": "120mm plate with 4 holes",
-      "family": "panel_plate",
-      "family_label": "panel / plate",
-      "plan": {
-        "family": "panel_plate",
-        "family_label": "panel / plate",
-        "recipe": "panel_plate",
-        "request_text": "120mm plate with 4 holes",
-        "dimensions": {
-          "width_mm": 120.0,
-          "height_mm": 60.0,
-          "thickness_mm": 120.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "hole_spacing_mm": 0.0,
-          "hole_pattern": "corners",
-          "corner_holes": true
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "plate",
-          "family_summary": "Flat plate or panel with optional mounting holes."
-        }
-      },
-      "validation_summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408170238-ed738260.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408170148-fe83cb",
-      "generation_id": "gen-20260408170142-865b3b76",
-      "created_at": "2026-04-08T17:01:48",
-      "prompt": "a 5 spoke gear",
-      "family": "gear",
-      "family_label": "gear",
-      "plan": {
-        "family": "gear",
-        "family_label": "gear",
-        "recipe": "gear",
-        "request_text": "a 5 spoke gear",
-        "dimensions": {
-          "diameter_mm": 60.0,
-          "thickness_mm": 8.0
-        },
-        "features": {
-          "center_hole_mm": 8.0,
-          "tooth_count": 12
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [
-          "Gear teeth are simplified rectangular blockouts, not involute profiles."
-        ],
-        "classification": {
-          "matched_alias": "gear",
-          "family_summary": "Simplified radial gear blockout with rectangular teeth."
-        }
-      },
-      "validation_summary": "Prepared deterministic gear blockout with 2 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408170142-865b3b76.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408165029-3445e2",
-      "generation_id": "gen-20260408165023-165de170",
-      "created_at": "2026-04-08T16:50:29",
-      "prompt": "88mm cable clip",
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "plan": {
-        "family": "cable_clip",
-        "family_label": "cable clip",
-        "recipe": "cable_clip",
-        "request_text": "88mm cable clip",
-        "dimensions": {
-          "clip_width_mm": 88.0,
-          "opening_mm": 90.0,
-          "depth_mm": 16.0,
-          "thickness_mm": 4.0
-        },
-        "features": {
-          "cable_diameter_mm": 88.0,
-          "base_length_mm": 88.0,
-          "mount_hole_mm": 0.0,
-          "closed_ring": false
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "cable clip",
-          "family_summary": "Open clip for holding a cable or wire bundle."
-        }
-      },
-      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408165023-165de170.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408164522-b9e421",
-      "generation_id": "gen-20260408164516-d4429d44",
-      "created_at": "2026-04-08T16:45:22",
-      "prompt": "a cable clip",
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "plan": {
-        "family": "cable_clip",
-        "family_label": "cable clip",
-        "recipe": "cable_clip",
-        "request_text": "a cable clip",
-        "dimensions": {
-          "clip_width_mm": 28.0,
-          "opening_mm": 15.400000000000002,
-          "depth_mm": 16.0,
-          "thickness_mm": 4.0
-        },
-        "features": {
-          "cable_diameter_mm": 13.400000000000002,
-          "base_length_mm": 28.0,
-          "mount_hole_mm": 0.0,
-          "closed_ring": false
-        },
-        "assumptions": [
-          "Inferred cable diameter from the requested opening and clip width."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "cable clip",
-          "family_summary": "Open clip for holding a cable or wire bundle."
-        }
-      },
-      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408164516-d4429d44.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408163851-a87c6c",
-      "generation_id": "gen-20260408163837-6a5c3483",
-      "created_at": "2026-04-08T16:38:51",
-      "prompt": "a 120mm 5 tooth gear",
-      "family": "gear",
-      "family_label": "gear",
-      "plan": {
-        "family": "gear",
-        "family_label": "gear",
-        "recipe": "gear",
-        "request_text": "a 120mm 5 tooth gear",
-        "dimensions": {
-          "diameter_mm": 120.0,
-          "thickness_mm": 8.0
-        },
-        "features": {
-          "center_hole_mm": 8.0,
-          "tooth_count": 5
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [
-          "Gear teeth are simplified rectangular blockouts, not involute profiles."
-        ],
-        "classification": {
-          "matched_alias": "gear",
-          "family_summary": "Simplified radial gear blockout with rectangular teeth."
-        }
-      },
-      "validation_summary": "Prepared deterministic gear blockout with 2 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408163837-6a5c3483.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408074528-03be81",
-      "generation_id": "gen-20260408074522-9c26d433",
-      "created_at": "2026-04-08T07:45:28",
-      "prompt": "Small electronics enclosure",
-      "family": "enclosure",
-      "family_label": "enclosure",
-      "plan": {
-        "family": "enclosure",
-        "family_label": "enclosure",
-        "recipe": "box_shell",
-        "request_text": "Small electronics enclosure",
-        "dimensions": {
-          "width_mm": 120.0,
-          "depth_mm": 80.0,
-          "height_mm": 60.0
-        },
-        "features": {
-          "wall_thickness_mm": 3.0,
-          "base_thickness_mm": 3.0,
-          "open_top": false,
-          "front_opening": false,
-          "opening_width_mm": 66.0,
-          "opening_height_mm": 27.0
-        },
-        "assumptions": [
-          "Used fallback rectangular dimensions because the request did not provide explicit width/depth/height cues."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "enclosure",
-          "family_summary": "Rectangular shell or case blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic enclosure blockout with 3 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408074522-9c26d433.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408073224-367625",
-      "generation_id": "gen-20260408073218-13eaa3e1",
-      "created_at": "2026-04-08T07:32:24",
-      "prompt": "a bracket",
-      "family": "bracket",
-      "family_label": "bracket",
-      "plan": {
-        "family": "bracket",
-        "family_label": "bracket",
-        "recipe": "bracket",
-        "request_text": "a bracket",
-        "dimensions": {
-          "base_length_mm": 100.0,
-          "flange_width_mm": 30.0,
-          "vertical_height_mm": 80.0,
-          "thickness_mm": 6.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "mounting_holes": false,
-          "hole_count": 0,
-          "bracket_angle_deg": 90.0,
-          "gusset": false
-        },
-        "assumptions": [
-          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "bracket",
-          "family_summary": "Simple L-style support bracket blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408073218-13eaa3e1.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408071127-c8c33e",
-      "generation_id": "gen-20260408071121-91154a8b",
-      "created_at": "2026-04-08T07:11:27",
-      "prompt": "Desk cable clip",
-      "family": "cable_clip",
-      "family_label": "cable clip",
-      "plan": {
-        "family": "cable_clip",
-        "family_label": "cable clip",
-        "recipe": "cable_clip",
-        "request_text": "Desk cable clip",
-        "dimensions": {
-          "clip_width_mm": 28.0,
-          "opening_mm": 15.400000000000002,
-          "depth_mm": 16.0,
-          "thickness_mm": 4.0
-        },
-        "features": {
-          "cable_diameter_mm": 13.400000000000002,
-          "base_length_mm": 28.0,
-          "mount_hole_mm": 0.0,
-          "closed_ring": false
-        },
-        "assumptions": [
-          "Inferred cable diameter from the requested opening and clip width."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "cable clip",
-          "family_summary": "Open clip for holding a cable or wire bundle."
-        }
-      },
-      "validation_summary": "Prepared deterministic cable clip blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408071121-91154a8b.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408065953-99ddae",
-      "generation_id": "gen-20260408065946-20d13f69",
-      "created_at": "2026-04-08T06:59:53",
-      "prompt": "make a 100mm bracket",
-      "family": "bracket",
-      "family_label": "bracket",
-      "plan": {
-        "family": "bracket",
-        "family_label": "bracket",
-        "recipe": "bracket",
-        "request_text": "make a 100mm bracket",
-        "dimensions": {
-          "base_length_mm": 100.0,
-          "flange_width_mm": 30.0,
-          "vertical_height_mm": 80.0,
-          "thickness_mm": 6.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "mounting_holes": false,
-          "hole_count": 0,
-          "bracket_angle_deg": 90.0,
-          "gusset": false
-        },
-        "assumptions": [
-          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "bracket",
-          "family_summary": "Simple L-style support bracket blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408065946-20d13f69.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408065243-2ac71c",
-      "generation_id": "gen-20260408065238-9200b7f9",
-      "created_at": "2026-04-08T06:52:43",
-      "prompt": "make a spur gear",
-      "family": "gear",
-      "family_label": "gear",
-      "plan": {
-        "family": "gear",
-        "family_label": "gear",
-        "recipe": "gear",
-        "request_text": "make a spur gear",
-        "dimensions": {
-          "diameter_mm": 60.0,
-          "thickness_mm": 8.0
-        },
-        "features": {
-          "center_hole_mm": 8.0,
-          "tooth_count": 12
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [
-          "Gear teeth are simplified rectangular blockouts, not involute profiles."
-        ],
-        "classification": {
-          "matched_alias": "spur gear",
-          "family_summary": "Simplified radial gear blockout with rectangular teeth."
-        }
-      },
-      "validation_summary": "Prepared deterministic gear blockout with 2 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408065238-9200b7f9.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408065218-5ed726",
-      "generation_id": "gen-20260408065213-e1ee0d33",
-      "created_at": "2026-04-08T06:52:18",
-      "prompt": "make a bracket",
-      "family": "bracket",
-      "family_label": "bracket",
-      "plan": {
-        "family": "bracket",
-        "family_label": "bracket",
-        "recipe": "bracket",
-        "request_text": "make a bracket",
-        "dimensions": {
-          "base_length_mm": 100.0,
-          "flange_width_mm": 30.0,
-          "vertical_height_mm": 80.0,
-          "thickness_mm": 6.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "mounting_holes": false,
-          "hole_count": 0,
-          "bracket_angle_deg": 90.0,
-          "gusset": false
-        },
-        "assumptions": [
-          "Used default bracket dimensions where the request did not provide a complete length x width x height set."
-        ],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "bracket",
-          "family_summary": "Simple L-style support bracket blockout."
-        }
-      },
-      "validation_summary": "Prepared deterministic bracket blockout with 4 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408065213-e1ee0d33.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260408064958-381e76",
-      "generation_id": "gen-20260408064942-7cceccbb",
-      "created_at": "2026-04-08T06:49:58",
-      "prompt": "Create a 160mm UV sphere with a 90mm circular face opening and 3mm shell thickness.",
-      "family": "housing_shell",
-      "family_label": "simple housing / mechanical shell",
-      "plan": {
-        "family": "housing_shell",
-        "family_label": "simple housing / mechanical shell",
-        "recipe": "box_shell",
-        "request_text": "Create a 160mm UV sphere with a 90mm circular face opening and 3mm shell thickness.",
-        "dimensions": {
-          "width_mm": 160.0,
-          "depth_mm": 90.0,
-          "height_mm": 3.0
-        },
-        "features": {
-          "wall_thickness_mm": 1.5,
-          "base_thickness_mm": 1.5,
-          "open_top": false,
-          "front_opening": false,
-          "opening_width_mm": 88.0,
-          "opening_height_mm": 20.0
-        },
-        "assumptions": [
-          "Used fallback rectangular dimensions because the request did not provide explicit width/depth/height cues."
-        ],
-        "warnings": [
-          "Base thickness was clamped to keep the enclosure shell believable."
-        ],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "shell",
-          "family_summary": "Mechanical shell blockout using conservative enclosure geometry."
-        }
-      },
-      "validation_summary": "Prepared deterministic simple housing / mechanical shell blockout with 3 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260408064942-7cceccbb.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260407214202-28ed36",
-      "generation_id": "gen-20260407214156-714e561b",
-      "created_at": "2026-04-07T21:42:02",
-      "prompt": "Create a 160mm UV sphere with a 90mm circular face opening and 3mm shell thickness.",
-      "family": "housing_shell",
-      "family_label": "simple housing / mechanical shell",
-      "plan": {
-        "family": "housing_shell",
-        "family_label": "simple housing / mechanical shell",
-        "recipe": "box_shell",
-        "request_text": "Create a 160mm UV sphere with a 90mm circular face opening and 3mm shell thickness.",
-        "dimensions": {
-          "width_mm": 160.0,
-          "depth_mm": 90.0,
-          "height_mm": 3.0
-        },
-        "features": {
-          "wall_thickness_mm": 1.5,
-          "base_thickness_mm": 1.5,
-          "open_top": false,
-          "front_opening": false,
-          "opening_width_mm": 88.0,
-          "opening_height_mm": 20.0
-        },
-        "assumptions": [
-          "Used fallback rectangular dimensions because the request did not provide explicit width/depth/height cues."
-        ],
-        "warnings": [
-          "Base thickness was clamped to keep the enclosure shell believable."
-        ],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "shell",
-          "family_summary": "Mechanical shell blockout using conservative enclosure geometry."
-        }
-      },
-      "validation_summary": "Prepared deterministic simple housing / mechanical shell blockout with 3 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260407214156-714e561b.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260407213657-1285b5",
-      "generation_id": "gen-20260407213651-18a041cf",
-      "created_at": "2026-04-07T21:36:57",
-      "prompt": "Create a 160mm UV sphere with a 90mm circular face opening and 3mm shell thickness.",
-      "family": "housing_shell",
-      "family_label": "simple housing / mechanical shell",
-      "plan": {
-        "family": "housing_shell",
-        "family_label": "simple housing / mechanical shell",
-        "recipe": "box_shell",
-        "request_text": "Create a 160mm UV sphere with a 90mm circular face opening and 3mm shell thickness.",
-        "dimensions": {
-          "width_mm": 160.0,
-          "depth_mm": 90.0,
-          "height_mm": 3.0
-        },
-        "features": {
-          "wall_thickness_mm": 1.5,
-          "base_thickness_mm": 1.5,
-          "open_top": false,
-          "front_opening": false,
-          "opening_width_mm": 88.0,
-          "opening_height_mm": 20.0
-        },
-        "assumptions": [
-          "Used fallback rectangular dimensions because the request did not provide explicit width/depth/height cues."
-        ],
-        "warnings": [
-          "Base thickness was clamped to keep the enclosure shell believable."
-        ],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "shell",
-          "family_summary": "Mechanical shell blockout using conservative enclosure geometry."
-        }
-      },
-      "validation_summary": "Prepared deterministic simple housing / mechanical shell blockout with 3 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260407213651-18a041cf.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260407212753-5bcc19",
-      "generation_id": "gen-20260407212746-3c3b464f",
-      "created_at": "2026-04-07T21:27:53",
-      "prompt": "make a rectangular plate 120mm by 80mm by 4mm with four corner hole",
-      "family": "panel_plate",
-      "family_label": "panel / plate",
-      "plan": {
-        "family": "panel_plate",
-        "family_label": "panel / plate",
-        "recipe": "panel_plate",
-        "request_text": "make a rectangular plate 120mm by 80mm by 4mm with four corner hole",
-        "dimensions": {
-          "width_mm": 120.0,
-          "height_mm": 80.0,
-          "thickness_mm": 120.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "hole_spacing_mm": 0.0,
-          "hole_pattern": "corners",
-          "corner_holes": true
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "plate",
-          "family_summary": "Flat plate or panel with optional mounting holes."
-        }
-      },
-      "validation_summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260407212746-3c3b464f.glb",
-      "preview_export_status": "ready"
-    },
-    {
-      "id": "model-20260407203057-449284",
-      "generation_id": "gen-20260407203049-e4c1db48",
-      "created_at": "2026-04-07T20:30:57",
-      "prompt": "make a rectangular plate 120mm by 80mm by 4mm with four corner holes",
-      "family": "panel_plate",
-      "family_label": "panel / plate",
-      "plan": {
-        "family": "panel_plate",
-        "family_label": "panel / plate",
-        "recipe": "panel_plate",
-        "request_text": "make a rectangular plate 120mm by 80mm by 4mm with four corner holes",
-        "dimensions": {
-          "width_mm": 120.0,
-          "height_mm": 80.0,
-          "thickness_mm": 120.0
-        },
-        "features": {
-          "hole_diameter_mm": 0.0,
-          "hole_spacing_mm": 0.0,
-          "hole_pattern": "corners",
-          "corner_holes": true
-        },
-        "assumptions": [],
-        "warnings": [],
-        "limitations": [],
-        "classification": {
-          "matched_alias": "plate",
-          "family_summary": "Flat plate or panel with optional mounting holes."
-        }
-      },
-      "validation_summary": "Prepared deterministic panel / plate blockout with 3 normalized dimensions.",
-      "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-      "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260407203049-e4c1db48.glb",
       "preview_export_status": "ready"
     }
   ],

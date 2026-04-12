@@ -12,7 +12,7 @@ from app.blender_runner import run_generated_script
 from app.backend.pipeline import generate_model_request
 from app.backend.runtime import GENERATED_SCRIPT_PATH
 from app.backend.versioning import load_version
-from app.model_library import get_library_summary
+from app.model_library import delete_saved_model_entry, get_library_summary, list_saved_models
 from app.runtime.health import collect_runtime_health, sync_runtime_health
 from app.runtime.models import RECOMMENDED_OLLAMA_MODEL
 from app.runtime.ollama import pull_model, run_smoke_test as run_ollama_smoke_test
@@ -47,6 +47,7 @@ class DesktopStatus:
     last_classification: dict
     last_saved_model_entry: dict
     library_summary: dict
+    saved_models: list[dict]
     last_run_status: str
     setup_completed: bool
     first_run_completed: bool
@@ -94,6 +95,7 @@ class BackendController:
             last_classification=state.get("last_classification") or {},
             last_saved_model_entry=state.get("last_saved_model_entry") or {},
             library_summary=get_library_summary(),
+            saved_models=list_saved_models(),
             last_run_status=state.get("last_run_status") or "idle",
             setup_completed=bool(state.get("setup_completed")),
             first_run_completed=bool(state.get("first_run_completed")),
@@ -198,6 +200,34 @@ class BackendController:
             return False, health.get("runtime_health_message", "Blender is not configured.")
         target_path = Path(script_path) if script_path else GENERATED_SCRIPT_PATH
         return run_generated_script(target_path, interactive=interactive)
+
+    def open_saved_model_in_blender(self, model_id: str) -> dict:
+        """Launch Blender for a saved model entry's script path."""
+        entry = next((item for item in list_saved_models() if item.get("id") == model_id), None)
+        if not entry:
+            return {"success": False, "message": "Saved model not found.", "model_id": model_id}
+        success, message = self.open_in_blender(script_path=entry.get("script_path") or None, interactive=True)
+        return {
+            "success": success,
+            "message": message,
+            "model_id": model_id,
+        }
+
+    def delete_saved_model(self, model_id: str) -> dict:
+        """Delete one saved model entry from the local library."""
+        removed = delete_saved_model_entry(model_id)
+        state = load_state()
+        last_saved = state.get("last_saved_model_entry") or {}
+        if removed and last_saved.get("id") == model_id:
+            state["last_saved_model_entry"] = {}
+            save_state(state)
+        return {
+            "success": removed,
+            "message": "Saved model deleted." if removed else "Saved model not found.",
+            "model_id": model_id,
+            "library_summary": get_library_summary(),
+            "saved_models": list_saved_models(),
+        }
 
     def get_runtime_health(self, refresh: bool = False) -> dict:
         """Return the structured runtime health payload for desktop use."""

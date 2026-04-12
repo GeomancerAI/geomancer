@@ -14,7 +14,7 @@
       </div>
 
       <nav class="topnav" aria-label="Primary">
-        <button class="topnav-tab is-active" type="button" data-tab="chat">Workspace</button>
+        <button class="topnav-tab is-active" type="button" data-tab="workspace">Workspace</button>
         <button class="topnav-tab" type="button" data-tab="models">Models</button>
         <button class="topnav-tab" type="button" data-tab="projects">Projects</button>
         <button class="topnav-tab" type="button" data-tab="templates">Templates</button>
@@ -28,7 +28,9 @@
       </div>
     </header>
 
-    <main class="workspace">
+    <main class="app-main">
+      <section id="mode-workspace" class="mode-screen is-active">
+        <div class="workspace">
       <aside class="left-rail panel">
         <div class="rail-header conversation-header">
           <div class="rail-heading convo-title-group">
@@ -128,16 +130,11 @@
               </div>
             </div>
             <div class="viewer-hud viewer-hud-bottom-left">
-              <button id="viewer-auto-orbit-toggle" class="viewer-auto-orbit-button" type="button" aria-pressed="false">Play</button>
+              <button id="viewer-auto-orbit-toggle" class="viewer-auto-orbit-button" type="button" aria-pressed="false" aria-label="Start auto-orbit" title="Start auto-orbit">▶</button>
             </div>
             <div class="viewer-hud viewer-hud-bottom">
               <div id="viewer-axis-indicator" class="viewer-axis-indicator" aria-hidden="true">
-                <div id="viewer-axis-scene" class="viewer-axis-scene">
-                  <div class="axis-origin"></div>
-                  <div class="axis-line axis-x"><span>X</span></div>
-                  <div class="axis-line axis-y"><span>Y</span></div>
-                  <div class="axis-line axis-z"><span>Z</span></div>
-                </div>
+                <div id="viewer-axis-scene" class="viewer-axis-scene"></div>
               </div>
             </div>
             <div id="viewer-overlay" class="viewer-overlay is-visible" aria-live="polite">
@@ -152,52 +149,43 @@
 
         <div class="info-strip">
           <section class="info-card">
-            <p class="info-heading">System</p>
+            <p class="info-heading">Model info</p>
             <div class="metric-grid">
-              <div class="metric-row"><span>AI</span><strong id="system-ai-status">Checking...</strong></div>
-              <div class="metric-row"><span>Blender</span><strong id="system-blender-status">Checking...</strong></div>
-              <div class="metric-row"><span>Last action</span><strong id="last-run-status">Idle</strong></div>
-            </div>
-            <div class="info-card-actions">
-              <button id="show-logs-button" class="info-strip-link" type="button">Logs</button>
+              <div class="metric-row"><span>Length</span><strong id="metric-length">—</strong></div>
+              <div class="metric-row"><span>Width</span><strong id="metric-width">—</strong></div>
+              <div class="metric-row"><span>Height</span><strong id="metric-height">—</strong></div>
+              <div class="metric-row"><span>Family</span><strong id="metric-model-family">Waiting</strong></div>
             </div>
           </section>
 
           <section class="info-card">
-            <p class="info-heading">Dimensions</p>
+            <p class="info-heading">Printability</p>
             <div class="metric-grid">
-              <div class="metric-row"><span>Length</span><strong id="metric-length">Unavailable</strong></div>
-              <div class="metric-row"><span>Width</span><strong id="metric-width">Unavailable</strong></div>
-              <div class="metric-row"><span>Height</span><strong id="metric-height">Unavailable</strong></div>
+              <div class="metric-row"><span>Status</span><strong id="review-status">Waiting</strong></div>
+              <div class="metric-row"><span>Base</span><strong id="printability-base">Waiting</strong></div>
+              <div class="metric-row"><span>Overhang</span><strong id="printability-overhang">Waiting</strong></div>
             </div>
           </section>
 
           <section class="info-card">
-            <p class="info-heading">Generation</p>
+            <p class="info-heading">Mesh</p>
             <div class="metric-grid">
-              <div class="metric-row"><span>Family</span><strong id="generation-family">Pending</strong></div>
-              <div class="metric-row"><span>Recipe</span><strong id="generation-recipe">Pending</strong></div>
-              <div class="metric-row"><span>Features</span><strong id="generation-features">Pending</strong></div>
-            </div>
-          </section>
-
-          <section class="info-card">
-            <p class="info-heading">Review</p>
-            <div class="metric-grid">
-              <div class="metric-row"><span>Confidence</span><strong id="review-confidence">Pending</strong></div>
-              <div class="metric-row"><span>Review</span><strong id="review-status">Pending</strong></div>
-              <div class="metric-row"><span>Triangles</span><strong id="metric-triangles">Pending</strong></div>
+              <div class="metric-row"><span>Preview</span><strong id="mesh-preview">Waiting</strong></div>
+              <div class="metric-row"><span>Export</span><strong id="mesh-export">Waiting</strong></div>
+              <div class="metric-row"><span>Quality</span><strong id="mesh-quality">Waiting</strong></div>
             </div>
           </section>
         </div>
 
         <div class="viewer-footer">
           <div class="viewer-footer-main">
-            <span class="generation-chip" id="generation-status">Idle</span>
+            <span class="generation-chip" id="generation-status">Waiting</span>
             <span id="readiness-state" class="viewer-footer-summary" title="Finish setup or submit a prompt to begin.">Finish setup or submit a prompt to begin.</span>
             <button id="view-plan-button" class="viewer-footer-link" type="button" disabled>View plan</button>
           </div>
           <div class="viewer-footer-meta">
+            <span class="viewer-footer-runtime">AI <span id="system-ai-status">Waiting</span> · Blender <span id="system-blender-status">Waiting</span></span>
+            <button id="show-logs-button" class="info-strip-link viewer-footer-link" type="button">Show logs</button>
             <span>Geomancer <span id="footer-version">v1.0.0</span></span>
           </div>
         </div>
@@ -208,53 +196,122 @@
           <div class="panel-title-mark">&#9672;</div>
           <div>
             <p class="section-eyebrow">Current model</p>
-            <p class="panel-title">Facts and actions</p>
+            <p class="panel-title">Properties</p>
           </div>
         </div>
 
         <div class="right-rail-scroll">
-          <section class="property-group">
+          <div id="properties-empty-state" class="property-empty-state">
+            Generate a model to see dimensions, features, and print guidance.
+          </div>
+
+          <section id="properties-dimensions-section" class="property-group" hidden>
             <h3>Dimensions</h3>
-            <p class="property-copy">Only parsed dimensions from the current generation are shown here.</p>
-            <div class="property-grid" id="current-model-dimensions">
-              <div class="check-row"><span class="checkmark">&#9672;</span><span>Unavailable until a generation completes</span></div>
-            </div>
+            <div class="property-grid property-grid-rows" id="current-model-dimensions"></div>
           </section>
 
-          <section class="property-group">
-            <h3>Shell and thickness</h3>
-            <p class="property-copy">Wall, shell, and base values appear when the family supports them.</p>
-            <div id="current-model-shell">
-              <div class="check-row"><span class="checkmark">&#9672;</span><span>No shell information yet</span></div>
-            </div>
+          <section id="properties-walls-section" class="property-group" hidden>
+            <h3>Walls</h3>
+            <div class="property-grid property-grid-rows" id="current-model-walls"></div>
           </section>
 
-          <section class="property-group overflow-section">
+          <section id="properties-features-section" class="property-group" hidden>
             <h3>Features</h3>
-            <p class="property-copy">Feature details come from Geomancer's normalized plan, not from placeholder presets.</p>
-            <div id="current-model-features">
-              <div class="check-row"><span class="checkmark">&#9672;</span><span>No feature details yet</span></div>
-            </div>
-          </section>
-
-          <section class="property-group overflow-section">
-            <h3>Openings and holes</h3>
-            <p class="property-copy">Cutouts, openings, and hole details appear here when available.</p>
-            <div id="current-model-cutouts">
-              <div class="check-row"><span class="checkmark">&#9672;</span><span>No openings or holes recorded yet</span></div>
-            </div>
+            <div class="property-grid property-grid-rows" id="current-model-features"></div>
           </section>
         </div>
 
         <section class="property-group actions-group">
           <h3>Actions</h3>
-          <p class="property-copy">Blender handoff is the primary next step in this alpha. Other export and project actions remain staged.</p>
+          <p class="property-copy">Open the latest model in Blender for local inspection and export.</p>
           <button id="open-blender-button" class="action-button primary-action" type="button">Open Latest in Blender</button>
-          <button class="action-button inspector-action" type="button" disabled>Refresh preview later in alpha</button>
-          <button class="action-button" type="button" disabled>Export STL later in alpha</button>
-          <button class="action-button" type="button" disabled>Save project later in alpha</button>
         </section>
       </aside>
+        </div>
+      </section>
+
+      <section id="mode-models" class="mode-screen" hidden>
+        <div class="models-shell">
+          <aside class="models-sidebar panel">
+            <div class="models-sidebar-header">
+              <p class="section-eyebrow">Library</p>
+              <h2 class="models-title">Models</h2>
+              <p class="models-copy">Browse locally generated geometry and reopen it when needed.</p>
+            </div>
+
+            <div class="models-sidebar-controls">
+              <label class="models-field">
+                <span class="models-field-label">Search</span>
+                <input id="models-search-input" class="models-input" type="search" placeholder="Search models">
+              </label>
+
+              <label class="models-field">
+                <span class="models-field-label">Sort</span>
+                <select id="models-sort-select" class="models-select">
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="name">Name</option>
+                  <option value="family">Family</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="models-sidebar-summary">
+              <span class="models-summary-label">Saved models</span>
+              <strong id="models-total-count" class="models-summary-value">0</strong>
+            </div>
+
+            <div class="models-filter-group">
+              <span class="models-field-label">Families</span>
+              <div id="models-family-filters" class="models-filter-chips"></div>
+            </div>
+
+            <div class="models-sidebar-browser">
+              <span class="models-field-label">Saved models</span>
+              <div id="models-sidebar-list" class="models-sidebar-list"></div>
+            </div>
+          </aside>
+
+          <section class="models-main panel">
+            <div class="models-main-header">
+              <div class="models-main-heading">
+                <p class="section-eyebrow">Model library</p>
+                <h2 class="models-title">Saved models</h2>
+                <p id="models-selection-summary" class="models-selection-summary">Select a saved model to open or delete it.</p>
+              </div>
+              <div class="models-header-actions">
+                <button id="models-selection-open" class="action-button primary-action" type="button">Open in Blender</button>
+                <button id="models-selection-delete" class="action-button" type="button">Delete model</button>
+                <button id="models-go-workspace" class="icon-button subtle" type="button">Go to Workspace</button>
+              </div>
+            </div>
+
+            <div id="models-empty-state" class="models-empty-state" hidden>
+              <h3>No models yet</h3>
+              <p>Generate a model in Workspace to build your local library.</p>
+              <button id="models-empty-cta" class="action-button primary-action" type="button">Open Workspace</button>
+            </div>
+
+            <div id="models-grid" class="models-grid"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="mode-projects" class="mode-screen" hidden>
+        <div class="mode-placeholder panel">
+          <p class="section-eyebrow">Projects</p>
+          <h2>Projects are not available yet</h2>
+          <p>This mode is reserved for grouped model work in a later pass.</p>
+        </div>
+      </section>
+
+      <section id="mode-templates" class="mode-screen" hidden>
+        <div class="mode-placeholder panel">
+          <p class="section-eyebrow">Templates</p>
+          <h2>Templates are not available yet</h2>
+          <p>This mode will surface reusable starting points in a later pass.</p>
+        </div>
+      </section>
     </main>
 
     <div id="logs-modal" class="logs-modal" hidden>

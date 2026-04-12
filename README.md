@@ -4,20 +4,20 @@ Geomancer is a local-first desktop geometry tool. Local AI interprets requests, 
 
 ## Current Status
 
-- Version: `0.7.27-alpha`
+- Version: `0.7.47-alpha`
 - Stage: `alpha`
 - Product direction: desktop shell -> local setup -> deterministic geometry pipeline -> Blender handoff
 - Core rule: AI interprets language, Geomancer owns geometry
 
 ## Product Shape
 
-The current alpha experience is centered on one desktop workspace:
+The current alpha experience is centered on one desktop shell with top-level modes:
 
-- left column: chat-style conversation thread, generation progress, system updates, prompt entry
-- center stage: viewer, generation summary, readiness state, bottom info strip
-- right column: current model facts, dimensions, features, actions
+- Workspace: chat-style conversation thread, generation progress, viewer, read-only properties, actions, and bottom summary surfaces
+- Models: saved local model library with search, sorting, selection, deletion, and a synced compact sidebar browser
+- Projects and Templates: reserved placeholders for later phases
 
-The UI now prioritizes truthful state over placeholder polish. If dimensions, features, or review signals are not available yet, the shell says so directly. The viewer is the hero surface and now uses a thinner toolbar, a denser telemetry strip, a dominant-face-first generic preview pose solver, support-aware floor grounding, a final settling pass, conservative dominant-surface leveling, and more deliberate first-view framing. The left rail now behaves like a compact product conversation: Geomancer posts readiness, progress, and result updates into a timestamped thread while user prompts appear as right-aligned messages, the opening Geomancer prompt carries the example chips directly inside the conversation, the Geomancer system avatar now uses the product icon instead of a placeholder initial, the chat bubbles use a tighter shadow treatment, the conversation history scrolls in its own dedicated vertical region between the fixed header and fixed composer, the composer includes a compact toolbelt with prompt-improver and quick-settings controls, the conversation header shows the dynamic session title in a stacked two-line layout with a faint divider and single-line ellipsis truncation, the viewer status/meta content lives in one compact footer band below the viewer instead of a separate top strip, the four-column strip beneath the viewer reads as a unified instrument panel with cleaner product wording and restrained teal accents, and the viewer controls now live inside the canvas overlay with a calm play/pause auto-orbit control.
+The UI now prioritizes truthful state over placeholder polish. If dimensions, features, or review signals are not available yet, the shell says so directly. The viewer is the hero surface and now uses a thinner toolbar, a dominant-face-first generic preview pose solver, support-aware floor grounding, a final settling pass, conservative dominant-surface leveling, and more deliberate first-view framing. The left rail now behaves like a compact product conversation: Geomancer posts readiness, progress, and result updates into a timestamped thread while user prompts appear as right-aligned messages, the opening Geomancer prompt carries the example chips directly inside the conversation, the Geomancer system avatar now uses the product icon instead of a placeholder initial, the chat bubbles use a tighter shadow treatment, the conversation history scrolls in its own dedicated vertical region between the fixed header and fixed composer, the composer includes a compact toolbelt with prompt-improver and quick-settings controls, the conversation header shows the dynamic session title in a stacked two-line layout with a faint divider and single-line ellipsis truncation, the lower section beneath the viewer now lands as three user-facing groups for model info, printability, and mesh readiness, the right rail now behaves as a truthful read-only properties panel that only shows real generated dimensions, wall thickness, and features when available, the actions area is visually separated as its own next-step container, runtime status emphasis lives in the footer instead of the lower summary band, the footer status chip now uses a fixed footprint so animated generation text does not shift adjacent content, the bottom summary band and footer have been tightened for cleaner alignment and more stable long-value layout, the bottom printability rows now use the same left/right row rhythm as the other summary groups with shorter fit-safe wording where needed, restrained real generation-state loading cues now appear across the viewer, properties, summary band, and footer, the top shell now switches cleanly between Workspace and a real Models library mode without leaving the app, Models now read as one coherent visual library view instead of carrying older management-first framing, the Models empty state now hides correctly whenever real saved models exist, the sidebar now includes a compact synced model browser that shares the same selection as the main grid, and the orientation cube now uses the same effective viewer basis as the staged model and main camera instead of a mismatched local gizmo basis.
 
 ## Architecture
 
