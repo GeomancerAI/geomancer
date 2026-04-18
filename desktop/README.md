@@ -1,12 +1,14 @@
 # Geomancer Desktop
 
-The desktop app is the intended product surface for Geomancer alpha. It now has a clearer workspace structure, a local setup gate, a simpler background execution path for generation, a real conversation-style left rail, a more dominant grounded viewer presentation, tighter fit/stability polish across the lower summary and footer areas, and a first real top-level mode split between Workspace and Models inside the same shell.
+The desktop app is the intended product surface for Geomancer alpha. It now has a clearer workspace structure, a local setup gate, a simpler background execution path for generation, a real conversation-style left rail, a more dominant grounded viewer presentation, tighter fit/stability polish across the lower summary and footer areas, compact Workspace app controls, a token-based light/dark theme surface system, and real top-level Workspace, Models, Projects, and Templates modes inside the same shell.
 
 ## Current Desktop Shape
 
-- top shell modes: `Workspace`, `Models`, plus light `Projects` and `Templates` placeholders
+- top shell modes: `Workspace`, `Models`, `Projects`, and `Templates`
 - Workspace mode: left rail conversation thread, center viewer/review stage, right rail properties/actions
-- Models mode: real saved-model library with search, sorting, selection, and deletion backed by local persisted entries, plus a compact synced sidebar list for faster browsing
+- Models mode: real saved-model library with search, sorting, single-select browsing, explicit multi-select deletion mode, selected-model Workspace reopen support, and a compact synced sidebar list for faster browsing
+- Projects mode: alpha project browser with in-memory project creation, project selection/deletion controls, derived saved-model containers, open-project navigation, and model cards reused from the Models visual language
+- Templates mode: curated starter blueprint library with category filtering, geometric starter-card previews, and one-click prompt launch into Workspace
 
 Viewer presentation notes:
 
@@ -20,6 +22,8 @@ Viewer presentation notes:
 - the top viewer controls are intentionally compressed into a thin toolbar
 - the lower summary area now lands as three user-facing groups for model info, printability, and mesh readiness, with printability carrying slightly stronger visual emphasis and mesh kept more muted
 - the lower summary area and footer/meta row now use denser alignment, better overflow handling, and more stable text footprints so longer values and animated generation states do not crowd adjacent content
+- the footer now presents generation/status copy as a flexible strip and moves runtime emphasis into AI/Blender connection pips, version text, and the `Show logs` action
+- the dark mode treatment now uses shared background/surface/panel tokens so panels and cards separate cleanly instead of flattening into an inverted gray wash
 - runtime logs remain available from the `Show logs` modal instead of occupying the main workspace
 - startup readiness, setup actions, user prompts, and generation progress now appear as timestamped Geomancer/user chat bubbles instead of static sidebar cards
 - the opening Geomancer message now carries the clickable example prompts, while the composer stays a simpler stable input zone
@@ -27,6 +31,7 @@ Viewer presentation notes:
 - chat bubbles use a tighter, less diffuse shadow so the thread feels crisper without changing layout
 - the conversation history now owns the only scrollable region in the left rail, while the header and composer stay fixed and message rows no longer clip or overlap
 - the composer now includes a compact toolbelt beneath the prompt with coming-soon media controls, an active prompt improver modal, and a lightweight quick settings menu
+- the prompt submit control now uses a compact send icon with enough reserved textarea space to avoid scrollbar overlap
 - the conversation header now uses a stacked `Session` plus dynamic-title treatment with single-line ellipsis truncation instead of the previous inline header
 - the corner XYZ gizmo is offset higher within the viewer so it clears the lower edge instead of clipping
 - viewer generation state, summary text, and the subtle View plan action now live in the bottom footer/meta band instead of a separate top status strip above the viewer
@@ -47,7 +52,10 @@ The UI is intentionally truthful:
 - top-level mode switching now happens inside the desktop shell without leaving the app, and Workspace stays mounted so returning to it preserves the active session state as much as practical
 - Models now emphasize the visual tile library first, with a lighter contextual actions row and no dominant selected-model management strip above the grid
 - the remaining old Models-only management framing has been removed so the screen reads as one coherent library view, with cleaner tile hierarchy and quieter metadata
-- the Models empty state now hides cleanly whenever saved models exist, and the left sidebar now uses its spare vertical space for a compact list browser that stays selection-synced with the main grid
+- the Models empty state now hides cleanly whenever saved models exist, the left sidebar now uses its spare vertical space for a compact list browser that stays selection-synced with the main grid, and the Models header now uses a tighter two-zone tool header with normalized selected-model actions plus a separate multi-select delete mode
+- Projects now has a functional alpha browser: a project-card overview, New Project control, project selection/delete mode for user-created in-memory projects, open-project detail view, back navigation, and saved-model browsing inside the selected project using existing model-card presentation patterns
+- Templates now has a library surface with category navigation, refined starter cards, geometry-specific CSS preview marks, fallback starter definitions, backend-provided template support, and Workspace prompt prefill launch behavior
+- the top-right shell controls now provide existing Workspace actions for new session and reset workspace plus a real theme toggle, while unsupported save behavior remains intentionally absent
 
 ## Current Architecture
 

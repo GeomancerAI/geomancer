@@ -66,6 +66,268 @@ Every future backend-focused Codex pass should record, either in the changelog o
 
 ## Entries
 
+## 2026-04-17 - 0.7.56-alpha - dark-mode-surface-token-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/app.js`
+- `desktop/ui/styles.css`
+
+### Summary
+- Converted the Workspace theme switch to a `data-theme="dark"` surface-token theme rather than a simple class-based inversion.
+- Introduced shared background, surface, panel, text, border, and viewer tokens so dark mode keeps a layered hierarchy across the top shell, Workspace panels, composer, footer, viewer, and runtime controls.
+- Darkened the viewer canvas and reduced the glow intensity on buttons and controls so geometry remains legible without the surface feeling washed out.
+
+### Verification
+- `node --check desktop/ui/app.js`
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- A few secondary hardcoded neutrals still exist outside the main Workspace surfaces, but the core theme now reads from shared tokens and the most visible dark-mode surfaces are layered correctly.
+
+### Rollback / Review Notes
+- Review `desktop/ui/styles.css` and `desktop/ui/app.js`; the change is local to theme tokens and the Workspace shell surfaces.
+
+## 2026-04-12 - 0.7.55-alpha - workspace-footer-controls-polish
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the top-right `Alpha / Review` chips with compact icon-only Workspace controls for new session, reset workspace, and a real theme toggle.
+- Converted the prompt submit control from `Go` text to a compact send icon and reserved extra textarea space so the button does not collide with the scrollbar.
+- Removed the footer `View plan` action and reorganized the right footer row into AI runtime, Blender runtime, version, and `Show logs`.
+- Restyled the left footer status area as a flexible status strip so longer generation/status text remains stable and aligned.
+- Added runtime pips that derive from existing runtime health, with calm teal pulse for connected/busy states and muted static indicators otherwise.
+
+### Verification
+- `node --check desktop/ui/app.js`
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Save was intentionally not added to the top controls because there is no existing supported save action to wire without inventing behavior.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js`; this pass is localized to Workspace shell controls, footer status presentation, and composer submit styling.
+
+## 2026-04-12 - 0.7.54-alpha - templates-pass-2-card-polish
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Refined Templates copy from `Start from structured, reusable model blueprints.` to `Start from structured model blueprints.`
+- Added a subtle helper line above the template grid without changing launch behavior.
+- Replaced the generic template circle glyph with CSS-only geometric preview marks for brackets, enclosures, planters, clips, plates, and mechanical templates.
+- Improved template card depth, hover lift, surface contrast, and sidebar active-category hierarchy.
+
+### Verification
+- `node --check desktop/ui/app.js`
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Template cards are still prompt starters only; no template parameter editor or authoring flow was added.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js`; this pass is visual/interactions-only for Templates.
+
+## 2026-04-12 - 0.7.53-alpha - templates-pass-1-library-launch
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the Templates placeholder with a real first-pass template library mode using a left category sidebar and main template-card grid.
+- Added template category filtering with one active category at a time.
+- Added template cards with category labels, curated descriptions, and starter prompt launch behavior.
+- Wired template launch to switch to Workspace, prefill the prompt composer, update the session title, and leave generation under user control.
+- Used backend-provided `librarySummary.templates` when available, with a local fallback starter list for alpha stability.
+
+### Verification
+- `node --check desktop/ui/app.js`
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Templates are starter prompt definitions only; no parameter editor, tutorial flow, authoring, or marketplace behavior was added.
+- Template launch preloads the Workspace prompt but does not auto-generate.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js`; this pass is scoped to Templates-mode browsing and launch behavior.
+
+## 2026-04-12 - 0.7.52-alpha - projects-pass-2-controls-and-polish
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Added Projects header controls for `New Project` and `Select`, aligned to the same two-zone header pattern used by Models.
+- Added session-local project creation through a lightweight project-name prompt and an empty-state `New Project` action.
+- Added Projects selection mode with selection indicators, selected count, `Delete selected`, and `Cancel`.
+- Refined project cards with denser grid sizing, compact metadata (`model count` plus updated date), stronger hover/selected states, and a more dimensional Geomancer-styled folder icon.
+
+### Verification
+- `node --check desktop/ui/app.js`
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- New projects are session-local UI state only; persistent project storage and model assignment are still postponed.
+- Delete selected removes only user-created projects; saved-model-derived project groups remain because they are virtual library views.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js`; this pass is scoped to Projects controls, selection mode, and visual polish.
+
+## 2026-04-12 - 0.7.51-alpha - projects-pass-1-browser-structure
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Replaced the Projects placeholder with a real first-pass Projects mode that shows a project-card overview and opens a selected project in place.
+- Added project detail navigation with a Back control, project context header, and model grid for the models inside the selected project.
+- Derived alpha-safe project containers from the existing saved-model library: an all-models project plus family-grouped project containers.
+- Reused the existing Models card presentation for project-contained model browsing to keep the browsing language consistent without changing Models behavior.
+
+### Verification
+- `node --check desktop/ui/app.js`
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Projects are derived from saved models in UI state for PASS 1; no persistent project membership, rename, delete, or custom project creation flow was added.
+- Templates remain a placeholder mode.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js`; this pass is scoped to Projects-mode structure and rendering.
+
+## 2026-04-12 - 0.7.50-alpha - models-header-and-action-row-polish-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+
+### Summary
+- Reworked the Models header into a true two-zone tool header with `MODEL LIBRARY` plus subtitle grouped on the left and `Saved models` aligned on the right.
+- Added a faint divider under the header so the selected-model summary and action area no longer visually blend into the page identity row.
+- Normalized selected-model action button height, padding, radius, spacing, and text sizing so primary, secondary, tertiary, and utility actions share one compact rhythm.
+
+### Verification
+- `node --check desktop/ui/app.js`
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- This is intentionally a visual Models-only polish pass; no Projects/Templates structure was added.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html` and `desktop/ui/styles.css`; the changes are limited to Models header and action-row presentation.
+
+## 2026-04-12 - 0.7.49-alpha - models-select-mode-and-card-polish-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Compressed the Models header into a horizontal `MODEL LIBRARY` / `Saved models` row with the purpose subtitle retained beneath it.
+- Added a dedicated Models selection mode with card/sidebar toggle selection, a stable selected-count label, `Delete selected`, and `Cancel`, keeping it separate from normal single-select browsing.
+- Improved model card surface contrast, hover lift, title hierarchy, metadata quietness, and selected-state emphasis so saved models read more like tangible library items.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+### Known Limitations
+- Bulk selection intentionally supports deletion only; no bulk open/export behavior was added.
+- Models still use branded placeholder preview tiles when no persisted thumbnail asset exists.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js`; this pass is isolated to Models-mode header, selection mode, and card styling.
+
+## 2026-04-12 - 0.7.48-alpha - models-selected-summary-polish-pass
+
+### Files Changed
+- `CHANGELOG.md`
+- `VERSION`
+- `README.md`
+- `desktop/README.md`
+- `docs/README.md`
+- `desktop/ui/index.html`
+- `desktop/ui/styles.css`
+- `desktop/ui/app.js`
+
+### Summary
+- Refined Models mode around a clearer page identity plus selected-model summary that shows the active model name, family, created time, and dimensions when available.
+- Moved Models actions into the selected-model context so Open in Blender, Go to Workspace, and Delete model read as selection-tied controls rather than generic page actions.
+- Strengthened selected states in both the main model grid and compact sidebar list while preserving the shared selected-model id and real saved-model data source.
+- Improved Models search/no-results behavior by including dimensions in matching and using explicit no-results copy for search and family filters.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+
+### Known Limitations
+- Models still use branded placeholder preview tiles when no dedicated thumbnail asset exists.
+- Projects and Templates remain intentionally placeholder modes.
+
+### Rollback / Review Notes
+- Review `desktop/ui/index.html`, `desktop/ui/styles.css`, and `desktop/ui/app.js` together; the behavior changes are limited to Models-mode selection, summary, and browsing polish.
+
 ## 2026-04-11 - 0.7.47-alpha - models-empty-state-and-sidebar-sync-pass
 
 ### Files Changed

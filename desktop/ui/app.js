@@ -5,6 +5,9 @@ let GLTFLoader = null;
 
 const promptInput = document.getElementById("prompt-input");
 const generateButton = document.getElementById("generate-button");
+const appNewSessionButton = document.getElementById("app-new-session-button");
+const appResetWorkspaceButton = document.getElementById("app-reset-workspace-button");
+const themeToggleButton = document.getElementById("theme-toggle-button");
 const toolbeltImageButton = document.getElementById("toolbelt-image");
 const toolbeltMicButton = document.getElementById("toolbelt-mic");
 const toolbeltImproveButton = document.getElementById("toolbelt-improve");
@@ -31,6 +34,9 @@ const logsBackdrop = document.getElementById("logs-backdrop");
 const showLogsButton = document.getElementById("show-logs-button");
 const closeLogsButton = document.getElementById("close-logs-button");
 const footerVersion = document.getElementById("footer-version");
+const footerAiLabel = document.getElementById("footer-ai-label");
+const footerAiPip = document.getElementById("footer-ai-pip");
+const footerBlenderPip = document.getElementById("footer-blender-pip");
 const sessionTitle = document.getElementById("sessionTitle");
 const metricLength = document.getElementById("metric-length");
 const metricWidth = document.getElementById("metric-width");
@@ -61,8 +67,6 @@ const setupPullButton = document.getElementById("setup-pull-button");
 const setupSmokeButton = document.getElementById("setup-smoke-button");
 const setupRefreshButton = document.getElementById("setup-refresh-button");
 const setupHelpText = document.getElementById("setup-help-text");
-const viewPlanButton = document.getElementById("view-plan-button");
-
 const viewerRenderSurface = document.getElementById("viewer-render-surface");
 const viewerOverlay = document.getElementById("viewer-overlay");
 const viewerOverlayTitle = document.getElementById("viewer-overlay-title");
@@ -94,9 +98,38 @@ const modelsGrid = document.getElementById("models-grid");
 const modelsEmptyState = document.getElementById("models-empty-state");
 const modelsEmptyCta = document.getElementById("models-empty-cta");
 const modelsGoWorkspace = document.getElementById("models-go-workspace");
-const modelsSelectionSummary = document.getElementById("models-selection-summary");
+const modelsSelectedName = document.getElementById("models-selected-name");
+const modelsSelectedFamily = document.getElementById("models-selected-family");
+const modelsSelectedCreated = document.getElementById("models-selected-created");
+const modelsSelectedDimensions = document.getElementById("models-selected-dimensions");
 const modelsSelectionOpen = document.getElementById("models-selection-open");
 const modelsSelectionDelete = document.getElementById("models-selection-delete");
+const modelsSingleActions = document.getElementById("models-single-actions");
+const modelsBulkActions = document.getElementById("models-bulk-actions");
+const modelsSelectToggle = document.getElementById("models-select-toggle");
+const modelsBulkDelete = document.getElementById("models-bulk-delete");
+const modelsSelectCancel = document.getElementById("models-select-cancel");
+const modelsSelectionCount = document.getElementById("models-selection-count");
+const projectsHomeView = document.getElementById("projects-home-view");
+const projectsDetailView = document.getElementById("projects-detail-view");
+const projectsGrid = document.getElementById("projects-grid");
+const projectsEmptyState = document.getElementById("projects-empty-state");
+const projectsBackButton = document.getElementById("projects-back-button");
+const projectsDetailTitle = document.getElementById("projects-detail-title");
+const projectsDetailMeta = document.getElementById("projects-detail-meta");
+const projectsDetailEmpty = document.getElementById("projects-detail-empty");
+const projectsModelGrid = document.getElementById("projects-model-grid");
+const projectsNewButton = document.getElementById("projects-new-button");
+const projectsEmptyNewButton = document.getElementById("projects-empty-new-button");
+const projectsSingleActions = document.getElementById("projects-single-actions");
+const projectsBulkActions = document.getElementById("projects-bulk-actions");
+const projectsSelectToggle = document.getElementById("projects-select-toggle");
+const projectsBulkDelete = document.getElementById("projects-bulk-delete");
+const projectsSelectCancel = document.getElementById("projects-select-cancel");
+const projectsSelectionCount = document.getElementById("projects-selection-count");
+const templatesCategoryList = document.getElementById("templates-category-list");
+const templatesGrid = document.getElementById("templates-grid");
+const templatesEmptyState = document.getElementById("templates-empty-state");
 let generationInFlight = false;
 let activeSession = createEmptySession();
 let librarySummary = { saved_model_count: 0, recent_saved_models: [], project_count: 0, template_count: 0, templates: [] };
@@ -114,6 +147,13 @@ let generationAnimationInterval = 0;
 let generationAnimationFrame = 0;
 let currentAppMode = "workspace";
 let selectedSavedModelId = "";
+let modelsSelectionMode = false;
+let bulkSelectedSavedModelIds = new Set();
+let userProjects = [];
+let activeProjectId = "";
+let projectsSelectionMode = false;
+let bulkSelectedProjectIds = new Set();
+let activeTemplateCategory = "all";
 let modelsSearchQuery = "";
 let modelsSortMode = "newest";
 let activeModelFamilyFilter = "all";
@@ -122,6 +162,49 @@ const STARTUP_EXAMPLE_PROMPTS = [
   "Desk cable clip",
   "Small electronics enclosure",
   "Planter with 3 mm walls",
+];
+
+const FALLBACK_TEMPLATE_ENTRIES = [
+  {
+    id: "template-wall-bracket",
+    name: "Wall Bracket",
+    family: "bracket",
+    category: "Brackets",
+    description: "Mounting bracket starter with holes and reinforced geometry.",
+    prompt: "Make a reinforced wall bracket 120 x 30 x 80 mm with four 5 mm mounting holes and 6 mm thickness",
+  },
+  {
+    id: "template-desk-cable-clip",
+    name: "Desk Cable Clip",
+    family: "clip",
+    category: "Clips",
+    description: "Simple clip starter for routing a cable along a desk edge.",
+    prompt: "Create a desk cable clip 35 mm wide for a 6 mm cable with a practical mounting base",
+  },
+  {
+    id: "template-small-enclosure",
+    name: "Small Electronics Enclosure",
+    family: "enclosure",
+    category: "Enclosures",
+    description: "Rectangular electronics case starter with wall thickness and opening cues.",
+    prompt: "Create an enclosure 120 x 80 x 50 mm with 3 mm walls and a 60 x 25 mm front opening",
+  },
+  {
+    id: "template-planter",
+    name: "Planter With Walls",
+    family: "planter",
+    category: "Planters",
+    description: "Open-top planter starter with controlled wall thickness.",
+    prompt: "Create a rectangular planter 140 x 80 x 70 mm with 3 mm walls and an open top",
+  },
+  {
+    id: "template-panel-plate",
+    name: "Panel Plate",
+    family: "panel_plate",
+    category: "Mechanical",
+    description: "Flat plate starter with mounting holes and explicit dimensions.",
+    prompt: "Make a 120 x 80 x 4 mm panel plate with four 5 mm mounting holes",
+  },
 ];
 
 const TAB_INTENTS = {
@@ -232,6 +315,41 @@ function setGenerationStatusText(text) {
   generationStatus.textContent = text || "Ready";
 }
 
+function setRuntimePipState(element, state) {
+  if (!element) {
+    return;
+  }
+  element.classList.toggle("is-connected", state === "connected");
+  element.classList.toggle("is-busy", state === "busy");
+  element.classList.toggle("is-muted", state !== "connected" && state !== "busy");
+}
+
+function updateGenerateButtonState(isBusy = generationInFlight) {
+  if (!generateButton) {
+    return;
+  }
+  generateButton.classList.toggle("is-loading", isBusy);
+  generateButton.setAttribute("aria-label", isBusy ? "Generating" : "Send prompt");
+  generateButton.title = isBusy ? "Generating" : "Send prompt";
+}
+
+function updateFooterRuntimeStatus(health = runtimeHealth) {
+  const normalizedHealth = health ? normalizeRuntimeHealth(health) : null;
+  const modelName = normalizedHealth?.ollamaModelName || normalizedHealth?.recommendedModel || "";
+  const aiReady = Boolean(
+    normalizedHealth?.ollamaInstalled
+    && normalizedHealth?.ollamaRunning
+    && normalizedHealth?.ollamaModelReady
+  );
+  const blenderReady = Boolean(normalizedHealth?.blenderDetected);
+
+  if (footerAiLabel) {
+    footerAiLabel.textContent = modelName ? `AI: Ollama (${modelName})` : "AI: Ollama";
+  }
+  setRuntimePipState(footerAiPip, generationInFlight ? "busy" : (aiReady ? "connected" : "muted"));
+  setRuntimePipState(footerBlenderPip, blenderReady ? "connected" : "muted");
+}
+
 function bindClick(element, handler) {
   if (element) {
     element.addEventListener("click", handler);
@@ -287,12 +405,122 @@ function formatLibraryTimestamp(value) {
   });
 }
 
+function formatProjectTimestamp(value) {
+  if (!value) {
+    return "Unknown";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown";
+  }
+  return parsed.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function modelLibraryName(entry = {}) {
   return generateSessionTitle(entry.prompt || entry.plan?.request_text || entry.family_label || entry.family || "Untitled");
 }
 
 function modelLibraryFamily(entry = {}) {
   return sentenceCaseLabel(entry.family_label || entry.family || entry.plan?.family_label || entry.plan?.family || "Model");
+}
+
+function templateCategory(entry = {}) {
+  const explicit = entry.category || "";
+  if (explicit) {
+    return sentenceCaseLabel(explicit);
+  }
+  const family = String(entry.family || entry.family_label || "").toLowerCase();
+  if (family.includes("bracket")) {
+    return "Brackets";
+  }
+  if (family.includes("enclosure") || family.includes("case") || family.includes("housing")) {
+    return "Enclosures";
+  }
+  if (family.includes("planter")) {
+    return "Planters";
+  }
+  if (family.includes("clip") || family.includes("hook")) {
+    return "Clips";
+  }
+  return "Mechanical";
+}
+
+function templateDescription(entry = {}) {
+  if (entry.description) {
+    return entry.description;
+  }
+  const category = templateCategory(entry);
+  if (category === "Brackets") {
+    return "Reusable mounting bracket starter with dimensional hole cues.";
+  }
+  if (category === "Enclosures") {
+    return "Structured enclosure starter with shell and opening cues.";
+  }
+  if (category === "Planters") {
+    return "Open-top container starter with wall-thickness guidance.";
+  }
+  if (category === "Clips") {
+    return "Compact clip starter for cable or retention geometry.";
+  }
+  return "Mechanical starter prompt with structured dimensions and features.";
+}
+
+function getTemplateEntries() {
+  const rawTemplates = Array.isArray(librarySummary.templates) && librarySummary.templates.length
+    ? librarySummary.templates
+    : FALLBACK_TEMPLATE_ENTRIES;
+  return rawTemplates.map((entry, index) => ({
+    ...entry,
+    id: entry.id || `template-${index}`,
+    name: entry.name || generateSessionTitle(entry.prompt || entry.family || "Template"),
+    family: entry.family || entry.family_label || "template",
+    category: templateCategory(entry),
+    description: templateDescription(entry),
+    prompt: entry.prompt || "",
+  })).filter((entry) => entry.prompt);
+}
+
+function templateCategoryOptions(templates = getTemplateEntries()) {
+  const categories = Array.from(new Set(templates.map((entry) => entry.category).filter(Boolean)));
+  const preferredOrder = ["Brackets", "Enclosures", "Planters", "Clips", "Mechanical"];
+  categories.sort((left, right) => {
+    const leftIndex = preferredOrder.indexOf(left);
+    const rightIndex = preferredOrder.indexOf(right);
+    if (leftIndex !== -1 || rightIndex !== -1) {
+      return (leftIndex === -1 ? 999 : leftIndex) - (rightIndex === -1 ? 999 : rightIndex);
+    }
+    return left.localeCompare(right);
+  });
+  return ["All", ...categories];
+}
+
+function filteredTemplates() {
+  const category = activeTemplateCategory.toLowerCase();
+  return getTemplateEntries().filter((entry) => category === "all" || entry.category.toLowerCase() === category);
+}
+
+function templateVisualClass(template = {}) {
+  const category = String(template.category || "").toLowerCase();
+  const family = String(template.family || "").toLowerCase();
+  if (category.includes("bracket") || family.includes("bracket")) {
+    return "is-bracket";
+  }
+  if (family.includes("plate") || family.includes("panel")) {
+    return "is-plate";
+  }
+  if (category.includes("enclosure") || family.includes("enclosure") || family.includes("case")) {
+    return "is-enclosure";
+  }
+  if (category.includes("planter") || family.includes("planter")) {
+    return "is-planter";
+  }
+  if (category.includes("clip") || family.includes("clip") || family.includes("hook")) {
+    return "is-clip";
+  }
+  return "is-mechanical";
 }
 
 function modelLibraryDimensions(entry = {}) {
@@ -303,7 +531,7 @@ function modelLibraryDimensions(entry = {}) {
   const formatted = [lengthValue, widthValue, heightValue]
     .filter((value) => typeof value === "number" && !Number.isNaN(value))
     .map((value) => Number(value.toFixed(2)).toString());
-  return formatted.length ? `${formatted.join(" × ")} mm` : "Dimensions unavailable";
+  return formatted.length ? `${formatted.join(" x ")} mm` : "Dimensions unavailable";
 }
 
 function normalizeSavedModelEntry(entry = {}) {
@@ -318,15 +546,69 @@ function normalizeSavedModelEntry(entry = {}) {
   };
 }
 
-function compactModelSelectionSummary(model) {
-  if (!model) {
-    return "Select a saved model to open or delete it.";
+function latestLibraryTimestamp(models = []) {
+  const timestamps = models
+    .map((entry) => new Date(entry.created_at || "").getTime())
+    .filter((value) => !Number.isNaN(value));
+  if (!timestamps.length) {
+    return "";
   }
-  return `${model.name} · ${model.familyDisplay} · ${model.createdDisplay}`;
+  return new Date(Math.max(...timestamps)).toISOString();
 }
 
 function getNormalizedSavedModels() {
   return savedModels.map((entry) => normalizeSavedModelEntry(entry));
+}
+
+function getDerivedProjects() {
+  const models = getNormalizedSavedModels();
+  const projects = userProjects.map((project) => ({
+    ...project,
+    description: project.description || "Custom project container.",
+    models: Array.isArray(project.models) ? project.models : [],
+    updatedAt: project.updatedAt || project.createdAt || "",
+    isUserProject: true,
+  }));
+
+  if (!models.length) {
+    return projects;
+  }
+
+  projects.push({
+    id: "all-models",
+    name: "All saved models",
+    description: "Every generated model in the local library.",
+    models,
+    updatedAt: latestLibraryTimestamp(models),
+    isUserProject: false,
+  });
+
+  const familyGroups = new Map();
+  models.forEach((model) => {
+    const key = model.familyDisplay || "Model";
+    const familyModels = familyGroups.get(key) || [];
+    familyModels.push(model);
+    familyGroups.set(key, familyModels);
+  });
+
+  Array.from(familyGroups.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .forEach(([family, familyModels]) => {
+      projects.push({
+        id: `family-${family.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "model"}`,
+        name: `${family} models`,
+        description: `Generated ${family.toLowerCase()} geometry.`,
+        models: familyModels,
+        updatedAt: latestLibraryTimestamp(familyModels),
+        isUserProject: false,
+      });
+    });
+
+  return projects;
+}
+
+function projectById(projectId) {
+  return getDerivedProjects().find((project) => project.id === projectId) || null;
 }
 
 function currentSelectedSavedModel() {
@@ -345,6 +627,7 @@ function filteredSavedModels() {
     const matchesQuery = !query || [
       entry.name,
       entry.familyDisplay,
+      entry.dimensionsDisplay,
       entry.prompt || "",
       entry.validation_summary || "",
     ].some((value) => String(value).toLowerCase().includes(query));
@@ -379,6 +662,33 @@ function ensureSelectedSavedModel(models = filteredSavedModels()) {
   }
 }
 
+function pruneBulkModelSelection(models = getNormalizedSavedModels()) {
+  const validIds = new Set(models.map((entry) => entry.id));
+  bulkSelectedSavedModelIds = new Set(Array.from(bulkSelectedSavedModelIds).filter((id) => validIds.has(id)));
+  if (!validIds.size) {
+    modelsSelectionMode = false;
+  }
+}
+
+function updateModelsActionMode() {
+  const selectedCount = bulkSelectedSavedModelIds.size;
+  if (modelsSingleActions) {
+    modelsSingleActions.hidden = modelsSelectionMode;
+  }
+  if (modelsBulkActions) {
+    modelsBulkActions.hidden = !modelsSelectionMode;
+  }
+  if (modelsSelectionCount) {
+    modelsSelectionCount.textContent = `${selectedCount} selected`;
+  }
+  if (modelsBulkDelete) {
+    modelsBulkDelete.disabled = selectedCount === 0;
+  }
+  if (modelsGrid) {
+    modelsGrid.classList.toggle("is-selecting", modelsSelectionMode);
+  }
+}
+
 function renderModelsFamilyFilters(models = getNormalizedSavedModels()) {
   if (!modelsFamilyFilters) {
     return;
@@ -391,19 +701,38 @@ function renderModelsFamilyFilters(models = getNormalizedSavedModels()) {
   }).join("");
 }
 
+function modelsNoResultsMessage() {
+  const hasSearch = Boolean(modelsSearchQuery.trim());
+  const familyLabel = activeModelFamilyFilter === "all" ? "" : activeModelFamilyFilter;
+  const readableFamily = familyLabel ? familyLabel.replace(/\b\w/g, (letter) => letter.toUpperCase()) : "";
+  if (hasSearch && familyLabel) {
+    return "No models match the current search and family filter.";
+  }
+  if (hasSearch) {
+    return "No models match your search.";
+  }
+  if (familyLabel) {
+    return `No ${readableFamily} models match the current filter.`;
+  }
+  return "No models match the current view.";
+}
+
 function renderModelsSidebarList(models = filteredSavedModels()) {
   if (!modelsSidebarList) {
     return;
   }
 
   if (!models.length) {
-    modelsSidebarList.innerHTML = '<p class="models-sidebar-empty">No models match the current view.</p>';
+    modelsSidebarList.innerHTML = `<p class="models-sidebar-empty">${escapeHtml(modelsNoResultsMessage())}</p>`;
     return;
   }
 
-  modelsSidebarList.innerHTML = models.map((model) => `
+  modelsSidebarList.innerHTML = models.map((model) => {
+    const isSingleSelected = !modelsSelectionMode && model.id === selectedSavedModelId;
+    const isBulkSelected = modelsSelectionMode && bulkSelectedSavedModelIds.has(model.id);
+    return `
     <button
-      class="models-sidebar-item${model.id === selectedSavedModelId ? " is-selected" : ""}"
+      class="models-sidebar-item${isSingleSelected ? " is-selected" : ""}${isBulkSelected ? " is-multi-selected" : ""}"
       type="button"
       data-model-select="${escapeHtml(model.id)}"
       aria-label="Select ${escapeHtml(model.name)}"
@@ -411,21 +740,37 @@ function renderModelsSidebarList(models = filteredSavedModels()) {
       <span class="models-sidebar-item-name">${escapeHtml(model.name)}</span>
       <span class="models-sidebar-item-meta">${escapeHtml(model.familyDisplay)}</span>
     </button>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function renderModelsSelection(model) {
-  if (!modelsSelectionSummary || !modelsSelectionOpen || !modelsSelectionDelete) {
+  if (!modelsSelectedName || !modelsSelectedFamily || !modelsSelectedCreated || !modelsSelectedDimensions || !modelsSelectionOpen || !modelsSelectionDelete || !modelsGoWorkspace) {
     return;
   }
-  modelsSelectionSummary.textContent = compactModelSelectionSummary(model);
-  modelsSelectionSummary.title = model
-    ? `${model.name}\n${model.dimensionsDisplay}\n${model.validation_summary || "No validation summary available."}`
-    : "Select a saved model to open or delete it.";
+  if (modelsSelectionMode) {
+    const selectedCount = bulkSelectedSavedModelIds.size;
+    modelsSelectedName.textContent = "Selection mode";
+    modelsSelectedName.title = "Selection mode";
+    modelsSelectedFamily.textContent = selectedCount ? `${selectedCount} selected` : "Select models";
+    modelsSelectedCreated.textContent = "Bulk delete available";
+    modelsSelectedDimensions.textContent = "Cancel to return";
+    updateModelsActionMode();
+    return;
+  }
+
+  modelsSelectedName.textContent = model?.name || "No model selected";
+  modelsSelectedName.title = model?.name || "No model selected";
+  modelsSelectedFamily.textContent = model ? `Family ${model.familyDisplay}` : "Family -";
+  modelsSelectedCreated.textContent = model ? `Created ${model.createdDisplay}` : "Created -";
+  modelsSelectedDimensions.textContent = model ? `Size ${model.dimensionsDisplay}` : "Size -";
   modelsSelectionOpen.disabled = !model?.script_path;
   modelsSelectionOpen.dataset.modelId = model?.id || "";
+  modelsGoWorkspace.disabled = !model?.id;
+  modelsGoWorkspace.dataset.modelId = model?.id || "";
   modelsSelectionDelete.disabled = !model?.id;
   modelsSelectionDelete.dataset.modelId = model?.id || "";
+  updateModelsActionMode();
 }
 
 function renderModelsGrid() {
@@ -433,6 +778,7 @@ function renderModelsGrid() {
     return;
   }
   const normalizedModels = getNormalizedSavedModels();
+  pruneBulkModelSelection(normalizedModels);
   renderModelsFamilyFilters(normalizedModels);
   const visibleModels = filteredSavedModels();
   ensureSelectedSavedModel(visibleModels);
@@ -450,9 +796,81 @@ function renderModelsGrid() {
     return;
   }
 
-  modelsGrid.innerHTML = visibleModels.map((model) => `
-    <article class="model-card${model.id === selectedSavedModelId ? " is-selected" : ""}" data-model-id="${escapeHtml(model.id)}">
-      <button class="model-card-surface" type="button" data-model-select="${escapeHtml(model.id)}" aria-label="Select ${escapeHtml(model.name)}">
+  modelsGrid.innerHTML = visibleModels.map((model) => {
+    const isSingleSelected = !modelsSelectionMode && model.id === selectedSavedModelId;
+    const isBulkSelected = modelsSelectionMode && bulkSelectedSavedModelIds.has(model.id);
+    return `
+    <article class="model-card${modelsSelectionMode ? " is-selectable" : ""}${isSingleSelected ? " is-selected" : ""}${isBulkSelected ? " is-multi-selected" : ""}" data-model-id="${escapeHtml(model.id)}">
+      <button class="model-card-surface" type="button" data-model-select="${escapeHtml(model.id)}" aria-label="${modelsSelectionMode ? "Toggle selection for" : "Select"} ${escapeHtml(model.name)}" aria-pressed="${isBulkSelected ? "true" : "false"}">
+        <div class="model-card-preview">
+          <span class="model-card-check" aria-hidden="true"></span>
+          <span class="model-card-badge">${escapeHtml(model.familyDisplay)}</span>
+          <span class="model-card-glyph">&#9638;</span>
+        </div>
+        <div class="model-card-body">
+          <h3 class="model-card-title">${escapeHtml(model.name)}</h3>
+          <p class="model-card-meta">${escapeHtml(model.createdDisplay)}</p>
+          <p class="model-card-submeta">${escapeHtml(model.dimensionsDisplay)}</p>
+        </div>
+      </button>
+    </article>
+  `;
+  }).join("");
+
+  if (!visibleModels.length) {
+    modelsGrid.innerHTML = `<div class="models-filter-empty">${escapeHtml(modelsNoResultsMessage())}</div>`;
+    renderModelsSelection(null);
+    return;
+  }
+
+  renderModelsSelection(selectedModel);
+}
+
+function setModelsSelectionMode(isActive) {
+  modelsSelectionMode = Boolean(isActive);
+  bulkSelectedSavedModelIds.clear();
+  renderModelsGrid();
+}
+
+function toggleBulkSelectedModel(modelId) {
+  if (!modelId) {
+    return;
+  }
+  if (bulkSelectedSavedModelIds.has(modelId)) {
+    bulkSelectedSavedModelIds.delete(modelId);
+  } else {
+    bulkSelectedSavedModelIds.add(modelId);
+  }
+  renderModelsGrid();
+}
+
+async function deleteBulkSelectedModels() {
+  if (!bridge) {
+    appendLog("Desktop bridge is not ready.");
+    return;
+  }
+  const ids = Array.from(bulkSelectedSavedModelIds);
+  if (!ids.length) {
+    return;
+  }
+  if (!window.confirm(`Delete ${ids.length} selected model${ids.length === 1 ? "" : "s"} from the local library?`)) {
+    return;
+  }
+  try {
+    for (const modelId of ids) {
+      await resolveBridgeJson(bridge.deleteSavedModel(modelId), "deleteSavedModel");
+    }
+    appendLog(`${ids.length} selected model${ids.length === 1 ? "" : "s"} deleted.`);
+    setModelsSelectionMode(false);
+  } catch (error) {
+    appendLog(`Failed to delete selected models: ${error}`);
+  }
+}
+
+function renderProjectModelCards(models = []) {
+  return models.map((model) => `
+    <article class="model-card project-model-card" data-model-id="${escapeHtml(model.id)}">
+      <button class="model-card-surface" type="button" data-project-model-select="${escapeHtml(model.id)}" aria-label="Open ${escapeHtml(model.name)} in Workspace">
         <div class="model-card-preview">
           <span class="model-card-badge">${escapeHtml(model.familyDisplay)}</span>
           <span class="model-card-glyph">&#9638;</span>
@@ -465,14 +883,283 @@ function renderModelsGrid() {
       </button>
     </article>
   `).join("");
+}
 
-  if (!visibleModels.length) {
-    modelsGrid.innerHTML = '<div class="models-filter-empty">No models match the current search or filter.</div>';
-    renderModelsSelection(null);
+function pruneBulkProjectSelection(projects = getDerivedProjects()) {
+  const validIds = new Set(projects.map((project) => project.id));
+  bulkSelectedProjectIds = new Set(Array.from(bulkSelectedProjectIds).filter((id) => validIds.has(id)));
+  if (!validIds.size) {
+    projectsSelectionMode = false;
+  }
+}
+
+function updateProjectsActionMode() {
+  const selectedCount = bulkSelectedProjectIds.size;
+  if (projectsSingleActions) {
+    projectsSingleActions.hidden = projectsSelectionMode;
+  }
+  if (projectsBulkActions) {
+    projectsBulkActions.hidden = !projectsSelectionMode;
+  }
+  if (projectsSelectionCount) {
+    projectsSelectionCount.textContent = `${selectedCount} selected`;
+  }
+  if (projectsBulkDelete) {
+    projectsBulkDelete.disabled = selectedCount === 0;
+  }
+  if (projectsGrid) {
+    projectsGrid.classList.toggle("is-selecting", projectsSelectionMode);
+  }
+}
+
+function projectMetaText(project) {
+  const modelCount = project.models?.length || 0;
+  const modelLabel = `${modelCount} model${modelCount === 1 ? "" : "s"}`;
+  return `${modelLabel} &bull; Updated ${escapeHtml(formatProjectTimestamp(project.updatedAt))}`;
+}
+
+function renderProjectsHome(projects = getDerivedProjects()) {
+  if (!projectsGrid || !projectsEmptyState) {
+    return;
+  }
+  pruneBulkProjectSelection(projects);
+  updateProjectsActionMode();
+
+  const hasProjects = projects.length > 0;
+  projectsEmptyState.hidden = hasProjects;
+  projectsGrid.hidden = !hasProjects;
+
+  if (!hasProjects) {
+    projectsGrid.innerHTML = "";
     return;
   }
 
-  renderModelsSelection(selectedModel);
+  projectsGrid.innerHTML = projects.map((project) => {
+    const isSelected = projectsSelectionMode && bulkSelectedProjectIds.has(project.id);
+    return `
+    <button class="project-card${projectsSelectionMode ? " is-selectable" : ""}${isSelected ? " is-selected" : ""}" type="button" data-project-open="${escapeHtml(project.id)}" aria-label="${projectsSelectionMode ? "Toggle selection for" : "Open"} ${escapeHtml(project.name)}" aria-pressed="${isSelected ? "true" : "false"}">
+      <span class="project-card-check" aria-hidden="true"></span>
+      <span class="project-folder-icon" aria-hidden="true"></span>
+      <span class="project-card-body">
+        <strong class="project-card-title">${escapeHtml(project.name)}</strong>
+        <span class="project-card-meta">${projectMetaText(project)}</span>
+      </span>
+    </button>
+  `;
+  }).join("");
+}
+
+function renderProjectDetail(project) {
+  if (!projectsDetailTitle || !projectsDetailMeta || !projectsModelGrid || !projectsDetailEmpty) {
+    return;
+  }
+
+  projectsDetailTitle.textContent = project?.name || "Project";
+  projectsDetailMeta.textContent = project
+    ? `${project.models.length} model${project.models.length === 1 ? "" : "s"} - Updated ${formatLibraryTimestamp(project.updatedAt)}`
+    : "0 models";
+
+  const models = project?.models || [];
+  const hasModels = models.length > 0;
+  projectsDetailEmpty.hidden = hasModels;
+  projectsModelGrid.hidden = !hasModels;
+  projectsModelGrid.innerHTML = hasModels ? renderProjectModelCards(models) : "";
+}
+
+function setProjectsDetailMode(projectId = "") {
+  projectsSelectionMode = false;
+  bulkSelectedProjectIds.clear();
+  activeProjectId = projectId;
+  const isDetail = Boolean(projectId);
+  if (projectsHomeView) {
+    projectsHomeView.hidden = isDetail;
+  }
+  if (projectsDetailView) {
+    projectsDetailView.hidden = !isDetail;
+  }
+
+  if (isDetail) {
+    renderProjectDetail(projectById(projectId));
+  } else {
+    renderProjectsHome();
+  }
+}
+
+function renderProjects() {
+  const projects = getDerivedProjects();
+  if (activeProjectId && !projects.some((project) => project.id === activeProjectId)) {
+    activeProjectId = "";
+  }
+  if (activeProjectId) {
+    renderProjectDetail(projectById(activeProjectId));
+    return;
+  }
+  renderProjectsHome(projects);
+}
+
+function renderTemplateCategories(templates = getTemplateEntries()) {
+  if (!templatesCategoryList) {
+    return;
+  }
+  const categories = templateCategoryOptions(templates);
+  templatesCategoryList.innerHTML = categories.map((category) => {
+    const value = category.toLowerCase();
+    const isActive = (activeTemplateCategory || "all") === value;
+    return `<button class="template-category-item${isActive ? " is-active" : ""}" type="button" data-template-category="${escapeHtml(value)}">${escapeHtml(category)}</button>`;
+  }).join("");
+}
+
+function renderTemplates() {
+  if (!templatesGrid || !templatesEmptyState) {
+    return;
+  }
+  const templates = getTemplateEntries();
+  const visibleTemplates = filteredTemplates();
+  renderTemplateCategories(templates);
+
+  const hasTemplates = templates.length > 0;
+  templatesEmptyState.hidden = hasTemplates;
+  templatesGrid.hidden = !hasTemplates;
+
+  if (!hasTemplates) {
+    templatesGrid.innerHTML = "";
+    return;
+  }
+
+  templatesGrid.innerHTML = visibleTemplates.length
+    ? visibleTemplates.map((template) => `
+      <article class="template-card">
+        <button class="template-card-surface" type="button" data-template-launch="${escapeHtml(template.id)}" aria-label="Use ${escapeHtml(template.name)} template">
+          <div class="template-card-preview">
+            <span class="template-card-badge">${escapeHtml(template.category)}</span>
+            <span class="template-visual ${templateVisualClass(template)}" aria-hidden="true"><span></span></span>
+          </div>
+          <div class="template-card-body">
+            <h3 class="template-card-title">${escapeHtml(template.name)}</h3>
+            <p class="template-card-copy">${escapeHtml(template.description)}</p>
+          </div>
+        </button>
+      </article>
+    `).join("")
+    : `<div class="templates-filter-empty">No templates in this category yet.</div>`;
+}
+
+function launchTemplate(templateId) {
+  const template = getTemplateEntries().find((entry) => entry.id === templateId);
+  if (!template || !promptInput) {
+    return;
+  }
+  promptInput.value = template.prompt;
+  setSessionTitle(generateSessionTitle(template.name || template.prompt));
+  setActiveTab("workspace");
+  promptInput.focus();
+  appendLog(`Template applied: ${template.name}`);
+}
+
+function createUserProject() {
+  const rawName = window.prompt("Project name");
+  const name = String(rawName || "").replace(/\s+/g, " ").trim();
+  if (!name) {
+    return;
+  }
+  const now = new Date().toISOString();
+  userProjects.push({
+    id: `project-${Date.now().toString(36)}`,
+    name: name.substring(0, 64),
+    description: "Custom project container.",
+    models: [],
+    createdAt: now,
+    updatedAt: now,
+    isUserProject: true,
+  });
+  activeProjectId = "";
+  renderProjects();
+  appendLog(`Project created: ${name.substring(0, 64)}`);
+}
+
+function setProjectsSelectionMode(isActive) {
+  projectsSelectionMode = Boolean(isActive);
+  bulkSelectedProjectIds.clear();
+  renderProjects();
+}
+
+function toggleBulkSelectedProject(projectId) {
+  if (!projectId) {
+    return;
+  }
+  if (bulkSelectedProjectIds.has(projectId)) {
+    bulkSelectedProjectIds.delete(projectId);
+  } else {
+    bulkSelectedProjectIds.add(projectId);
+  }
+  renderProjects();
+}
+
+function deleteSelectedProjects() {
+  const selectedIds = Array.from(bulkSelectedProjectIds);
+  if (!selectedIds.length) {
+    return;
+  }
+  const customIds = new Set(userProjects.map((project) => project.id));
+  const deletableIds = selectedIds.filter((id) => customIds.has(id));
+  const skippedCount = selectedIds.length - deletableIds.length;
+
+  if (!deletableIds.length) {
+    window.alert("Saved-model project groups are derived from the model library and cannot be deleted in this alpha pass.");
+    return;
+  }
+  if (!window.confirm(`Delete ${deletableIds.length} project${deletableIds.length === 1 ? "" : "s"}?`)) {
+    return;
+  }
+
+  userProjects = userProjects.filter((project) => !deletableIds.includes(project.id));
+  if (activeProjectId && deletableIds.includes(activeProjectId)) {
+    activeProjectId = "";
+  }
+  appendLog(`Deleted ${deletableIds.length} project${deletableIds.length === 1 ? "" : "s"}.${skippedCount ? " Library-derived groups were kept." : ""}`);
+  setProjectsSelectionMode(false);
+}
+
+async function openSelectedModelInWorkspace() {
+  const model = currentSelectedSavedModel();
+  if (!model) {
+    return;
+  }
+
+  const previewKey = `library-${model.id || model.generation_id || "saved-model"}`;
+  const validation = model.validation_summary ? { summary: model.validation_summary } : null;
+  applyActiveSession({
+    generationId: model.generation_id || model.id || "",
+    requestText: model.prompt || model.plan?.request_text || model.name,
+    promptText: model.prompt || model.plan?.request_text || model.name,
+    plan: model.plan || null,
+    validation,
+    classification: model.plan?.classification || null,
+    resultStatus: "ready",
+    message: model.validation_summary || "Saved model loaded from the local library.",
+    previewStatus: model.preview_export_status || "",
+    previewMessage: "",
+    previewModelPath: model.preview_model_path || "",
+    previewAssetVersion: "",
+    previewKey,
+  });
+  setGenerationStatusText("Library model");
+  setReadinessStateText(model.validation_summary || "Saved model loaded from the local library.");
+  setActiveTab("workspace");
+
+  if (viewer.initialized) {
+    try {
+      await viewer.loadPreview({
+        promptText: model.prompt || model.name,
+        plan: model.plan || null,
+        previewModelPath: model.preview_model_path || "",
+        previewAssetVersion: "",
+        previewKey,
+      });
+    } catch (error) {
+      appendLog(`Saved model preview load failed: ${error}`);
+    }
+  }
 }
 
 function renderConversationThread() {
@@ -1328,7 +2015,7 @@ function applyRuntimeGate(state = {}) {
   promptInput.disabled = !ready;
   openBlenderButton.disabled = !normalizedHealth.blenderDetected;
   generateButton.disabled = !ready || generationInFlight;
-  generateButton.textContent = generationInFlight ? "..." : "Go";
+  updateGenerateButtonState(generationInFlight);
 
   if (!ready) {
     setReadinessStateText(normalizedHealth.runtimeHealthMessage || "Finish local setup before generating.");
@@ -1340,6 +2027,7 @@ function applyRuntimeGate(state = {}) {
   }
   systemAiStatus.textContent = aiReady ? "Ready" : (normalizedHealth.ollamaInstalled ? "Setup needed" : "Not ready");
   systemBlenderStatus.textContent = blenderReady ? "Connected" : "Not configured";
+  updateFooterRuntimeStatus(normalizedHealth);
   if (ready) {
     seedStartupConversationIfReady();
   }
@@ -1351,6 +2039,8 @@ function updatePassiveShellState(state) {
   scriptPath.textContent = state.generatedScriptPath || "Unavailable";
   footerVersion.textContent = `v${state.version}`;
   renderModelsGrid();
+  renderProjects();
+  renderTemplates();
   applyRuntimeGate(state);
 }
 
@@ -1369,6 +2059,12 @@ function setActiveTab(tabName) {
   });
   if (tabName === "models") {
     renderModelsGrid();
+  }
+  if (tabName === "projects") {
+    renderProjects();
+  }
+  if (tabName === "templates") {
+    renderTemplates();
   }
   if (tabName === "workspace" && viewer?.initialized) {
     viewer.resize();
@@ -3015,7 +3711,8 @@ async function applyState(rawState) {
 
 function setGenerating(isGenerating) {
   generateButton.disabled = isGenerating || !runtimeReady();
-  generateButton.textContent = isGenerating ? "..." : "Go";
+  updateGenerateButtonState(isGenerating);
+  updateFooterRuntimeStatus(runtimeHealth);
 }
 
 function connectBridge() {
@@ -3309,7 +4006,9 @@ bindClick(openBlenderButton, async () => {
   }
 });
 
-bindClick(modelsGoWorkspace, () => setActiveTab("workspace"));
+bindClick(modelsGoWorkspace, () => {
+  void openSelectedModelInWorkspace();
+});
 bindClick(modelsEmptyCta, () => setActiveTab("workspace"));
 
 bindClick(modelsSelectionOpen, async () => {
@@ -3340,6 +4039,18 @@ bindClick(modelsSelectionDelete, async () => {
   } catch (error) {
     appendLog(`Failed to delete saved model: ${error}`);
   }
+});
+
+bindClick(modelsSelectToggle, () => {
+  setModelsSelectionMode(true);
+});
+
+bindClick(modelsSelectCancel, () => {
+  setModelsSelectionMode(false);
+});
+
+bindClick(modelsBulkDelete, () => {
+  void deleteBulkSelectedModels();
 });
 
 if (promptInput) {
@@ -3437,6 +4148,10 @@ if (modelsGrid) {
   modelsGrid.addEventListener("click", async (event) => {
     const selectButton = event.target.closest("[data-model-select]");
     if (selectButton) {
+      if (modelsSelectionMode) {
+        toggleBulkSelectedModel(selectButton.dataset.modelSelect || "");
+        return;
+      }
       selectedSavedModelId = selectButton.dataset.modelSelect || "";
       renderModelsGrid();
       return;
@@ -3473,8 +4188,75 @@ if (modelsSidebarList) {
     if (!selectButton) {
       return;
     }
+    if (modelsSelectionMode) {
+      toggleBulkSelectedModel(selectButton.dataset.modelSelect || "");
+      return;
+    }
     selectedSavedModelId = selectButton.dataset.modelSelect || "";
     renderModelsGrid();
+  });
+}
+
+if (projectsGrid) {
+  projectsGrid.addEventListener("click", (event) => {
+    const projectButton = event.target.closest("[data-project-open]");
+    if (!projectButton) {
+      return;
+    }
+    if (projectsSelectionMode) {
+      toggleBulkSelectedProject(projectButton.dataset.projectOpen || "");
+      return;
+    }
+    setProjectsDetailMode(projectButton.dataset.projectOpen || "");
+  });
+}
+
+bindClick(projectsNewButton, createUserProject);
+bindClick(projectsEmptyNewButton, createUserProject);
+
+bindClick(projectsSelectToggle, () => {
+  setProjectsSelectionMode(true);
+});
+
+bindClick(projectsSelectCancel, () => {
+  setProjectsSelectionMode(false);
+});
+
+bindClick(projectsBulkDelete, deleteSelectedProjects);
+
+bindClick(projectsBackButton, () => {
+  setProjectsDetailMode("");
+});
+
+if (projectsModelGrid) {
+  projectsModelGrid.addEventListener("click", (event) => {
+    const modelButton = event.target.closest("[data-project-model-select]");
+    if (!modelButton) {
+      return;
+    }
+    selectedSavedModelId = modelButton.dataset.projectModelSelect || "";
+    void openSelectedModelInWorkspace();
+  });
+}
+
+if (templatesCategoryList) {
+  templatesCategoryList.addEventListener("click", (event) => {
+    const categoryButton = event.target.closest("[data-template-category]");
+    if (!categoryButton) {
+      return;
+    }
+    activeTemplateCategory = categoryButton.dataset.templateCategory || "all";
+    renderTemplates();
+  });
+}
+
+if (templatesGrid) {
+  templatesGrid.addEventListener("click", (event) => {
+    const templateButton = event.target.closest("[data-template-launch]");
+    if (!templateButton) {
+      return;
+    }
+    launchTemplate(templateButton.dataset.templateLaunch || "");
   });
 }
 
@@ -3490,6 +4272,40 @@ function startNewChat() {
   });
 }
 
+function resetWorkspaceFromToolbar() {
+  if (generationInFlight) {
+    appendLog("Debug: workspace reset blocked -> generation already in flight.");
+    return;
+  }
+  appendLog("Workspace reset requested from top controls.");
+  resetActiveSession({
+    reasonText: "Workspace reset. Submit a prompt to begin.",
+    clearPrompt: true,
+  });
+  setActiveTab("workspace");
+}
+
+function setDarkTheme(enabled) {
+  if (enabled) {
+    document.body.dataset.theme = "dark";
+  } else {
+    delete document.body.dataset.theme;
+  }
+  if (themeToggleButton) {
+    themeToggleButton.setAttribute("aria-pressed", enabled ? "true" : "false");
+    themeToggleButton.setAttribute("aria-label", enabled ? "Switch to light mode" : "Switch to dark mode");
+    themeToggleButton.title = enabled ? "Switch to light mode" : "Switch to dark mode";
+  }
+}
+
+bindClick(appNewSessionButton, () => {
+  startNewChat();
+  setActiveTab("workspace");
+});
+bindClick(appResetWorkspaceButton, resetWorkspaceFromToolbar);
+bindClick(themeToggleButton, () => {
+  setDarkTheme(document.body.dataset.theme !== "dark");
+});
 bindClick(newConversationButton, startNewChat);
 topnavTabs.forEach((button) => {
   button.addEventListener("click", () => {

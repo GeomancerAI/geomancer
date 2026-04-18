@@ -21,9 +21,25 @@
       </nav>
 
       <div class="topbar-meta">
-        <div class="mode-switch" aria-label="Mode">
-          <button class="mode-chip is-active" type="button">Alpha</button>
-          <button class="mode-chip" type="button">Review</button>
+        <div class="app-control-cluster" aria-label="Workspace controls">
+          <div class="app-control-group" aria-label="Session controls">
+            <button id="app-new-session-button" class="app-icon-control" type="button" aria-label="New session" title="New session">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M10 4v12M4 10h12" />
+              </svg>
+            </button>
+            <button id="app-reset-workspace-button" class="app-icon-control" type="button" aria-label="Reset workspace" title="Reset workspace">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M15.8 7.2A6 6 0 1 0 16 13" />
+                <path d="M15.8 3.8v3.4h-3.4" />
+              </svg>
+            </button>
+          </div>
+          <button id="theme-toggle-button" class="theme-toggle-button" type="button" aria-label="Switch to dark mode" aria-pressed="false" title="Toggle theme">
+            <span class="theme-toggle-track" aria-hidden="true">
+              <span class="theme-toggle-thumb"></span>
+            </span>
+          </button>
         </div>
       </div>
     </header>
@@ -55,7 +71,12 @@
           <div class="composer">
             <label class="sr-only" for="prompt-input">Prompt</label>
             <textarea id="prompt-input" placeholder="Describe your part (e.g. 120mm plate with 4 holes)"></textarea>
-            <button id="generate-button" class="composer-send" type="button" aria-label="Generate">Go</button>
+            <button id="generate-button" class="composer-send" type="button" aria-label="Send prompt" title="Send prompt">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M4 10h10.5" />
+                <path d="M10.5 5 15.5 10l-5 5" />
+              </svg>
+            </button>
           </div>
           <div class="composer-toolbelt" aria-label="Composer tools">
             <div class="composer-toolbelt-group">
@@ -181,12 +202,19 @@
           <div class="viewer-footer-main">
             <span class="generation-chip" id="generation-status">Waiting</span>
             <span id="readiness-state" class="viewer-footer-summary" title="Finish setup or submit a prompt to begin.">Finish setup or submit a prompt to begin.</span>
-            <button id="view-plan-button" class="viewer-footer-link" type="button" disabled>View plan</button>
           </div>
           <div class="viewer-footer-meta">
+            <span class="viewer-runtime-item">
+              <span id="footer-ai-label">AI: Ollama</span>
+              <span id="footer-ai-pip" class="runtime-pip is-muted" aria-hidden="true"></span>
+            </span>
+            <span class="viewer-runtime-item">
+              <span>Blender</span>
+              <span id="footer-blender-pip" class="runtime-pip is-muted" aria-hidden="true"></span>
+            </span>
             <span class="viewer-footer-runtime">AI <span id="system-ai-status">Waiting</span> · Blender <span id="system-blender-status">Waiting</span></span>
-            <button id="show-logs-button" class="info-strip-link viewer-footer-link" type="button">Show logs</button>
             <span>Geomancer <span id="footer-version">v1.0.0</span></span>
+            <button id="show-logs-button" class="info-strip-link viewer-footer-link" type="button">Show logs</button>
           </div>
         </div>
       </section>
@@ -275,14 +303,36 @@
           <section class="models-main panel">
             <div class="models-main-header">
               <div class="models-main-heading">
-                <p class="section-eyebrow">Model library</p>
+                <div class="models-heading-copy">
+                  <p class="section-eyebrow">Model library</p>
+                  <p class="models-page-subtitle">Browse, reopen, and manage locally generated geometry.</p>
+                </div>
                 <h2 class="models-title">Saved models</h2>
-                <p id="models-selection-summary" class="models-selection-summary">Select a saved model to open or delete it.</p>
+              </div>
+            </div>
+
+            <div class="models-selected-summary">
+              <div class="models-selected-copy">
+                <p class="models-selected-label">Selected model</p>
+                <h3 id="models-selected-name" class="models-selected-name">No model selected</h3>
+                <div class="models-selected-facts">
+                  <span id="models-selected-family">Family -</span>
+                  <span id="models-selected-created">Created -</span>
+                  <span id="models-selected-dimensions">Size -</span>
+                </div>
               </div>
               <div class="models-header-actions">
-                <button id="models-selection-open" class="action-button primary-action" type="button">Open in Blender</button>
-                <button id="models-selection-delete" class="action-button" type="button">Delete model</button>
-                <button id="models-go-workspace" class="icon-button subtle" type="button">Go to Workspace</button>
+                <div id="models-single-actions" class="models-action-set">
+                  <button id="models-selection-open" class="action-button primary-action" type="button">Open in Blender</button>
+                  <button id="models-go-workspace" class="icon-button subtle" type="button">Go to Workspace</button>
+                  <button id="models-selection-delete" class="action-button" type="button">Delete model</button>
+                  <button id="models-select-toggle" class="action-button models-select-button" type="button">Select</button>
+                </div>
+                <div id="models-bulk-actions" class="models-action-set" hidden>
+                  <span id="models-selection-count" class="models-selection-count">0 selected</span>
+                  <button id="models-bulk-delete" class="action-button danger-action" type="button" disabled>Delete selected</button>
+                  <button id="models-select-cancel" class="icon-button subtle" type="button">Cancel</button>
+                </div>
               </div>
             </div>
 
@@ -298,18 +348,85 @@
       </section>
 
       <section id="mode-projects" class="mode-screen" hidden>
-        <div class="mode-placeholder panel">
-          <p class="section-eyebrow">Projects</p>
-          <h2>Projects are not available yet</h2>
-          <p>This mode is reserved for grouped model work in a later pass.</p>
+        <div class="projects-shell">
+          <section id="projects-home-view" class="projects-view panel">
+            <div class="projects-header">
+              <div class="projects-heading-copy">
+                <p class="section-eyebrow">Projects</p>
+                <p class="projects-copy">Open a local project container to browse its generated models.</p>
+              </div>
+              <div class="projects-header-right">
+                <h2 class="projects-title">Project library</h2>
+                <div id="projects-single-actions" class="projects-action-set">
+                  <button id="projects-new-button" class="action-button primary-action" type="button">New Project</button>
+                  <button id="projects-select-toggle" class="action-button projects-select-button" type="button">Select</button>
+                </div>
+                <div id="projects-bulk-actions" class="projects-action-set" hidden>
+                  <span id="projects-selection-count" class="projects-selection-count">0 selected</span>
+                  <button id="projects-bulk-delete" class="action-button danger-action" type="button" disabled>Delete selected</button>
+                  <button id="projects-select-cancel" class="icon-button subtle" type="button">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="projects-empty-state" class="projects-empty-state" hidden>
+              <h3>No projects yet</h3>
+              <p>Create a project or generate saved models to build the project library.</p>
+              <button id="projects-empty-new-button" class="action-button primary-action" type="button">New Project</button>
+            </div>
+
+            <div id="projects-grid" class="projects-grid"></div>
+          </section>
+
+          <section id="projects-detail-view" class="projects-view panel" hidden>
+            <div class="projects-detail-header">
+              <button id="projects-back-button" class="icon-button subtle" type="button">Back to Projects</button>
+              <div class="projects-detail-copy">
+                <p class="section-eyebrow">Project</p>
+                <h2 id="projects-detail-title" class="projects-title">Project</h2>
+                <p id="projects-detail-meta" class="projects-copy">0 models</p>
+              </div>
+            </div>
+
+            <div id="projects-detail-empty" class="projects-empty-state" hidden>
+              <h3>No models in this project</h3>
+              <p>This project container does not have saved models yet.</p>
+            </div>
+
+            <div id="projects-model-grid" class="models-grid projects-model-grid"></div>
+          </section>
         </div>
       </section>
 
       <section id="mode-templates" class="mode-screen" hidden>
-        <div class="mode-placeholder panel">
-          <p class="section-eyebrow">Templates</p>
-          <h2>Templates are not available yet</h2>
-          <p>This mode will surface reusable starting points in a later pass.</p>
+        <div class="templates-shell">
+          <aside class="templates-sidebar panel">
+            <div class="templates-sidebar-header">
+              <p class="section-eyebrow">Categories</p>
+              <h2 class="templates-sidebar-title">Browse templates</h2>
+              <p class="templates-copy">Choose a starting point, then refine it in Workspace.</p>
+            </div>
+
+            <div id="templates-category-list" class="templates-category-list"></div>
+          </aside>
+
+          <section class="templates-main panel">
+            <div class="templates-header">
+              <div class="templates-heading-copy">
+                <p class="section-eyebrow">Templates</p>
+                <p class="templates-copy">Start from structured model blueprints.</p>
+              </div>
+              <h2 class="templates-title">Template library</h2>
+            </div>
+
+            <p class="templates-helper">Select a template to start in Workspace.</p>
+            <div id="templates-empty-state" class="templates-empty-state" hidden>
+              <h3>No templates available</h3>
+              <p>Template starters will appear here when local template data is available.</p>
+            </div>
+
+            <div id="templates-grid" class="templates-grid"></div>
+          </section>
         </div>
       </section>
     </main>

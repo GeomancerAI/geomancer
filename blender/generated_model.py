@@ -34,19 +34,25 @@ def join_objects(objects, final_name='Geomancer_Final'):
     final_obj.name = final_name
     return final_obj
 
-# Family: bracket
-# Recipe: bracket
+# Family: enclosure
+# Recipe: box_shell
 
-bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, mm(3.0)))
-base_leg = bpy.context.active_object
-base_leg.scale = (mm(50.0), mm(15.0), mm(3.0))
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 0.0))
+outer_box = bpy.context.active_object
+outer_box.name = "Geomancer_Box"
+outer_box.scale = (mm(60.0), mm(40.0), mm(25.0))
 
-bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm(-47.0), 0.0, mm(40.0)))
-vertical_leg = bpy.context.active_object
-vertical_leg.scale = (mm(3.0), mm(15.0), mm(40.0))
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, mm(0.0)))
+inner_box = bpy.context.active_object
+inner_box.scale = (mm(57.0), mm(37.0), mm(22.0))
+apply_boolean(outer_box, inner_box, modifier_name='InnerCavity')
 
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, mm(38.5), mm(-9.5)))
+front_cutter = bpy.context.active_object
+front_cutter.scale = (mm(30.0), mm(4.800000000000001), mm(12.5))
+apply_boolean(outer_box, front_cutter, modifier_name='FrontOpening')
 
-final_obj = join_objects([base_leg, vertical_leg])
+final_obj = outer_box
 
 final_obj = locals().get("final_obj")
 if final_obj is None:

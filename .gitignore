@@ -24,3 +24,4 @@ blender/generated_model.py
 blender/generated_model_*.py
 *.blend1
 *.blend2
+.aider*
