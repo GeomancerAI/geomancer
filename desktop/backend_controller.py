@@ -4,15 +4,17 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime
+import shutil
 from pathlib import Path
 from typing import Callable
 from uuid import uuid4
 
-from app.blender_runner import run_generated_script
+from app.blender_runner import open_generated_model_file, run_generated_script
 from app.backend.pipeline import generate_model_request
-from app.backend.runtime import GENERATED_SCRIPT_PATH
+from app.backend.runtime import GENERATED_SCRIPT_PATH, PREVIEWS_DIR
 from app.backend.versioning import load_version
 from app.model_library import delete_saved_model_entry, get_library_summary, list_saved_models
+from app.path_utils import to_file_url
 from app.runtime.health import collect_runtime_health, sync_runtime_health
 from app.runtime.models import RECOMMENDED_OLLAMA_MODEL
 from app.runtime.ollama import pull_model, run_smoke_test as run_ollama_smoke_test
@@ -22,6 +24,7 @@ from app.runtime.blender import verify_blender_callable
 
 
 LogCallback = Callable[[str], None]
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 @dataclass
@@ -46,6 +49,16 @@ class DesktopStatus:
     last_validation: dict
     last_classification: dict
     last_saved_model_entry: dict
+    last_final_model_path: str
+    last_final_model_url: str
+    last_output_source: str
+    last_generation_path: str
+    last_generation_route: str
+    last_generation_fallback_reason: str
+    last_implementation_id: str
+    last_execution_recipe: str
+    preview_model_url: str
+    last_preview_model_url: str
     library_summary: dict
     saved_models: list[dict]
     last_run_status: str
@@ -94,6 +107,16 @@ class BackendController:
             last_validation=state.get("last_validation") or {},
             last_classification=state.get("last_classification") or {},
             last_saved_model_entry=state.get("last_saved_model_entry") or {},
+            last_final_model_path=state.get("last_final_model_path") or "",
+            last_final_model_url=state.get("last_final_model_url") or to_file_url(state.get("last_final_model_path") or ""),
+            last_output_source=state.get("last_output_source") or "",
+            last_generation_path=state.get("last_generation_path") or "",
+            last_generation_route=state.get("last_generation_route") or "",
+            last_generation_fallback_reason=state.get("last_generation_fallback_reason") or "",
+            last_implementation_id=state.get("last_implementation_id") or "",
+            last_execution_recipe=state.get("last_execution_recipe") or "",
+            preview_model_url=state.get("last_preview_model_url") or to_file_url(state.get("last_preview_model_path") or ""),
+            last_preview_model_url=state.get("last_preview_model_url") or to_file_url(state.get("last_preview_model_path") or ""),
             library_summary=get_library_summary(),
             saved_models=list_saved_models(),
             last_run_status=state.get("last_run_status") or "idle",
@@ -160,9 +183,15 @@ class BackendController:
         state["last_generation_id"] = generation_id
         state["last_generated_script_path"] = str(GENERATED_SCRIPT_PATH)
         state["last_preview_model_path"] = ""
+        state["last_preview_model_url"] = ""
         state["last_preview_asset_version"] = ""
         state["last_preview_export_status"] = "error"
         state["last_preview_export_message"] = message
+        state["last_final_model_path"] = ""
+        state["last_final_model_url"] = ""
+        state["last_output_source"] = ""
+        state["last_implementation_id"] = ""
+        state["last_execution_recipe"] = ""
         state["last_generation_timestamp"] = datetime.now().isoformat(timespec="seconds")
         state["last_generation_family"] = ""
         state["last_generation_status"] = status
@@ -170,6 +199,13 @@ class BackendController:
         state["last_generation_message"] = message
         state["last_validation_summary"] = message
         state["last_plan"] = {}
+        state["last_recipe"] = {}
+        state["last_recipe_summary"] = ""
+        state["last_execution_path"] = ""
+        state["last_execution_summary"] = ""
+        state["last_generation_path"] = ""
+        state["last_generation_route"] = ""
+        state["last_generation_fallback_reason"] = ""
         state["last_validation"] = {}
         state["last_classification"] = {}
         state["last_saved_model_entry"] = {}
@@ -198,15 +234,23 @@ class BackendController:
         health = self.get_runtime_health(refresh=True)
         if not health.get("blender_detected"):
             return False, health.get("runtime_health_message", "Blender is not configured.")
-        target_path = Path(script_path) if script_path else GENERATED_SCRIPT_PATH
+        state = load_state()
+        preferred_path = state.get("last_final_model_path") or state.get("last_preview_model_path") or ""
+        target_path = Path(script_path) if script_path else (Path(preferred_path) if preferred_path else GENERATED_SCRIPT_PATH)
+        if target_path.suffix.lower() in {".glb", ".gltf"}:
+            return open_generated_model_file(target_path, interactive=interactive)
         return run_generated_script(target_path, interactive=interactive)
 
     def open_saved_model_in_blender(self, model_id: str) -> dict:
-        """Launch Blender for a saved model entry's script path."""
+        """Launch Blender for a saved model entry's persisted final artifact."""
         entry = next((item for item in list_saved_models() if item.get("id") == model_id), None)
         if not entry:
             return {"success": False, "message": "Saved model not found.", "model_id": model_id}
-        success, message = self.open_in_blender(script_path=entry.get("script_path") or None, interactive=True)
+        target_path = entry.get("final_model_path") or entry.get("preview_model_path") or entry.get("script_path") or None
+        if target_path and str(target_path).lower().endswith((".glb", ".gltf")):
+            success, message = open_generated_model_file(Path(target_path), interactive=True)
+        else:
+            success, message = self.open_in_blender(script_path=entry.get("script_path") or None, interactive=True)
         return {
             "success": success,
             "message": message,
@@ -228,6 +272,24 @@ class BackendController:
             "library_summary": get_library_summary(),
             "saved_models": list_saved_models(),
         }
+
+    def clean_dev_reload(self, log: LogCallback | None = None) -> dict:
+        """Clear generated previews and local Python caches for a development reload."""
+        logger = log or (lambda _message: None)
+        preview_result = self._clear_preview_artifacts(logger)
+        pycache_result = self._clear_python_caches(logger)
+        logger("UI reload triggered.")
+        return self.make_json_safe(
+            {
+                "success": True,
+                "preview_directory": str(PREVIEWS_DIR),
+                "preview_artifacts_cleared": preview_result["cleared"],
+                "preview_artifacts_failed": preview_result["failed"],
+                "pycache_directories_cleared": pycache_result["cleared"],
+                "pycache_directories_failed": pycache_result["failed"],
+                "messages": preview_result["messages"] + pycache_result["messages"] + ["UI reload triggered."],
+            }
+        )
 
     def get_runtime_health(self, refresh: bool = False) -> dict:
         """Return the structured runtime health payload for desktop use."""
@@ -286,6 +348,62 @@ class BackendController:
     def _build_controller_generation_id(self) -> str:
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         return f"ctrl-{timestamp}-{uuid4().hex[:8]}"
+
+    def _clear_preview_artifacts(self, log: LogCallback) -> dict:
+        messages: list[str] = []
+        cleared = 0
+        failed = 0
+        preview_dir = PREVIEWS_DIR
+        if not preview_dir.exists():
+            message = f"Preview directory not found; nothing to clear: {preview_dir}"
+            log(message)
+            messages.append(message)
+            return {"cleared": 0, "failed": 0, "messages": messages}
+
+        for entry in sorted(preview_dir.iterdir(), key=lambda item: item.name):
+            try:
+                if entry.is_dir():
+                    shutil.rmtree(entry)
+                else:
+                    entry.unlink()
+                cleared += 1
+                message = f"Cleared preview artifact: {entry}"
+                log(message)
+                messages.append(message)
+            except Exception as error:  # pragma: no cover - defensive cleanup path
+                failed += 1
+                message = f"Failed to clear preview artifact {entry}: {error}"
+                log(message)
+                messages.append(message)
+        return {"cleared": cleared, "failed": failed, "messages": messages}
+
+    def _clear_python_caches(self, log: LogCallback) -> dict:
+        messages: list[str] = []
+        cleared = 0
+        failed = 0
+        root = PROJECT_ROOT.resolve()
+        for cache_dir in sorted(root.rglob("__pycache__"), key=lambda item: str(item)):
+            try:
+                resolved_cache = cache_dir.resolve()
+                resolved_cache.relative_to(root)
+            except Exception:
+                continue
+            try:
+                shutil.rmtree(cache_dir)
+                cleared += 1
+                message = f"Cleared Python cache directory: {cache_dir}"
+                log(message)
+                messages.append(message)
+            except Exception as error:  # pragma: no cover - defensive cleanup path
+                failed += 1
+                message = f"Failed to clear Python cache directory {cache_dir}: {error}"
+                log(message)
+                messages.append(message)
+        if not cleared and not failed:
+            message = "No Python cache directories found under the project root."
+            log(message)
+            messages.append(message)
+        return {"cleared": cleared, "failed": failed, "messages": messages}
 
     @classmethod
     def make_json_safe(cls, value):

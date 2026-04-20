@@ -18,6 +18,7 @@ def build_script(plan: GenerationPlan) -> str:
         "panel_plate": _build_panel_plate_script,
         "standoff": _build_standoff_script,
         "hook_mount": _build_hook_mount_script,
+        "phone_stand": _build_phone_stand_script,
         "primitive_assembly": _build_primitive_assembly_script,
     }
     builder = builders.get(plan.recipe, _build_primitive_assembly_script)
@@ -47,6 +48,18 @@ def apply_boolean(target, cutter, operation='DIFFERENCE', modifier_name='Geomanc
     bpy.ops.object.modifier_apply(modifier=modifier.name)
     bpy.data.objects.remove(cutter, do_unlink=True)
 
+def apply_bevel(obj, width_mm, segments=2, profile=0.7, modifier_name='GeomancerBevel'):
+    if obj is None or width_mm <= 0:
+        return obj
+    modifier = obj.modifiers.new(name=modifier_name, type='BEVEL')
+    modifier.width = mm(width_mm)
+    modifier.segments = segments
+    modifier.profile = profile
+    modifier.use_clamp_overlap = True
+    set_active(obj)
+    bpy.ops.object.modifier_apply(modifier=modifier.name)
+    return obj
+
 def join_objects(objects, final_name='Geomancer_Final'):
     valid_objects = [obj for obj in objects if obj is not None]
     if not valid_objects:
@@ -60,6 +73,25 @@ def join_objects(objects, final_name='Geomancer_Final'):
     final_obj = bpy.context.view_layer.objects.active
     final_obj.name = final_name
     return final_obj
+
+def finalize_object(obj, final_name='Geomancer_Final'):
+    if obj is None:
+        return None
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    obj.name = final_name
+    return obj
+
+def apply_transforms(obj):
+    if obj is None:
+        return obj
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    return obj
 
 # Family: {plan.family}
 # Recipe: {plan.recipe}
@@ -81,13 +113,18 @@ def _build_box_shell_script(plan: GenerationPlan) -> str:
     height = plan.dimensions["height_mm"]
     wall = float(plan.features["wall_thickness_mm"])
     base_thickness = float(plan.features.get("base_thickness_mm", wall))
-    open_top = bool(plan.features.get("open_top"))
     front_opening = bool(plan.features.get("front_opening"))
+    wall = max(wall, 1.5)
+    wall = min(wall, max(min(width, depth) * 0.45, 1.5), max((height - 0.5) / 2.0, 1.5))
+    base_thickness = max(base_thickness, wall)
+    base_thickness = min(base_thickness, max(height - wall - 0.5, wall))
     inner_width = max(width - (wall * 2.0), wall)
     inner_depth = max(depth - (wall * 2.0), wall)
-    inner_height = max(height - base_thickness - (0.0 if open_top else wall), wall)
-    inner_z = (base_thickness / 2.0) if open_top else ((base_thickness - wall) / 2.0)
-    inner_height_cut = inner_height + (wall if open_top else 0.0)
+    inner_height = max(height - base_thickness + wall, wall)
+    inner_bottom_z = -(height / 2.0) + base_thickness
+    inner_z = inner_bottom_z + (inner_height / 2.0)
+    inner_height_cut = inner_height
+    bevel_mm = max(min(wall * 0.18, 1.0), 0.25)
     front_cut = ""
     if front_opening:
         opening_width = min(float(plan.features.get("opening_width_mm", inner_width)), inner_width)
@@ -109,6 +146,7 @@ inner_box = bpy.context.active_object
 inner_box.scale = (mm({inner_width / 2.0}), mm({inner_depth / 2.0}), mm({inner_height_cut / 2.0}))
 apply_boolean(outer_box, inner_box, modifier_name='InnerCavity')
 {front_cut}
+apply_bevel(outer_box, {bevel_mm}, modifier_name='ShellBevel')
 final_obj = outer_box"""
 
 
@@ -143,46 +181,56 @@ def _build_bracket_script(plan: GenerationPlan) -> str:
     thickness = plan.dimensions["thickness_mm"]
     hole_diameter = float(plan.features["hole_diameter_mm"])
     hole_count = int(plan.features.get("hole_count", 0))
-    gusset = bool(plan.features.get("gusset"))
+    gusset = bool(plan.features.get("gusset")) and hole_count < 4
     holes = ""
     if hole_diameter > 0:
-        base_offset = max(min(base_length * 0.28, (base_length / 2.0) - thickness), hole_diameter)
-        vertical_offset = max(min(vertical_height * 0.28, (vertical_height / 2.0) - thickness), hole_diameter)
+        hole_margin = max(thickness * 1.8, hole_diameter * 1.5, 8.0)
+        base_span = max(base_length - (hole_margin * 2.0), 0.0)
+        vertical_span = max(vertical_height - (hole_margin * 2.0), 0.0)
+        base_positions = [hole_margin + (base_span * 0.33), hole_margin + (base_span * 0.67)] if hole_count >= 2 else []
+        vertical_positions = [hole_margin + (vertical_span * 0.33), hole_margin + (vertical_span * 0.67)] if hole_count >= 4 else []
         holes = f"""
 base_hole_positions = []
 if {hole_count} >= 2:
-    base_hole_positions = [(-mm({base_offset}), 0.0, mm({thickness / 2.0})), (mm({base_offset}), 0.0, mm({thickness / 2.0}))]
+    base_hole_positions = [(mm({base_positions[0] if base_positions else hole_margin}), mm({flange_width / 2.0}), mm({thickness / 2.0})), (mm({base_positions[1] if base_positions else hole_margin}), mm({flange_width / 2.0}), mm({thickness / 2.0}))]
 for x_pos, y_pos, z_pos in base_hole_positions:
     bpy.ops.mesh.primitive_cylinder_add(radius=mm({hole_diameter / 2.0}), depth=mm({thickness * 2.5}), location=(x_pos, y_pos, z_pos))
     hole_cutter = bpy.context.active_object
-    hole_cutter.rotation_euler = (math.radians(90.0), 0.0, 0.0)
+    apply_transforms(hole_cutter)
     apply_boolean(base_leg, hole_cutter, modifier_name='BaseHole')
 
 if {hole_count} >= 4:
-    for z_pos in (-mm({vertical_offset}), mm({vertical_offset})):
-        bpy.ops.mesh.primitive_cylinder_add(radius=mm({hole_diameter / 2.0}), depth=mm({thickness * 2.5}), location=(mm({-(base_length / 2.0) + (thickness / 2.0)}), 0.0, z_pos))
+    for z_pos in (mm({vertical_positions[0] if vertical_positions else hole_margin}), mm({vertical_positions[1] if vertical_positions else hole_margin})):
+        bpy.ops.mesh.primitive_cylinder_add(radius=mm({hole_diameter / 2.0}), depth=mm({thickness * 2.5}), location=(mm({thickness / 2.0}), mm({flange_width / 2.0}), z_pos))
         vertical_hole = bpy.context.active_object
         vertical_hole.rotation_euler = (0.0, math.radians(90.0), 0.0)
-        apply_boolean(vertical_leg, vertical_hole, modifier_name='VerticalHole')
+        apply_transforms(vertical_hole)
+        apply_boolean(base_leg, vertical_hole, modifier_name='VerticalHole')
 """
     gusset_code = ""
     if gusset:
         gusset_code = f"""
-bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm({-(base_length / 4.0)}), 0.0, mm({vertical_height / 4.0})))
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm({thickness / 2.0}), mm({flange_width / 2.0}), mm({vertical_height / 4.0})))
 gusset_block = bpy.context.active_object
 gusset_block.scale = (mm({thickness / 2.0}), mm({flange_width / 2.0}), mm({vertical_height / 4.0}))
+apply_transforms(gusset_block)
 """
-    join_objects = "[base_leg, vertical_leg" + (", gusset_block" if gusset else "") + "]"
-    return f"""bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, mm({thickness / 2.0})))
+    gusset_join_code = "apply_boolean(base_leg, gusset_block, modifier_name='JoinGusset')\n" if gusset else ""
+    return f"""bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm({base_length / 2.0}), mm({flange_width / 2.0}), mm({thickness / 2.0})))
 base_leg = bpy.context.active_object
 base_leg.scale = (mm({base_length / 2.0}), mm({flange_width / 2.0}), mm({thickness / 2.0}))
+apply_transforms(base_leg)
 
-bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm({-(base_length / 2.0) + (thickness / 2.0)}), 0.0, mm({vertical_height / 2.0})))
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(mm({thickness / 2.0}), mm({flange_width / 2.0}), mm({vertical_height / 2.0})))
 vertical_leg = bpy.context.active_object
 vertical_leg.scale = (mm({thickness / 2.0}), mm({flange_width / 2.0}), mm({vertical_height / 2.0}))
+apply_transforms(vertical_leg)
 {gusset_code}
+apply_boolean(base_leg, vertical_leg, modifier_name='JoinBracket')
+{gusset_join_code}
 {holes}
-final_obj = join_objects({join_objects})"""
+final_obj = base_leg
+final_obj = finalize_object(final_obj)"""
 
 
 def _build_cable_clip_script(plan: GenerationPlan) -> str:
@@ -404,6 +452,55 @@ hook_lip = bpy.context.active_object
 hook_lip.scale = (mm({thickness / 2.0}), mm({thickness / 2.0}), mm({hook_drop / 2.0}))
 {holes}
 final_obj = join_objects([base_plate, hook_arm, hook_lip])"""
+
+
+def _build_phone_stand_script(plan: GenerationPlan) -> str:
+    width = plan.dimensions["width_mm"]
+    height = plan.dimensions["height_mm"]
+    base_depth = plan.dimensions["base_depth_mm"]
+    base_thickness = plan.dimensions.get("base_thickness_mm", plan.dimensions["thickness_mm"])
+    support_thickness = plan.dimensions.get("support_thickness_mm", max(base_thickness * 0.85, 4.0))
+    slot_width = plan.dimensions["slot_width_mm"]
+    lip_width = plan.dimensions.get("lip_width_mm", max(slot_width + 16.0, width * 0.55))
+    lip_height = plan.dimensions.get("lip_height_mm", max(base_thickness * 0.8, 4.0))
+    lip_depth = plan.dimensions.get("lip_depth_mm", max(base_thickness * 0.9, 4.0))
+    angle_deg = float(plan.dimensions.get("angle_deg", 65.0))
+    with_cable_cutout = bool(plan.features.get("with_cable_cutout"))
+    cable_cutout_width = float(plan.features.get("cable_cutout_width_mm", max(slot_width * 0.65, 6.0)))
+    cable_cutout_depth = float(plan.features.get("cable_cutout_depth_mm", max(base_thickness * 2.5, 8.0)))
+    cable_cutout_height = float(plan.features.get("cable_cutout_height_mm", max(base_thickness * 1.2, 6.0)))
+    support_width = max(width * 0.86, slot_width + 18.0)
+    support_rotation = 90.0 - angle_deg
+
+    cable_cutout_code = ""
+    if with_cable_cutout:
+        cable_cutout_code = f"""
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, mm({-(base_depth / 2.0) + (cable_cutout_depth / 2.0) + max(base_thickness * 0.1, 0.25)}), mm({cable_cutout_height / 2.0})))
+cable_cutout = bpy.context.active_object
+cable_cutout.scale = (mm({cable_cutout_width / 2.0}), mm({cable_cutout_depth / 2.0}), mm({cable_cutout_height / 2.0}))
+apply_boolean(final_obj, cable_cutout, modifier_name='CableCutout')
+"""
+
+    return f"""bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, mm({base_thickness / 2.0})))
+base_plate = bpy.context.active_object
+base_plate.scale = (mm({width / 2.0}), mm({base_depth / 2.0}), mm({base_thickness / 2.0}))
+
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, mm({(base_depth / 2.0) - (max(base_thickness * 1.1, 4.0) / 2.0)}), mm({base_thickness + (max(base_thickness * 1.35, 6.0) / 2.0)})))
+support_anchor = bpy.context.active_object
+support_anchor.scale = (mm({max(support_width * 0.72, slot_width + 10.0) / 2.0}), mm({max(base_thickness * 1.1, 4.0) / 2.0}), mm({max(base_thickness * 1.35, 6.0) / 2.0}))
+
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, mm({(base_depth / 2.0) - (support_thickness / 2.0) - max(base_thickness * 0.35, 1.5)}), mm({base_thickness + (height / 2.0)})))
+support_panel = bpy.context.active_object
+support_panel.scale = (mm({support_width / 2.0}), mm({support_thickness / 2.0}), mm({height / 2.0}))
+support_panel.rotation_euler = (math.radians({support_rotation}), 0.0, 0.0)
+
+bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, mm({-(base_depth / 2.0) + (lip_depth / 2.0) + max(base_thickness * 0.15, 0.5)}), mm({base_thickness + (lip_height / 2.0) - max(base_thickness * 0.1, 0.25)})))
+retaining_lip = bpy.context.active_object
+retaining_lip.scale = (mm({lip_width / 2.0}), mm({lip_depth / 2.0}), mm({lip_height / 2.0}))
+
+final_obj = join_objects([base_plate, support_anchor, support_panel, retaining_lip])
+{cable_cutout_code}
+final_obj = finalize_object(final_obj)"""
 
 
 def _build_primitive_assembly_script(plan: GenerationPlan) -> str:

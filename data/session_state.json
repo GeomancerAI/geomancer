@@ -10,107 +10,231 @@
   "blender_path": "C:\\Program Files\\Blender Foundation\\Blender 5.0\\blender.exe",
   "runtime_health_status": "ready",
   "runtime_health_message": "Local runtime is healthy. Geomancer is ready to generate deterministic geometry.",
-  "last_user_request": "Create an enclosure 120 x 80 x 50 mm with 3 mm walls and a 60 x 25 mm front opening",
-  "last_generation_id": "gen-20260417222827-ec8490f9",
+  "last_user_request": "make a hook mount.",
+  "last_generation_id": "gen-20260419212526-2001c010",
   "last_generated_script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-  "last_preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260417222827-ec8490f9.glb",
-  "last_preview_asset_version": "gen-20260417222827-ec8490f9",
+  "last_preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260419212526-2001c010.glb",
+  "last_preview_model_url": "file:///C:/Users/Studl/geomancer/geomancer/data/previews/generated_preview_gen-20260419212526-2001c010.glb",
+  "last_preview_asset_version": "gen-20260419212526-2001c010",
   "last_preview_export_status": "ready",
-  "last_preview_export_message": "Preview exported successfully to C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260417222827-ec8490f9.glb.",
-  "last_generation_timestamp": "2026-04-17T22:28:46",
-  "last_generation_family": "enclosure",
+  "last_preview_export_message": "Preview exported successfully to C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260419212526-2001c010.glb.",
+  "last_generation_timestamp": "2026-04-19T21:25:31",
+  "last_generation_family": "hook_mount",
   "last_generation_status": "ready",
   "last_generation_raw_status": "ready",
   "last_generation_message": "",
-  "last_validation_summary": "Prepared deterministic enclosure blockout with 3 normalized dimensions.",
+  "last_validation_summary": "Prepared deterministic simple hook / mount blockout with 17 normalized dimensions.",
   "last_plan": {
-    "family": "enclosure",
-    "family_label": "enclosure",
-    "recipe": "box_shell",
-    "request_text": "Create an enclosure 120 x 80 x 50 mm with 3 mm walls and a 60 x 25 mm front opening",
+    "family": "hook_mount",
+    "family_label": "simple hook / mount",
+    "recipe": "hook_mount",
+    "request_text": "make a hook mount.",
     "dimensions": {
-      "width_mm": 120.0,
-      "depth_mm": 80.0,
-      "height_mm": 50.0
+      "width_mm": 50.0,
+      "height_mm": 80.0,
+      "depth_mm": 35.0,
+      "thickness_mm": 6.0,
+      "base_thickness_mm": 7.5,
+      "hook_length_mm": 25.2,
+      "hook_radius_mm": 9.0,
+      "hook_angle_deg": 18.0,
+      "base_width_mm": 50.0,
+      "base_height_mm": 80.0,
+      "arm_length_mm": 35.0,
+      "hole_count": 2.0,
+      "hole_diameter_mm": 5.0,
+      "hole_margin_mm": 12.0,
+      "hook_drop_mm": 9.0,
+      "mount_hole_mm": 5.0,
+      "mount_hole_count": 2.0
     },
     "features": {
-      "wall_thickness_mm": 3.0,
-      "base_thickness_mm": 3.0,
-      "open_top": false,
-      "front_opening": true,
-      "opening_width_mm": 60.0,
-      "opening_height_mm": 25.0
+      "hole_count": 2,
+      "hole_diameter_mm": 5.0,
+      "hole_margin_mm": 12.0,
+      "mount_hole_mm": 5.0,
+      "mount_hole_count": 2,
+      "hook_drop_mm": 9.0,
+      "double_hook": false
     },
     "assumptions": [],
-    "warnings": [
-      "Front openings are represented as simple rectangular cutouts in alpha."
-    ],
+    "warnings": [],
     "limitations": [],
     "classification": {
-      "matched_alias": "enclosure",
-      "family_summary": "Rectangular shell or case blockout."
+      "matched_alias": "mount",
+      "family_summary": "Simple mounted hook blockout."
     }
   },
+  "last_recipe": {
+    "recipe_version": "1.0",
+    "object_type": "hook_mount",
+    "source_family": "hook_mount",
+    "source_recipe": "hook_mount",
+    "execution_recipe": "hook_mount",
+    "generation_id": "gen-20260419212526-2001c010",
+    "implementation_id": "hook_mount_wall_hook_v1",
+    "ops": [
+      {
+        "op": "hook_mount_body",
+        "id": "hook_mount_body",
+        "params": {
+          "width_mm": 50.0,
+          "height_mm": 80.0,
+          "depth_mm": 35.0,
+          "thickness_mm": 6.0,
+          "base_thickness_mm": 7.5,
+          "hook_length_mm": 25.2,
+          "hook_radius_mm": 9.0,
+          "hook_angle_deg": 18.0
+        }
+      },
+      {
+        "op": "hole_pattern",
+        "id": "mount_holes",
+        "params": {
+          "count": 2,
+          "diameter_mm": 5.0,
+          "layout": "wall_vertical_pair",
+          "margin_mm": 12.0
+        },
+        "target": "hook_mount_body"
+      }
+    ],
+    "warnings": [],
+    "notes": []
+  },
+  "last_recipe_summary": "Built deterministic recipe for hook_mount with 2 ops.",
+  "last_execution_path": "recipe",
+  "last_execution_summary": "Executed recipe for hook_mount with 2 ops.",
+  "last_generation_path": "recipe",
+  "last_generation_route": "recipe_success",
+  "last_generation_fallback_reason": "",
+  "last_implementation_id": "hook_mount_wall_hook_v1",
+  "last_execution_recipe": "hook_mount",
+  "last_final_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260419212526-2001c010.glb",
+  "last_final_model_url": "file:///C:/Users/Studl/geomancer/geomancer/data/previews/generated_preview_gen-20260419212526-2001c010.glb",
+  "last_output_source": "recipe",
   "last_validation": {
     "status": "ready",
-    "summary": "Prepared deterministic enclosure blockout with 3 normalized dimensions.",
-    "warnings": [
-      "Front openings are represented as simple rectangular cutouts in alpha."
-    ],
+    "summary": "Prepared deterministic simple hook / mount blockout with 17 normalized dimensions.",
+    "warnings": [],
     "limitations": [
       "Family outputs are alpha blockouts and may need manual refinement."
     ],
     "review_notes": [
-      "Family: enclosure",
-      "Recipe: box_shell",
+      "Family: simple hook / mount",
+      "Recipe: hook_mount",
       "Deterministic Blender generation only; no freeform mesh synthesis is attempted."
     ]
   },
   "last_classification": {
     "status": "ready",
-    "family_key": "enclosure",
-    "matched_alias": "enclosure",
+    "family_key": "hook_mount",
+    "matched_alias": "mount",
     "confidence": 0.99,
     "message": ""
   },
   "last_saved_model_entry": {
-    "id": "model-20260417222846-da905b",
-    "generation_id": "gen-20260417222827-ec8490f9",
-    "created_at": "2026-04-17T22:28:46",
-    "prompt": "Create an enclosure 120 x 80 x 50 mm with 3 mm walls and a 60 x 25 mm front opening",
-    "family": "enclosure",
-    "family_label": "enclosure",
+    "id": "model-20260419212531-fe5c26",
+    "generation_id": "gen-20260419212526-2001c010",
+    "created_at": "2026-04-19T21:25:31",
+    "prompt": "make a hook mount.",
+    "family": "hook_mount",
+    "family_label": "simple hook / mount",
     "plan": {
-      "family": "enclosure",
-      "family_label": "enclosure",
-      "recipe": "box_shell",
-      "request_text": "Create an enclosure 120 x 80 x 50 mm with 3 mm walls and a 60 x 25 mm front opening",
+      "family": "hook_mount",
+      "family_label": "simple hook / mount",
+      "recipe": "hook_mount",
+      "request_text": "make a hook mount.",
       "dimensions": {
-        "width_mm": 120.0,
-        "depth_mm": 80.0,
-        "height_mm": 50.0
+        "width_mm": 50.0,
+        "height_mm": 80.0,
+        "depth_mm": 35.0,
+        "thickness_mm": 6.0,
+        "base_thickness_mm": 7.5,
+        "hook_length_mm": 25.2,
+        "hook_radius_mm": 9.0,
+        "hook_angle_deg": 18.0,
+        "base_width_mm": 50.0,
+        "base_height_mm": 80.0,
+        "arm_length_mm": 35.0,
+        "hole_count": 2.0,
+        "hole_diameter_mm": 5.0,
+        "hole_margin_mm": 12.0,
+        "hook_drop_mm": 9.0,
+        "mount_hole_mm": 5.0,
+        "mount_hole_count": 2.0
       },
       "features": {
-        "wall_thickness_mm": 3.0,
-        "base_thickness_mm": 3.0,
-        "open_top": false,
-        "front_opening": true,
-        "opening_width_mm": 60.0,
-        "opening_height_mm": 25.0
+        "hole_count": 2,
+        "hole_diameter_mm": 5.0,
+        "hole_margin_mm": 12.0,
+        "mount_hole_mm": 5.0,
+        "mount_hole_count": 2,
+        "hook_drop_mm": 9.0,
+        "double_hook": false
       },
       "assumptions": [],
-      "warnings": [
-        "Front openings are represented as simple rectangular cutouts in alpha."
-      ],
+      "warnings": [],
       "limitations": [],
       "classification": {
-        "matched_alias": "enclosure",
-        "family_summary": "Rectangular shell or case blockout."
+        "matched_alias": "mount",
+        "family_summary": "Simple mounted hook blockout."
       }
     },
-    "validation_summary": "Prepared deterministic enclosure blockout with 3 normalized dimensions.",
+    "validation_summary": "Prepared deterministic simple hook / mount blockout with 17 normalized dimensions.",
+    "recipe": {
+      "recipe_version": "1.0",
+      "object_type": "hook_mount",
+      "source_family": "hook_mount",
+      "source_recipe": "hook_mount",
+      "execution_recipe": "hook_mount",
+      "generation_id": "gen-20260419212526-2001c010",
+      "implementation_id": "hook_mount_wall_hook_v1",
+      "ops": [
+        {
+          "op": "hook_mount_body",
+          "id": "hook_mount_body",
+          "params": {
+            "width_mm": 50.0,
+            "height_mm": 80.0,
+            "depth_mm": 35.0,
+            "thickness_mm": 6.0,
+            "base_thickness_mm": 7.5,
+            "hook_length_mm": 25.2,
+            "hook_radius_mm": 9.0,
+            "hook_angle_deg": 18.0
+          }
+        },
+        {
+          "op": "hole_pattern",
+          "id": "mount_holes",
+          "params": {
+            "count": 2,
+            "diameter_mm": 5.0,
+            "layout": "wall_vertical_pair",
+            "margin_mm": 12.0
+          },
+          "target": "hook_mount_body"
+        }
+      ],
+      "warnings": [],
+      "notes": []
+    },
+    "recipe_summary": "Built deterministic recipe for hook_mount with 2 ops.",
+    "execution_path": "recipe",
+    "execution_summary": "Executed recipe for hook_mount with 2 ops.",
+    "generation_path": "recipe",
+    "generation_route": "recipe_success",
+    "generation_fallback_reason": "",
+    "implementation_id": "hook_mount_wall_hook_v1",
+    "execution_recipe": "hook_mount",
+    "final_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260419212526-2001c010.glb",
+    "final_model_url": "file:///C:/Users/Studl/geomancer/geomancer/data/previews/generated_preview_gen-20260419212526-2001c010.glb",
+    "final_output_source": "recipe",
     "script_path": "C:\\Users\\Studl\\geomancer\\geomancer\\blender\\generated_model.py",
-    "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260417222827-ec8490f9.glb",
+    "preview_model_path": "C:\\Users\\Studl\\geomancer\\geomancer\\data\\previews\\generated_preview_gen-20260419212526-2001c010.glb",
+    "preview_model_url": "file:///C:/Users/Studl/geomancer/geomancer/data/previews/generated_preview_gen-20260419212526-2001c010.glb",
     "preview_export_status": "ready"
   },
   "last_run_status": "ready"

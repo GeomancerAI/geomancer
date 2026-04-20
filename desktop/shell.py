@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QAction, QIcon
+from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
@@ -45,7 +47,7 @@ class GeomancerDesktopWindow(QMainWindow):
         file_menu = self.menuBar().addMenu("&File")
 
         reload_action = QAction("Reload UI", self)
-        reload_action.triggered.connect(self.web_view.reload)
+        reload_action.triggered.connect(self._reload_ui_clean_dev)
         file_menu.addAction(reload_action)
 
         open_blender_action = QAction("Open Latest In Blender", self)
@@ -62,6 +64,20 @@ class GeomancerDesktopWindow(QMainWindow):
         if not UI_ENTRYPOINT.exists():
             raise FileNotFoundError(f"Desktop UI entrypoint not found: {UI_ENTRYPOINT}")
         self.web_view.load(QUrl.fromLocalFile(str(UI_ENTRYPOINT)))
+
+    def _reload_ui_clean_dev(self) -> None:
+        try:
+            cleanup_payload = json.loads(self.bridge.cleanDevReload())
+            for message in cleanup_payload.get("messages", []):
+                self.bridge.logMessage.emit(f"[reload] {message}")
+            self.bridge.logMessage.emit("[reload] Desktop UI reload requested.")
+        except Exception as error:
+            self.bridge.logMessage.emit(f"[reload] Cleanup step failed: {error}")
+        finally:
+            try:
+                self.web_view.page().triggerAction(QWebEnginePage.WebAction.ReloadAndBypassCache)
+            except Exception:
+                self.web_view.reload()
 
     def _open_latest_in_blender(self) -> None:
         result_json = self.bridge.openLatestInBlender()

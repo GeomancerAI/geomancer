@@ -27,6 +27,7 @@ FAMILY_DEFINITIONS: tuple[FamilyDefinition, ...] = (
     FamilyDefinition("spacer_standoff", "spacer / standoff", "standoff", ("spacer", "standoff", "standoff spacer", "bushing spacer"), "Simple spacer or standoff with optional center hole."),
     FamilyDefinition("tray_box", "tray / box", "tray_box", ("tray", "open box", "parts tray", "bin", "organizer tray"), "Open-top tray or shallow box blockout."),
     FamilyDefinition("hook_mount", "simple hook / mount", "hook_mount", ("hook", "mount", "hanger", "wall hook"), "Simple mounted hook blockout."),
+    FamilyDefinition("phone_stand", "phone stand", "phone_stand", ("phone stand", "smartphone stand", "cell phone stand", "mobile phone stand", "phone dock", "device stand"), "Deterministic phone stand blockout with a stable base and angled support."),
     FamilyDefinition("housing_shell", "simple housing / mechanical shell", "box_shell", ("housing", "shell", "mechanical shell", "cover"), "Mechanical shell blockout using conservative enclosure geometry."),
     FamilyDefinition("primitive_assembly", "dimensional primitive/blockout assemblies", "primitive_assembly", ("assembly", "blockout", "primitive assembly", "blockout assembly", "primitive"), "Simple assembly made from deterministic primitives."),
 )

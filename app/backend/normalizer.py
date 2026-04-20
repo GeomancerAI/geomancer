@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from .archetypes import build_phone_stand_generation_plan
 from .families import FAMILY_BY_KEY
 from .models import ClassificationResult, GenerationPlan
 
@@ -62,6 +63,7 @@ def normalize_request(user_request: str, classification: ClassificationResult) -
         "panel_plate": _normalize_panel_plate,
         "spacer_standoff": _normalize_standoff,
         "hook_mount": _normalize_hook_mount,
+        "phone_stand": _normalize_phone_stand,
         "primitive_assembly": _normalize_primitive_assembly,
     }
 
@@ -84,7 +86,7 @@ def _normalize_box_shell_like(text: str, plan: GenerationPlan) -> None:
     plan.dimensions.update({"width_mm": width, "depth_mm": depth, "height_mm": height})
     plan.features["wall_thickness_mm"] = min(max(wall, 1.5), max(min(width, depth, height) * 0.2, 1.5))
     plan.features["base_thickness_mm"] = min(max(base_thickness, 1.5), max(height * 0.35, 1.5))
-    plan.features["open_top"] = "open top" in text or plan.family == "tray_box"
+    plan.features["open_top"] = "open top" in text or plan.family in {"tray_box", "enclosure", "housing_shell"}
     plan.features["front_opening"] = "front opening" in text or "front cutout" in text
     plan.features["opening_width_mm"] = opening_pair[0] if opening_pair else max(width * 0.55, 20.0)
     plan.features["opening_height_mm"] = opening_pair[1] if opening_pair else max(height * 0.45, 20.0)
@@ -97,8 +99,20 @@ def _normalize_box_shell_like(text: str, plan: GenerationPlan) -> None:
 
 
 def _normalize_tray_box(text: str, plan: GenerationPlan) -> None:
+    triplet = _extract_triplet(text)
     _normalize_box_shell_like(text, plan)
     plan.features["open_top"] = True
+    width = plan.dimensions.get("width_mm", 0.0)
+    depth = plan.dimensions.get("depth_mm", 0.0)
+    wall = plan.features.get("wall_thickness_mm", 0.0)
+    if not triplet and not any(keyword in text for keyword in ("height", "tall")):
+        shallow_height = max(min(width, depth) * 0.28, 18.0)
+        plan.dimensions["height_mm"] = min(plan.dimensions.get("height_mm", shallow_height), shallow_height)
+    max_tray_height = max(min(width, depth) * 0.35, 18.0)
+    if plan.dimensions.get("height_mm", 0.0) > max_tray_height:
+        plan.dimensions["height_mm"] = max_tray_height
+    if wall:
+        plan.features["base_thickness_mm"] = max(plan.features.get("base_thickness_mm", wall), wall * 1.2, 4.0)
     plan.features["lip_height_mm"] = _extract_named_mm(text, ("lip", "rim")) or 0.0
     plan.features["front_opening"] = False
 
@@ -124,7 +138,17 @@ def _normalize_bracket(text: str, plan: GenerationPlan) -> None:
     plan.features["mounting_holes"] = hole_diameter > 0
     plan.features["hole_count"] = hole_count
     plan.features["bracket_angle_deg"] = bracket_angle
-    plan.features["gusset"] = "gusset" in text or "reinforced" in text
+    plan.features["gusset"] = "gusset" in text or "reinforced" in text or hole_count >= 4
+    if hole_count > 0 and hole_diameter <= 0:
+        plan.features["hole_diameter_mm"] = 5.0
+        plan.features["mounting_holes"] = True
+        hole_diameter = 5.0
+    if "mount" in text or "mounting" in text or "hardware" in text:
+        if hole_count == 0:
+            plan.features["hole_count"] = 2
+            plan.features["hole_diameter_mm"] = hole_diameter or 5.0
+            plan.features["mounting_holes"] = True
+            plan.assumptions.append("Assumed a two-hole mounting bracket pattern from the request wording.")
     if bracket_angle != 90.0:
         plan.limitations.append("Bracket geometry currently remains a right-angle blockout even when another angle is requested.")
     if not triplet:
@@ -204,14 +228,17 @@ def _normalize_panel_plate(text: str, plan: GenerationPlan) -> None:
     pair = _extract_pair(text)
     width = _extract_named_mm(text, ("width", "wide", "length")) or (triplet[0] if triplet else None) or (pair[0] if pair else None) or _extract_first_mm(text) or 100.0
     height = _extract_named_mm(text, ("height", "tall")) or (triplet[1] if triplet else None) or (pair[1] if pair else None) or _extract_second_mm(text) or 60.0
-    thickness = _extract_named_mm(text, ("thickness", "plate")) or (triplet[2] if triplet else None) or _extract_third_mm(text) or 3.0
+    thickness = _extract_named_mm(text, ("thickness", "panel thickness", "plate thickness")) or (triplet[2] if triplet else None) or _extract_third_mm(text) or 3.0
+    hole_count = _extract_count(text, ("holes", "hole")) or _infer_hole_count_words(text) or 0
     hole_diameter = _extract_hole_diameter(text) or _extract_named_mm(text, ("hole", "mounting hole")) or 0.0
     spacing = _extract_named_mm(text, ("spacing", "pitch")) or max(min(width, height) * 0.6, 12.0)
-    hole_count = _extract_count(text, ("holes", "hole")) or _infer_hole_count_words(text)
-    if not hole_count and ("corner" in text or "mounting" in text) and hole_diameter > 0:
+    if hole_count == 0 and ("corner" in text or "mounting" in text):
         hole_count = 4
+    if hole_diameter == 0.0 and hole_count > 0:
+        hole_diameter = 5.0
     plan.dimensions.update({"width_mm": width, "height_mm": height, "thickness_mm": thickness})
     plan.features["hole_diameter_mm"] = hole_diameter
+    plan.features["hole_count"] = hole_count
     plan.features["hole_spacing_mm"] = min(spacing, min(width, height) - 8.0) if hole_diameter > 0 else 0.0
     plan.features["hole_pattern"] = "corners" if hole_count >= 4 else ("pair_horizontal" if hole_count == 2 else "none")
     plan.features["corner_holes"] = plan.features["hole_pattern"] == "corners"
@@ -233,27 +260,70 @@ def _normalize_standoff(text: str, plan: GenerationPlan) -> None:
 
 
 def _normalize_hook_mount(text: str, plan: GenerationPlan) -> None:
+    triplet = _extract_triplet(text)
     pair = _extract_pair(text)
-    base_width = _extract_named_mm(text, ("base width", "width", "wide")) or (pair[0] if pair else None) or _extract_first_mm(text) or 50.0
-    base_height = _extract_named_mm(text, ("base height", "height", "tall")) or (pair[1] if pair else None) or _extract_second_mm(text) or 80.0
-    arm_length = _extract_named_mm(text, ("arm", "hook length", "reach", "depth")) or _extract_third_mm(text) or 40.0
-    thickness = _extract_named_mm(text, ("thickness", "base", "wall")) or 6.0
-    hook_drop = _extract_named_mm(text, ("drop", "lip", "return")) or max(arm_length * 0.25, thickness * 2.0)
-    mount_hole = _extract_hole_diameter(text) or _extract_named_mm(text, ("hole", "mounting hole")) or 0.0
+    width = _extract_named_mm(text, ("width", "base width", "plate width", "wide")) or (triplet[0] if triplet else None) or (pair[0] if pair else None) or _extract_first_mm(text) or 50.0
+    height = _extract_named_mm(text, ("height", "base height", "plate height", "tall")) or (triplet[1] if triplet else None) or (pair[1] if pair else None) or _extract_second_mm(text) or 80.0
+    depth = _extract_named_mm(text, ("depth", "projection", "reach", "hook length", "arm length")) or (triplet[2] if triplet else None) or _extract_third_mm(text) or 35.0
+    thickness = _extract_named_mm(text, ("thickness", "plate thickness", "wall")) or 6.0
+    base_thickness = _extract_named_mm(text, ("base thickness", "base plate thickness")) or max(thickness * 1.25, 6.0)
+    hook_length = _extract_named_mm(text, ("hook length", "arm length", "reach", "projection")) or max(depth * 0.72, thickness * 4.0)
+    hook_radius = _extract_named_mm(text, ("hook radius", "bend radius", "radius")) or max(thickness * 1.5, 3.0)
+    hook_angle = _extract_named_mm(text, ("hook angle", "tilt", "upward angle")) or 18.0
+    hole_count = _extract_count(text, ("holes", "hole")) or 2
+    hole_diameter = _extract_hole_diameter(text) or _extract_named_mm(text, ("hole", "mounting hole")) or 5.0
+    hole_margin = _extract_named_mm(text, ("hole margin", "margin")) or max(thickness * 2.0, hole_diameter * 1.5, 8.0)
     plan.dimensions.update(
         {
-            "base_width_mm": base_width,
-            "base_height_mm": base_height,
-            "arm_length_mm": arm_length,
+            "width_mm": width,
+            "height_mm": height,
+            "depth_mm": depth,
             "thickness_mm": thickness,
+            "base_thickness_mm": base_thickness,
+            "hook_length_mm": hook_length,
+            "hook_radius_mm": hook_radius,
+            "hook_angle_deg": hook_angle,
+            "base_width_mm": width,
+            "base_height_mm": height,
+            "arm_length_mm": depth,
         }
     )
-    plan.features["mount_hole_mm"] = mount_hole
-    plan.features["hook_drop_mm"] = hook_drop
-    plan.features["mount_hole_count"] = _extract_count(text, ("holes", "hole")) or (2 if mount_hole > 0 else 0)
+    plan.features["hole_count"] = hole_count
+    plan.features["hole_diameter_mm"] = hole_diameter
+    plan.features["hole_margin_mm"] = hole_margin
+    plan.features["mount_hole_mm"] = hole_diameter
+    plan.features["mount_hole_count"] = hole_count
+    plan.features["hook_drop_mm"] = max(hook_length * 0.35, thickness * 1.5)
     plan.features["double_hook"] = "double hook" in text or "two hooks" in text
     if plan.features["double_hook"]:
         plan.limitations.append("Double-hook requests are normalized to a single hook in alpha.")
+
+    if plan.dimensions["thickness_mm"] < 3.0:
+        plan.dimensions["thickness_mm"] = 3.0
+        plan.assumptions.append("Clamped hook mount thickness to the printable minimum.")
+    if plan.dimensions["base_thickness_mm"] < max(plan.dimensions["thickness_mm"] * 1.25, 4.0):
+        plan.dimensions["base_thickness_mm"] = max(plan.dimensions["thickness_mm"] * 1.25, 4.0)
+        plan.assumptions.append("Clamped hook mount base thickness to keep the mounting plate readable.")
+    if plan.dimensions["hook_length_mm"] < 10.0:
+        plan.dimensions["hook_length_mm"] = 10.0
+        plan.assumptions.append("Clamped hook mount hook length to a visible minimum.")
+    if plan.dimensions["hook_angle_deg"] < 12.0:
+        plan.dimensions["hook_angle_deg"] = 12.0
+    if plan.dimensions["hook_angle_deg"] > 35.0:
+        plan.dimensions["hook_angle_deg"] = 35.0
+    if plan.dimensions["depth_mm"] < plan.dimensions["hook_length_mm"] + max(plan.dimensions["thickness_mm"] * 1.5, 6.0):
+        plan.dimensions["depth_mm"] = plan.dimensions["hook_length_mm"] + max(plan.dimensions["thickness_mm"] * 1.5, 6.0)
+
+
+def _normalize_phone_stand(text: str, plan: GenerationPlan) -> None:
+    del text
+    archetype_plan = build_phone_stand_generation_plan(plan.request_text)
+    plan.dimensions.update(archetype_plan.dimensions)
+    plan.features.update(archetype_plan.features)
+    plan.assumptions.extend(archetype_plan.assumptions)
+    plan.warnings.extend(archetype_plan.warnings)
+    plan.limitations.extend(archetype_plan.limitations)
+    plan.classification.update(archetype_plan.classification)
 
 
 def _normalize_primitive_assembly(text: str, plan: GenerationPlan) -> None:

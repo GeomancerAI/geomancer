@@ -3,6 +3,7 @@ import unittest
 from concurrent.futures import Future
 from datetime import datetime
 from pathlib import Path
+import tempfile
 from unittest.mock import patch
 
 from desktop.backend_controller import BackendController
@@ -31,6 +32,11 @@ class FakeController:
             "last_validation": {"items": ("a", "b")},
             "last_classification": {"exc": ValueError("bad")},
             "last_saved_model_entry": {"path": Path("data/example.glb")},
+            "last_generation_path": "recipe",
+            "last_generation_route": "recipe_success",
+            "last_generation_fallback_reason": "",
+            "last_implementation_id": "panel_plate_v1",
+            "last_execution_recipe": "panel_plate",
             "library_summary": {"templates": {"a", "b"}, "recent_saved_models": ()},
             "last_run_status": "ready",
             "setup_completed": False,
@@ -68,6 +74,21 @@ class FakeController:
         if progress_callback is not None:
             progress_callback({"status": "success", "model": model_name, "done": True})
         return {"pull_result": {"model_name": model_name, "done": True}, "runtime_health": self.refresh_runtime_health()}
+
+    def clean_dev_reload(self, log=None):
+        if log is not None:
+            log("Cleared preview artifact: fake.glb")
+            log("Cleared Python cache directory: fake/__pycache__")
+            log("UI reload triggered.")
+        return {
+            "success": True,
+            "preview_directory": "data/previews",
+            "preview_artifacts_cleared": 1,
+            "preview_artifacts_failed": 0,
+            "pycache_directories_cleared": 1,
+            "pycache_directories_failed": 0,
+            "messages": ["Cleared preview artifact: fake.glb", "Cleared Python cache directory: fake/__pycache__", "UI reload triggered."],
+        }
 
     def generate_model(self, prompt_text, log=None):
         if log is not None:
@@ -124,6 +145,11 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertEqual(payload["lastPlan"], {"dims": [1, 2]})
         self.assertEqual(payload["lastValidation"], {"items": ["a", "b"]})
         self.assertEqual(payload["lastSavedModelEntry"], {"path": str(Path("data/example.glb"))})
+        self.assertEqual(payload["lastGenerationPath"], "recipe")
+        self.assertEqual(payload["lastGenerationRoute"], "recipe_success")
+        self.assertEqual(payload["lastGenerationFallbackReason"], "")
+        self.assertEqual(payload["lastImplementationId"], "panel_plate_v1")
+        self.assertEqual(payload["lastExecutionRecipe"], "panel_plate")
         self.assertEqual(payload["runtimeHealthStatus"], "ready")
         self.assertEqual(payload["runtimeHealth"]["runtime_health_status"], "ready")
 
@@ -137,6 +163,50 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertEqual(result["payload"]["request_text"], "make a plate")
         self.assertTrue(any("python generation job start" in entry for entry in result["logs"]))
         self.assertTrue(any("backend generation returned" in entry for entry in result["logs"]))
+
+    def test_terminal_payload_preserves_generation_provenance_fields(self):
+        controller = FakeController()
+        bridge = GeomancerBridge(controller=controller)
+
+        payload = bridge._normalize_terminal_payload(
+            {
+                "generation_id": "gen-phone-1",
+                "request_text": "make a phone stand",
+                "status": "ready",
+                "raw_status": "ready",
+                "is_terminal": True,
+                "message": "",
+                "generation_path": "recipe",
+                "generation_route": "recipe_success",
+                "generation_fallback_reason": "",
+                "execution_recipe": "phone_stand",
+                "implementation_id": "phone_stand_cradle_v1",
+                "output_source": "recipe",
+                "preview_export_status": "ready",
+                "preview_model_path": "data/previews/generated_preview.glb",
+            }
+        )
+
+        self.assertEqual(payload["generation_path"], "recipe")
+        self.assertEqual(payload["generation_route"], "recipe_success")
+        self.assertEqual(payload["generation_fallback_reason"], "")
+        self.assertEqual(payload["execution_recipe"], "phone_stand")
+        self.assertEqual(payload["implementation_id"], "phone_stand_cradle_v1")
+        self.assertEqual(payload["output_source"], "recipe")
+
+    def test_clean_dev_reload_payload_is_preserved_by_bridge(self):
+        controller = FakeController()
+        bridge = GeomancerBridge(controller=controller)
+        logs = []
+        bridge.logMessage.connect(logs.append)
+
+        payload = json.loads(bridge.cleanDevReload())
+
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["preview_artifacts_cleared"], 1)
+        self.assertEqual(payload["pycache_directories_cleared"], 1)
+        self.assertTrue(any("Cleared preview artifact" in entry for entry in logs))
+        self.assertTrue(any("UI reload triggered." in entry for entry in logs))
 
     def test_run_generation_job_returns_failure_payload_and_logs(self):
         controller = FakeController()
@@ -180,6 +250,38 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertEqual(completions[0]["status"], "error")
         self.assertEqual(len(failures), 1)
         self.assertEqual(failures[0], "Generation is already running.")
+
+    def test_backend_controller_clean_dev_reload_clears_only_safe_artifacts(self):
+        controller = BackendController()
+        with tempfile.TemporaryDirectory() as temp_root:
+            root = Path(temp_root)
+            preview_dir = root / "data" / "previews"
+            preview_dir.mkdir(parents=True)
+            preview_file = preview_dir / "generated_preview_test.glb"
+            preview_file.write_text("preview", encoding="utf-8")
+            nested_preview_dir = preview_dir / "nested"
+            nested_preview_dir.mkdir()
+            (nested_preview_dir / "stale.txt").write_text("stale", encoding="utf-8")
+            cache_dir = root / "app" / "__pycache__"
+            cache_dir.mkdir(parents=True)
+            (cache_dir / "stale.pyc").write_text("cache", encoding="utf-8")
+            preserved_file = root / "keep.txt"
+            preserved_file.write_text("keep", encoding="utf-8")
+
+            with patch("desktop.backend_controller.PROJECT_ROOT", root), patch("desktop.backend_controller.PREVIEWS_DIR", preview_dir):
+                logs = []
+                result = controller.clean_dev_reload(log=logs.append)
+
+            self.assertTrue(result["success"])
+            self.assertEqual(result["preview_artifacts_cleared"], 2)
+            self.assertEqual(result["pycache_directories_cleared"], 1)
+            self.assertFalse(preview_file.exists())
+            self.assertFalse(nested_preview_dir.exists())
+            self.assertFalse(cache_dir.exists())
+            self.assertTrue(preserved_file.exists())
+            self.assertTrue(any("Cleared preview artifact" in entry for entry in logs))
+            self.assertTrue(any("Cleared Python cache directory" in entry for entry in logs))
+            self.assertTrue(any("UI reload triggered." in entry for entry in logs))
 
     def test_handle_generation_job_resolved_success_emits_completion(self):
         controller = FakeController()

@@ -1,3 +1,5 @@
+import { computeViewerFrame } from "./viewer_framing.js";
+
 let bridge = null;
 let THREE = null;
 let OrbitControls = null;
@@ -55,9 +57,11 @@ const propertiesEmptyState = document.getElementById("properties-empty-state");
 const propertiesDimensionsSection = document.getElementById("properties-dimensions-section");
 const propertiesWallsSection = document.getElementById("properties-walls-section");
 const propertiesFeaturesSection = document.getElementById("properties-features-section");
+const propertiesImplementationSection = document.getElementById("properties-implementation-section");
 const currentModelDimensions = document.getElementById("current-model-dimensions");
 const currentModelWalls = document.getElementById("current-model-walls");
 const currentModelFeatures = document.getElementById("current-model-features");
+const currentModelImplementation = document.getElementById("current-model-implementation");
 const setupWizard = document.getElementById("setup-wizard");
 const setupStatusTitle = document.getElementById("setup-status-title");
 const setupStatusText = document.getElementById("setup-status-text");
@@ -543,6 +547,11 @@ function normalizeSavedModelEntry(entry = {}) {
     createdDisplay: formatLibraryTimestamp(entry.created_at),
     dimensionsDisplay: modelLibraryDimensions(entry),
     previewReady: entry.preview_export_status === "ready",
+    implementationId: entry.implementation_id || "",
+    executionRecipe: entry.execution_recipe || "",
+    generationPath: entry.generation_path || "",
+    generationRoute: entry.generation_route || "",
+    generationFallbackReason: entry.generation_fallback_reason || "",
   };
 }
 
@@ -1127,6 +1136,8 @@ async function openSelectedModelInWorkspace() {
   }
 
   const previewKey = `library-${model.id || model.generation_id || "saved-model"}`;
+  const previewModelPath = model.final_model_path || model.preview_model_path || "";
+  const previewModelUrl = model.final_model_url || model.preview_model_url || normalizePreviewArtifactUrl(previewModelPath);
   const validation = model.validation_summary ? { summary: model.validation_summary } : null;
   applyActiveSession({
     generationId: model.generation_id || model.id || "",
@@ -1139,9 +1150,19 @@ async function openSelectedModelInWorkspace() {
     message: model.validation_summary || "Saved model loaded from the local library.",
     previewStatus: model.preview_export_status || "",
     previewMessage: "",
-    previewModelPath: model.preview_model_path || "",
+    previewModelPath,
+    previewModelUrl,
+    previewSource: previewModelUrl ? "artifact" : "missing",
+    previewArtifactPath: previewModelPath,
+    previewArtifactUrl: previewModelUrl,
+    previewLoadError: "",
     previewAssetVersion: "",
     previewKey,
+    generationPath: model.generationPath || model.generation_path || model.execution_path || "",
+    generationRoute: model.generationRoute || model.generation_route || "",
+    generationFallbackReason: model.generationFallbackReason || model.generation_fallback_reason || "",
+    executionRecipe: model.executionRecipe || model.execution_recipe || model.recipe?.execution_recipe || model.plan?.recipe || "",
+    implementationId: model.implementationId || model.implementation_id || "",
   });
   setGenerationStatusText("Library model");
   setReadinessStateText(model.validation_summary || "Saved model loaded from the local library.");
@@ -1149,15 +1170,26 @@ async function openSelectedModelInWorkspace() {
 
   if (viewer.initialized) {
     try {
-      await viewer.loadPreview({
+      const loaded = await viewer.loadPreview({
         promptText: model.prompt || model.name,
         plan: model.plan || null,
-        previewModelPath: model.preview_model_path || "",
+        previewModelPath,
+        previewModelUrl,
         previewAssetVersion: "",
         previewKey,
+        previewSource: previewModelUrl ? "artifact" : "missing",
+        previewArtifactPath: previewModelPath,
+        previewArtifactUrl: previewModelUrl,
       });
+      if (!loaded) {
+        appendLog("Saved model preview could not be loaded.");
+        applyActiveSession({ previewLoadError: "Could not load generated model." });
+      }
     } catch (error) {
       appendLog(`Saved model preview load failed: ${error}`);
+      viewer.setError("Could not load generated model.");
+      applyActiveSession({ previewLoadError: "Could not load generated model." });
+      setReadinessStateText("Could not load generated model.");
     }
   }
 }
@@ -1293,6 +1325,11 @@ function createEmptySession() {
     previewModelPath: "",
     previewAssetVersion: "",
     previewKey: "",
+    generationPath: "",
+    generationRoute: "",
+    generationFallbackReason: "",
+    executionRecipe: "",
+    implementationId: "",
   };
 }
 
@@ -1745,10 +1782,13 @@ function updateRightPanel(plan, validation = null, uiState = "idle") {
     if (currentModelWalls) {
       currentModelWalls.innerHTML = "";
     }
-    if (currentModelFeatures) {
-      currentModelFeatures.innerHTML = "";
-    }
-    return;
+  if (currentModelFeatures) {
+    currentModelFeatures.innerHTML = "";
+  }
+  if (currentModelImplementation) {
+    currentModelImplementation.innerHTML = "";
+  }
+  return;
   }
 
   renderDetailRows(currentModelDimensions, [
@@ -1763,6 +1803,20 @@ function updateRightPanel(plan, validation = null, uiState = "idle") {
 
   if (currentModelFeatures) {
     renderDetailRows(currentModelFeatures, featureRows.map(([label, value]) => [label, value || "Yes"]));
+  }
+
+  if (currentModelImplementation) {
+    const implementationRows = [
+      ["Generation path", activeSession.generationPath || "Unavailable"],
+      ["Generation route", activeSession.generationRoute || "Unavailable"],
+      ["Execution recipe", activeSession.executionRecipe || plan?.recipe || "Unavailable"],
+      ["Implementation ID", activeSession.implementationId || "Unavailable"],
+    ];
+    renderDetailRows(currentModelImplementation, implementationRows);
+  }
+
+  if (propertiesImplementationSection) {
+    propertiesImplementationSection.hidden = !(hasPlan || activeSession.generationPath || activeSession.executionRecipe || activeSession.implementationId);
   }
 }
 
@@ -1782,6 +1836,8 @@ function applyBackendSnapshot({ promptText = "", plan = null, validation = null,
 }
 
 function normalizeTerminalResult(result = {}) {
+  const previewModelPath = result.preview_model_path || result.previewModelPath || "";
+  const previewModelUrl = result.preview_model_url || result.previewModelUrl || normalizePreviewArtifactUrl(previewModelPath, result.preview_asset_version || result.previewAssetVersion || "");
   return {
     generationId: result.generation_id || result.generationId || "",
     requestText: result.request_text || result.requestText || "",
@@ -1792,10 +1848,23 @@ function normalizeTerminalResult(result = {}) {
     plan: result.plan || null,
     validation: result.validation || null,
     classification: result.classification || null,
-    previewModelPath: result.preview_model_path || result.previewModelPath || "",
+    previewModelPath,
+    previewModelUrl,
+    previewSource: result.preview_source || result.previewSource || (previewModelPath ? "artifact" : "none"),
+    previewArtifactPath: result.final_model_path || result.finalModelPath || previewModelPath,
+    previewArtifactUrl: result.final_model_url || result.finalModelUrl || previewModelUrl,
+    previewLoadError: result.preview_load_error || result.previewLoadError || "",
     previewAssetVersion: result.preview_asset_version || result.previewAssetVersion || "",
     previewStatus: result.preview_export_status || result.previewExportStatus || "not_requested",
     previewMessage: result.preview_export_message || result.previewExportMessage || "",
+    finalModelPath: result.final_model_path || result.finalModelPath || "",
+    finalModelUrl: result.final_model_url || result.finalModelUrl || "",
+    outputSource: result.output_source || result.outputSource || "",
+    generationPath: result.generation_path || result.generationPath || "",
+    generationRoute: result.generation_route || result.generationRoute || "",
+    generationFallbackReason: result.generation_fallback_reason || result.generationFallbackReason || "",
+    executionRecipe: result.execution_recipe || result.executionRecipe || "",
+    implementationId: result.implementation_id || result.implementationId || "",
     savedModelEntry: result.saved_model_entry || result.savedModelEntry || null,
   };
 }
@@ -1842,6 +1911,7 @@ async function applyTerminalResult(rawResult) {
   }
   const previewIdentity = previewIdentityFromResult(rawResult) || result.generationId;
   appendLog(`[UI] terminal payload parsed: request_text=${result.requestText || "none"}, generation_id=${result.generationId || "none"}, status=${result.status}, reason=${result.message || result.previewMessage || "none"}, preview_path=${result.previewModelPath || "none"}`);
+  appendLog(`[UI] generation truth: family=${result.plan?.family || "none"}; path=${result.generationPath || "none"}; route=${result.generationRoute || "none"}; recipe=${result.executionRecipe || result.plan?.recipe || "none"}; impl=${result.implementationId || "none"}; generation_id=${result.generationId || "none"}; preview=${result.previewModelPath || "none"}`);
 
   applyActiveSession({
     generationId: result.generationId,
@@ -1855,8 +1925,18 @@ async function applyTerminalResult(rawResult) {
     previewStatus: result.previewStatus,
     previewMessage: result.previewMessage,
     previewModelPath: result.previewModelPath,
+    previewModelUrl: result.previewModelUrl,
+    previewSource: result.previewSource,
+    previewArtifactPath: result.previewArtifactPath,
+    previewArtifactUrl: result.previewArtifactUrl,
+    previewLoadError: result.previewLoadError,
     previewAssetVersion: result.previewAssetVersion,
     previewKey: previewIdentity,
+    generationPath: result.generationPath,
+    generationRoute: result.generationRoute,
+    generationFallbackReason: result.generationFallbackReason,
+    executionRecipe: result.executionRecipe,
+    implementationId: result.implementationId,
   });
   appendLog("[UI] final terminal UI applied");
   const summaryLines = toSummaryLines(result.plan, result.validation, result.classification, result.status, result.previewStatus);
@@ -1877,24 +1957,28 @@ async function applyTerminalResult(rawResult) {
     appendLog(`[UI] preview load started: generation_id=${result.generationId || "none"}, preview_path=${result.previewModelPath || "none"}`);
     appendLog(`[UI] backend-owned preview identity -> ${previewIdentity || "none"}`);
     try {
-      await viewer.loadPreview({
+      const loaded = await viewer.loadPreview({
         promptText: result.requestText,
         plan: result.plan,
         previewModelPath: result.previewModelPath,
+        previewModelUrl: result.previewModelUrl,
         previewAssetVersion: result.previewAssetVersion,
         previewKey: previewIdentity,
+        previewSource: result.previewSource,
+        previewArtifactPath: result.previewArtifactPath,
+        previewArtifactUrl: result.previewArtifactUrl,
       });
-      appendLog(`[UI] preview load succeeded: generation_id=${result.generationId || "none"}`);
+      if (loaded) {
+        appendLog(`[UI] preview load succeeded: generation_id=${result.generationId || "none"}`);
+      } else {
+        appendLog(`[UI] preview load failed without fallback: generation_id=${result.generationId || "none"}`);
+        applyActiveSession({ previewLoadError: "Could not load generated model." });
+      }
     } catch (error) {
       appendLog(`[UI] preview load failed: generation_id=${result.generationId || "unknown"}, error=${error}`);
-      await viewer.loadPreview({
-        promptText: result.requestText,
-        plan: result.plan,
-        previewModelPath: "",
-        previewAssetVersion: "",
-        previewKey: `${previewIdentity || result.generationId || "fallback"}-procedural`,
-      });
-      setReadinessStateText(terminalViewerMessage(result));
+      viewer.setError("Could not load generated model.");
+      applyActiveSession({ previewLoadError: "Could not load generated model." });
+      setReadinessStateText("Could not load generated model.");
     }
 
     if (result.previewStatus === "error") {
@@ -2093,6 +2177,21 @@ function toFileUrl(pathText) {
   return null;
 }
 
+function normalizePreviewArtifactUrl(pathText, assetVersion = "") {
+  if (!pathText) {
+    return null;
+  }
+  const baseUrl = toFileUrl(pathText) || pathText.replace(/\\/g, "/");
+  if (!baseUrl) {
+    return null;
+  }
+  const normalizedBaseUrl = baseUrl.split("?")[0];
+  if (!/\.(glb|gltf)$/i.test(normalizedBaseUrl)) {
+    return null;
+  }
+  return withCacheKey(normalizedBaseUrl, assetVersion);
+}
+
 function withCacheKey(url, cacheKey) {
   if (!url || !cacheKey) {
     return url;
@@ -2160,6 +2259,10 @@ class GeomancerViewer {
     this.controls = null;
     this.rootGroup = null;
     this.previewObject = null;
+    this.previewSource = "";
+    this.previewArtifactPath = "";
+    this.previewArtifactUrl = "";
+    this.previewLoadError = "";
     this.contactShadow = null;
     this.gizmoRenderer = null;
     this.gizmoScene = null;
@@ -2590,11 +2693,15 @@ class GeomancerViewer {
         materials.forEach((material) => material.dispose());
       }
     });
-    this.previewObject = null;
-    if (this.contactShadow) {
-      this.contactShadow.visible = false;
-    }
+  this.previewObject = null;
+  this.previewSource = "";
+  this.previewArtifactPath = "";
+  this.previewArtifactUrl = "";
+  this.previewLoadError = "";
+  if (this.contactShadow) {
+    this.contactShadow.visible = false;
   }
+}
 
   createMaterial(color = 0xf6f7f8) {
     return new THREE.MeshStandardMaterial({
@@ -3530,72 +3637,36 @@ class GeomancerViewer {
     this.contactShadow.visible = true;
   }
 
-  getFramingProfile(previewKind, size) {
-    const flatProfile = size.y <= Math.max(size.x, size.z) * 0.2;
-    if (previewKind === "bracket" || previewKind === "clip" || previewKind === "cylinder") {
-      return {
-        direction: new THREE.Vector3(1.06, 0.6, 0.86),
-        distanceMultiplier: 1.14,
-        targetHeight: 0.35,
-      };
-    }
-    if (previewKind === "panel" || flatProfile) {
-      return {
-        direction: new THREE.Vector3(0.3, 0.9, 1.12),
-        distanceMultiplier: 1.1,
-        targetHeight: 0.24,
-      };
-    }
-    if (previewKind === "enclosure" || previewKind === "planter") {
-      return {
-        direction: new THREE.Vector3(1, 0.72, 1.04),
-        distanceMultiplier: 1.18,
-        targetHeight: 0.35,
-      };
-    }
-    return {
-      direction: new THREE.Vector3(0.96, 0.68, 1),
-      distanceMultiplier: 1.16,
-      targetHeight: 0.35,
-    };
-  }
-
   fitCameraToObject(object3D, previewKind = "block", placement = null) {
-    if (!object3D || !this.camera || !this.controls || !THREE) {
-      return;
+      if (!object3D || !this.camera || !this.controls || !THREE) {
+        return;
+      }
+      const box = placement?.box || new THREE.Box3().setFromObject(object3D);
+      if (box.isEmpty()) {
+        return;
+      }
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const frame = computeViewerFrame({
+        size,
+        center,
+        aspect: this.camera.aspect || 1,
+        fovDegrees: this.camera.fov,
+        previewKind,
+      });
+      const direction = new THREE.Vector3(frame.direction.x, frame.direction.y, frame.direction.z);
+      const target = new THREE.Vector3(frame.target.x, frame.target.y, frame.target.z);
+      const offset = direction.multiplyScalar(frame.distance);
+      this.camera.position.copy(target).add(offset);
+      this.camera.lookAt(target);
+      this.controls.target.copy(target);
+      this.controls.minDistance = Math.max(frame.distance * 0.2, 0.06);
+      this.controls.maxDistance = Math.max(frame.distance * 12, 24);
+      this.camera.near = frame.near;
+      this.camera.far = frame.far;
+      this.camera.updateProjectionMatrix();
+      this.controls.update();
     }
-    const box = placement?.box || new THREE.Box3().setFromObject(object3D);
-    if (box.isEmpty()) {
-      return;
-    }
-    const size = box.getSize(new THREE.Vector3());
-    const sphere = box.getBoundingSphere(new THREE.Sphere());
-    const aspect = this.camera.aspect || 1;
-    const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
-    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect);
-    const fitHeightDistance = (size.y / 2) / Math.tan(verticalFov / 2);
-    const fitWidthDistance = (Math.max(size.x, size.z) / 2) / Math.tan(horizontalFov / 2);
-    const profile = this.getFramingProfile(previewKind, size);
-    const fitDistance = THREE.MathUtils.clamp(
-      Math.max(fitHeightDistance, fitWidthDistance, sphere.radius * 1.34, 0.28) * profile.distanceMultiplier,
-      1.6,
-      22
-    );
-    const supportCenter = placement?.supportFootprint?.center || new THREE.Vector3(0, box.min.y, 0);
-    const viewCenter = new THREE.Vector3(
-      supportCenter.x * 0.3,
-      box.max.y * profile.targetHeight,
-      supportCenter.z * 0.3
-    );
-    const direction = profile.direction.clone().normalize();
-    const offset = direction.multiplyScalar(fitDistance);
-    this.camera.position.copy(viewCenter).add(offset);
-    this.controls.target.copy(viewCenter);
-    this.camera.near = Math.max(fitDistance / 100, 0.001);
-    this.camera.far = Math.max(fitDistance * 20, 20);
-    this.camera.updateProjectionMatrix();
-    this.controls.update();
-  }
 
   focusObject() {
     if (this.previewObject) {
@@ -3615,15 +3686,16 @@ class GeomancerViewer {
     }
   }
 
-  async tryLoadExternalPreview(previewModelPath, previewAssetVersion = "") {
-    if (!GLTFLoader || !previewModelPath) {
+  async tryLoadExternalPreview(previewModelPath, previewAssetVersion = "", previewModelUrl = "") {
+    if (!GLTFLoader || (!previewModelPath && !previewModelUrl)) {
       return null;
     }
-    const previewUrl = withCacheKey(toFileUrl(previewModelPath) || previewModelPath, previewAssetVersion);
-    if (!previewUrl || !/\.(glb|gltf)$/i.test(previewUrl)) {
+    const previewUrl = normalizePreviewArtifactUrl(previewModelUrl || previewModelPath, previewAssetVersion);
+    if (!previewUrl) {
       return null;
     }
     const loader = new GLTFLoader();
+    appendLog(`[Viewer] loading preview artifact: ${previewUrl}`);
     return new Promise((resolve, reject) => {
       loader.load(
         previewUrl,
@@ -3634,7 +3706,7 @@ class GeomancerViewer {
     });
   }
 
-  async loadPreview({ promptText = "", plan = null, previewModelPath = "", previewAssetVersion = "", previewKey = "" }) {
+  async loadPreview({ promptText = "", plan = null, previewModelPath = "", previewModelUrl = "", previewAssetVersion = "", previewKey = "", previewSource = "", previewArtifactPath = "", previewArtifactUrl = "" }) {
     if (!this.initialized) {
       return;
     }
@@ -3642,27 +3714,49 @@ class GeomancerViewer {
       return;
     }
 
-    setViewerOverlay("loading", "Generating model", "Setting the current model in place.");
+    this.previewSource = previewSource || (previewArtifactUrl || previewModelUrl || previewModelPath ? "artifact" : "none");
+    this.previewArtifactPath = previewArtifactPath || previewModelPath || "";
+    this.previewArtifactUrl = previewArtifactUrl || previewModelUrl || "";
+    this.previewLoadError = "";
+    setViewerOverlay("loading", "Generating model", "Loading the generated model artifact.");
     this.clearPreview();
 
-    let loadedObject = null;
-    const previewKind = getPromptPreviewKind(promptText, plan);
-    if (previewModelPath) {
-      try {
-        loadedObject = await this.tryLoadExternalPreview(previewModelPath, previewAssetVersion);
-      } catch (error) {
-        appendLog(`Preview asset load failed, falling back to procedural preview: ${error}`);
-      }
+    const artifactUrl = previewArtifactUrl || previewModelUrl || normalizePreviewArtifactUrl(previewModelPath, previewAssetVersion);
+    if (!artifactUrl) {
+      this.previewLoadError = "Generated model artifact is unavailable.";
+      appendLog("[Viewer] preview load failed: no artifact path was provided.");
+      setViewerOverlay("error", "Preview unavailable", "Could not load generated model.");
+      return false;
     }
 
-    this.previewObject = loadedObject || this.buildPreviewGroup({ promptText, plan });
+    let loadedObject = null;
+    try {
+      loadedObject = await this.tryLoadExternalPreview(previewModelPath, previewAssetVersion, artifactUrl);
+    } catch (error) {
+      const message = error?.message || String(error);
+      this.previewLoadError = message;
+      appendLog(`Preview artifact load failed: ${message}`);
+      setViewerOverlay("error", "Preview unavailable", "Could not load generated model.");
+      return false;
+    }
+
+    if (!loadedObject) {
+      this.previewLoadError = "Generated model artifact could not be loaded.";
+      appendLog("[Viewer] preview load failed: loader returned no scene.");
+      setViewerOverlay("error", "Preview unavailable", "Could not load generated model.");
+      return false;
+    }
+
+    const previewKind = getPromptPreviewKind(promptText, plan);
+    this.previewObject = loadedObject;
     this.rootGroup.add(this.previewObject);
     this.normalizeRestingOrientation(this.previewObject, previewKind);
     const placement = this.placeObjectOnStage(this.previewObject);
     this.setRenderMode(this.renderMode);
     this.fitCameraToObject(this.previewObject, previewKind, placement);
     this.lastPreviewKey = previewKey;
-    setViewerOverlay("ready", "Preview ready", "Review available.");
+    setViewerOverlay("ready", "Preview ready", "Loaded final artifact.");
+    return true;
   }
 
   setError(message) {
@@ -3691,7 +3785,7 @@ const viewer = new GeomancerViewer();
 
 async function applyState(rawState) {
   const state = await resolveBridgeJson(rawState, "getInitialState/stateChanged");
-  appendLog(`Debug: restored state applied -> status=${state.lastGenerationStatus || "idle"}, raw_status=${state.lastGenerationRawStatus || "none"}, family=${state.lastGenerationFamily || "none"}, generation_id=${state.generationId || "none"}, saved_models=${state.librarySummary?.saved_model_count || 0}`);
+  appendLog(`Debug: restored state applied -> status=${state.lastGenerationStatus || "idle"}, raw_status=${state.lastGenerationRawStatus || "none"}, family=${state.lastGenerationFamily || "none"}, generation_id=${state.generationId || "none"}, path=${state.lastGenerationPath || "none"}, route=${state.lastGenerationRoute || "none"}, impl=${state.lastImplementationId || "none"}, recipe=${state.lastExecutionRecipe || "none"}, saved_models=${state.librarySummary?.saved_model_count || 0}`);
   updatePassiveShellState(state);
   if (!hasLoadedInitialState) {
     hasLoadedInitialState = true;

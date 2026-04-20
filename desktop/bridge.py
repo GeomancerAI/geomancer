@@ -113,6 +113,7 @@ class GeomancerBridge(QObject):
                 "generationId": status.get("generation_id", ""),
                 "generatedScriptPath": status.get("generated_script_path", ""),
                 "previewModelPath": status.get("preview_model_path", ""),
+                "previewModelUrl": status.get("preview_model_url", ""),
                 "previewAssetVersion": status.get("preview_asset_version", ""),
                 "previewExportStatus": status.get("preview_export_status", ""),
                 "previewExportMessage": status.get("preview_export_message", ""),
@@ -127,6 +128,15 @@ class GeomancerBridge(QObject):
                 "lastValidation": status.get("last_validation", {}),
                 "lastClassification": status.get("last_classification", {}),
                 "lastSavedModelEntry": status.get("last_saved_model_entry", {}),
+                "lastFinalModelPath": status.get("last_final_model_path", ""),
+                "lastFinalModelUrl": status.get("last_final_model_url", ""),
+                "lastOutputSource": status.get("last_output_source", ""),
+                "lastGenerationPath": status.get("last_generation_path", ""),
+                "lastGenerationRoute": status.get("last_generation_route", ""),
+                "lastGenerationFallbackReason": status.get("last_generation_fallback_reason", ""),
+                "lastImplementationId": status.get("last_implementation_id", ""),
+                "lastExecutionRecipe": status.get("last_execution_recipe", ""),
+                "lastPreviewModelUrl": status.get("last_preview_model_url", ""),
                 "librarySummary": status.get("library_summary", {}),
                 "savedModels": status.get("saved_models", []),
                 "lastRunStatus": status.get("last_run_status", "idle"),
@@ -160,6 +170,7 @@ class GeomancerBridge(QObject):
                 "generationId": fallback.get("generation_id", ""),
                 "generatedScriptPath": "",
                 "previewModelPath": "",
+                "previewModelUrl": "",
                 "previewAssetVersion": "",
                 "previewExportStatus": "error",
                 "previewExportMessage": fallback.get("message", ""),
@@ -174,6 +185,15 @@ class GeomancerBridge(QObject):
                 "lastValidation": {},
                 "lastClassification": {},
                 "lastSavedModelEntry": {},
+                "lastFinalModelPath": "",
+                "lastFinalModelUrl": "",
+                "lastOutputSource": "",
+                "lastGenerationPath": "",
+                "lastGenerationRoute": "",
+                "lastGenerationFallbackReason": "",
+                "lastImplementationId": "",
+                "lastExecutionRecipe": "",
+                "lastPreviewModelUrl": "",
                 "librarySummary": {"saved_model_count": 0, "recent_saved_models": [], "project_count": 0, "template_count": 0, "templates": []},
                 "savedModels": [],
                 "lastRunStatus": "error",
@@ -288,6 +308,12 @@ class GeomancerBridge(QObject):
         """Launch Blender for a selected saved model entry."""
         result = self._controller.open_saved_model_in_blender(model_id.strip())
         self.refreshState()
+        return self._safe_json_dumps(result)
+
+    @Slot(result=str)
+    def cleanDevReload(self) -> str:
+        """Clear generated dev artifacts and return a cleanup report."""
+        result = self._controller.clean_dev_reload(log=lambda message: self._log_bridge(f"[reload] {message}"))
         return self._safe_json_dumps(result)
 
     @Slot(str, result=str)
@@ -486,6 +512,12 @@ class GeomancerBridge(QObject):
             "preview_asset_version": normalized.get("preview_asset_version", ""),
             "preview_export_status": normalized.get("preview_export_status", "not_requested"),
             "preview_export_message": normalized.get("preview_export_message", normalized.get("message", "")),
+            "generation_path": normalized.get("generation_path", ""),
+            "generation_route": normalized.get("generation_route", ""),
+            "generation_fallback_reason": normalized.get("generation_fallback_reason", ""),
+            "execution_recipe": normalized.get("execution_recipe", ""),
+            "implementation_id": normalized.get("implementation_id", ""),
+            "output_source": normalized.get("output_source", ""),
             "saved_model_entry": normalized.get("saved_model_entry", {}),
             "supported_families": normalized.get("supported_families", []),
         }

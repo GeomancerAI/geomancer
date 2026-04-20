@@ -20,6 +20,122 @@ Use this pattern going forward:
 Recommended entry format:
 
 ```md
+## 2026-04-19 - hook-mount-wall-hook-v1-profile-fix
+
+### Summary
+- Corrected the `hook_mount` direct-body profile so it now builds a recognizable wall hook silhouette with an explicit wall plate, horizontal arm, and visible upward tip using a named X/Z side profile extruded along Y.
+
+### Verification
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+- `python -m compileall app tests`
+
+## 2026-04-19 - hook-mount-wall-hook-v1
+
+### Summary
+- Reworked `hook_mount` onto a direct coherent `hook_mount_body` recipe op, updated its implementation id to `hook_mount_wall_hook_v1`, and carried the new provenance through the backend pipeline and recipe executor.
+
+### Verification
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+- `python -m compileall app tests`
+
+## 2026-04-19 - desktop-clean-dev-reload
+
+### Summary
+- Turned `File > Reload UI` into a clean development reload that clears generated preview artifacts and project-local `__pycache__` directories before refreshing the desktop UI.
+
+### Verification
+- `python -m unittest tests.test_desktop_bridge`
+- `python -m compileall desktop app tests`
+
+## 2026-04-19 - tray-box-shell-v1-pass
+
+### Summary
+- Tightened the tray box family into a shallow open-top shell profile, updated the tray implementation id to `tray_box_shell_v1`, and preserved tray provenance through the backend pipeline and desktop bridge.
+
+### Verification
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+- `python -m compileall app tests`
+
+## 2026-04-19 - phone-stand-provenance-plumbing-fix
+
+### Summary
+- Preserved `generation_path`, `generation_route`, `execution_recipe`, `implementation_id`, `generation_fallback_reason`, and `output_source` through the desktop bridge so phone stand and other migrated recipe-path families no longer render their provenance as unavailable in the right-rail implementation panel.
+
+### Verification
+- `python -m unittest tests.test_desktop_bridge tests.test_backend_plan_schema tests.test_backend_archetypes`
+- `python -m compileall app tests`
+
+## 2026-04-19 - phone-stand-cradle-v1-structure-refinement
+
+### Summary
+- Refined the direct-body phone stand silhouette so the stand reads more clearly as a cradle with a flat base shelf, a distinct front lip, and a stepped support transition rather than a single wedge block.
+- Raised the minimum visible lip height during validation so compact phone stands keep a readable retaining edge.
+
+### Verification
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_archetypes`
+- `python -m compileall app tests`
+
+## 2026-04-19 - phone-stand-cradle-v1-pass
+
+### Summary
+- Replaced the phone stand recipe path with a single coherent cradle-body construction for `phone_stand_cradle_v1`.
+- Aligned phone stand defaults and validation around width, depth, height, thickness, viewing angle, lip height, and cradle depth while keeping the implementation stamp visible in logs, state, and the desktop UI.
+
+### Verification
+- `python -m unittest tests.test_backend_archetypes tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `python -m compileall app tests`
+
+## 2026-04-18 - viewer-auto-fit-bounds-framing-pass
+
+### Summary
+- Auto-fit the Workspace camera to the actual bounds of loaded artifacts so real-world-sized models remain readable without changing model scale.
+- Moved orbit target and camera placement onto the loaded object bounds for truthier framing across phone stands, plates, and enclosures.
+
+### Verification
+- `python -m unittest tests.test_viewer_framing tests.test_backend_alpha_pipeline tests.test_backend_archetypes tests.test_backend_plan_schema`
+- `python -m compileall app desktop tests`
+
+## 2026-04-18 - generation-truth-composition-hardening-pass
+
+### Summary
+- Reset generation-specific backend state at the start of each request so archetype and plan metadata do not leak between generations.
+- Hardened `phone_stand` composition with a small structural anchor, stronger part overlap, and final transform normalization before export.
+- Fixed plate normalization so `120 mm plate with 4 holes` infers a real hole count and default hole diameter instead of collapsing into a plain slab.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_archetypes tests.test_backend_plan_schema`
+- `python -m compileall app tests`
+
+## 2026-04-18 - glb-path-normalization-viewer-load-fix
+
+### Summary
+- Normalized preview artifact paths into browser-safe file URLs before GLB loading.
+- Exposed clearer preview-load errors when the expected artifact cannot be opened.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_archetypes tests.test_backend_plan_schema`
+- `python -m compileall app desktop tests`
+
+## 2026-04-18 - viewer-glb-truth-pass
+
+### Summary
+- Made the Workspace viewer prefer the persisted final artifact and surface explicit load failures instead of silently substituting a procedural preview.
+- Added final-artifact and preview-load metadata so preview, save, and reload stay honest about what was actually loaded.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_archetypes tests.test_backend_plan_schema`
+- `python -m compileall app desktop tests`
+
+## 2026-04-18 - preview-output-unification-pass
+
+### Summary
+- Unified preview, saved-model persistence, and Blender-open behavior around a single final artifact path.
+- Saved models now record the final output artifact alongside execution metadata so reloads and previews stay aligned.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_archetypes tests.test_backend_plan_schema`
+- `python -m compileall app tests`
+
 ## 2026-04-06 - 0.3.1-alpha - backend-foundation-doc-baseline
 
 ### Files Changed
@@ -65,6 +181,297 @@ Every future backend-focused Codex pass should record, either in the changelog o
 - If a pass is partially complete, state exactly what remains.
 
 ## Entries
+
+## 2026-04-19 - backend-legacy-quarantine-pass
+
+### Summary
+- Simplified the active backend flow so migrated families stay recipe-authoritative and no longer drop into legacy geometry during normal operation.
+- Quarantined legacy fallback to the remaining non-migrated primitive-assembly path, reducing overlap and making the active generation route easier to follow.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema tests.test_backend_archetypes`
+- `python -m compileall app tests`
+
+## 2026-04-19 - backend-authority-fallback-audit-pass
+
+### Summary
+- Tightened backend generation provenance so the deterministic recipe path is surfaced explicitly as the normal success route and legacy fallback is labeled when it is used.
+- Hardened the legacy bracket fallback to boolean-fuse its flanges instead of leaving joined mesh islands behind.
+- Added explicit generation-path metadata to backend state and saved-model entries so future debugging can tell which path built the artifact.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema tests.test_backend_archetypes`
+- `python -m compileall app tests`
+
+## 2026-04-18 - bracket-build-spec-v1-stabilization
+
+### Files Changed
+- `app/backend/plan_bridge.py`
+- `app/backend/plan_validator.py`
+- `app/backend/recipe_builder.py`
+- `app/backend/recipe_executor.py`
+- `tests/test_backend_alpha_pipeline.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Aligned the bracket recipe path with the v1 build spec by carrying flange width into the canonical vertical-leg feature, keeping the shared inner-corner frame coherent, clamping unsafe hole diameters earlier, and treating zero-hole bracket requests as a supported no-op in the recipe executor.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+- `python -m compileall app tests`
+
+### Known Limitations
+- Gussets remain disabled for `hole_count >= 4` during stabilization.
+
+## 2026-04-18 - bracket-authoritative-frame-pass-1-2
+
+### Files Changed
+- `app/backend/recipe_builder.py`
+- `app/backend/recipe_executor.py`
+- `app/backend/geometry.py`
+- `tests/test_backend_alpha_pipeline.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Rebased the deterministic bracket path onto a single inner-corner origin, aligned both flanges to that frame, and moved bracket hole cuts onto the joined object after union for a cleaner, coherent L-bracket.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+- `python -m compileall app tests`
+
+### Known Limitations
+- Gussets remain deferred for high-hole-count brackets to preserve stability.
+
+## 2026-04-18 - bracket-stabilization-pass-1-1
+
+### Files Changed
+- `app/backend/recipe_builder.py`
+- `app/backend/recipe_executor.py`
+- `app/backend/geometry.py`
+- `tests/test_backend_alpha_pipeline.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Reordered bracket construction so hole cuts happen before the final bracket union, removed the risky bracket bevel pass, and deferred gusset generation for high-hole-count brackets to keep the output exportable and coherent.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+- `python -m compileall app tests`
+
+### Known Limitations
+- High-hole-count brackets may temporarily omit gussets to preserve mesh stability.
+
+### Rollback / Review Notes
+- Revert the bracket recipe ordering, gusset guard, executor, and legacy geometry updates together to restore the prior more decorated path.
+
+## 2026-04-18 - bracket-enrichment-pass-1
+
+### Files Changed
+- `app/backend/normalizer.py`
+- `app/backend/plan_validator.py`
+- `app/backend/geometry.py`
+- `app/backend/recipe_executor.py`
+- `tests/test_backend_alpha_pipeline.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Tightened the deterministic bracket path so bracket prompts now normalize and render with more believable mounting-bracket proportions, safer hole margins, optional gusset support, and a light bevel pass.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+- `python -m compileall app tests`
+
+### Known Limitations
+- This pass stays within the existing 90-degree bracket family and does not introduce angled or slotted variants.
+
+### Rollback / Review Notes
+- Revert the bracket normalization, validation, geometry, executor, and test updates together to restore the earlier blockier bracket output.
+
+## 2026-04-18 - enclosure-open-top-fix-pass-1-1
+
+### Files Changed
+- `app/backend/normalizer.py`
+- `app/backend/plan_bridge.py`
+- `app/backend/recipe_builder.py`
+- `app/backend/recipe_executor.py`
+- `app/backend/geometry.py`
+- `tests/test_backend_alpha_pipeline.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Adjusted the deterministic enclosure path so enclosure shells now normalize and generate as visibly open-top containers instead of leaving a top cap in solid view.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+- `python -m compileall app tests`
+
+### Known Limitations
+- The pass is limited to the existing enclosure shell family and does not add lids, rails, or other enclosure features.
+
+### Rollback / Review Notes
+- Revert the enclosure normalization, bridge, recipe, emitter, and geometry updates together to restore the prior closed-top read.
+
+## 2026-04-18 - enclosure-shell-enrichment-pass-1
+
+### Files Changed
+- `app/backend/plan_bridge.py`
+- `app/backend/plan_validator.py`
+- `app/backend/recipe_builder.py`
+- `app/backend/recipe_executor.py`
+- `app/backend/geometry.py`
+- `tests/test_backend_alpha_pipeline.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Tightened the deterministic enclosure shell path so the canonical plan carries base thickness through to generation and both the recipe and legacy Blender emitters build a clearer shell with a stable flat base, cavity depth derived from wall thickness, and light bevel softening.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+
+### Known Limitations
+- This pass stays within the existing rectangular enclosure family and does not add lids, rails, bosses, or port features.
+- Beveling is intentionally light and deterministic rather than a fully parametric hardware-grade edge treatment.
+
+### Rollback / Review Notes
+- Revert the enclosure bridge, validator, recipe, emitter, and test updates together to restore the earlier blockier shell behavior.
+
+## 2026-04-18 - 0.7.56-alpha - archetype-phone-stand-structure-pass
+
+### Files Changed
+- `app/backend/archetypes.py`
+- `app/backend/plan_bridge.py`
+- `app/backend/plan_validator.py`
+- `app/backend/recipe_builder.py`
+- `app/backend/geometry.py`
+- `tests/test_backend_archetypes.py`
+- `CHANGELOG.md`
+
+### Summary
+- Tightened the `phone_stand` archetype so its defaults and canonical features now emphasize a flat base, angled support, and retaining lip instead of a generic tilted slab.
+- Updated the recipe and fallback geometry to compose the stand from distinct structural parts with bounded optional cable-cutout behavior.
+
+### Verification
+- `python -m unittest tests.test_backend_archetypes tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+
+### Known Limitations
+- Only the first archetype has been hardened this way.
+- The phone-stand geometry remains intentionally simple and deterministic rather than feature-rich.
+
+### Rollback / Review Notes
+- Revert the archetype, canonical feature, recipe, and fallback geometry changes together to return to the earlier phone-stand shape.
+
+## 2026-04-18 - 0.7.56-alpha - archetype-phone-stand-pass
+
+### Files Changed
+- `app/backend/archetypes.py`
+- `app/backend/families.py`
+- `app/backend/normalizer.py`
+- `app/backend/plan_bridge.py`
+- `app/backend/plan_validator.py`
+- `app/backend/recipe_builder.py`
+- `app/backend/recipe_executor.py`
+- `app/backend/geometry.py`
+- `app/backend/pipeline.py`
+- `tests/test_backend_archetypes.py`
+- `CHANGELOG.md`
+
+### Summary
+- Added the first archetype layer with a high-confidence `phone_stand` shortcut that feeds the canonical plan, recipe, executor, and legacy fallback paths.
+- Preserved the existing family/generic generation behavior for non-phone-stand prompts while making the phone stand path deterministic and usable.
+
+### Verification
+- `python -m unittest tests.test_backend_archetypes tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+
+### Known Limitations
+- Only `phone_stand` is currently routed through the archetype layer.
+- Unknown prompts still rely on the existing family/generic path rather than a broader open-ended archetype system.
+
+### Rollback / Review Notes
+- Revert the archetype selector, phone-stand family additions, and backend pipeline hook together to disable the new shortcut without disturbing other generation paths.
+
+## 2026-04-18 - 0.7.56-alpha - backend-recipe-executor-pass-3
+
+### Files Changed
+- `app/backend/recipe_executor.py`
+- `app/backend/pipeline.py`
+- `app/model_library.py`
+- `app/state.py`
+- `tests/test_backend_alpha_pipeline.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Added a bounded hybrid recipe executor that can render supported deterministic recipe ops into Blender Python for the current alpha families.
+- Kept a safe legacy fallback path for unsupported recipe/object combinations and recorded the chosen execution path in state and saved-model metadata.
+- Preserved current generation behavior while moving the recipe contract closer to the real execution layer.
+
+### Verification
+- `python -m unittest tests.test_backend_alpha_pipeline tests.test_backend_plan_schema`
+- `python -m compileall app tests`
+
+### Known Limitations
+- The executor is intentionally bounded and still falls back to the legacy family generator for unsupported combinations or future recipe expansions.
+- No frontend changes were made in this pass.
+
+### Rollback / Review Notes
+- Revert the pipeline/executor/state/model-library changes together to return to the pre-pass hybrid bridge state.
+
+## 2026-04-18 - 0.7.56-alpha - backend-recipe-builder-pass-2
+
+### Files Changed
+- `app/backend/recipe_schema.py`
+- `app/backend/recipe_builder.py`
+- `app/backend/pipeline.py`
+- `app/model_library.py`
+- `app/state.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Added a bounded deterministic recipe schema and builder between canonical plan validation and the existing family-shaped generator path.
+- Converted validated canonical plans into explicit recipe ops for supported alpha families while preserving current generation behavior.
+- Threaded recipe artifacts into saved model metadata and session state for inspection and future execution-layer work.
+
+### Verification
+- Backend unit tests will be run after the implementation pass.
+
+### Known Limitations
+- The current Blender/script execution path still consumes the existing family-shaped plan contract.
+- Recipe execution remains bridged to the legacy generator path rather than replacing it.
+
+### Rollback / Review Notes
+- Revert `app/backend/pipeline.py`, `app/backend/recipe_*`, `app/model_library.py`, and `app/state.py` together if the recipe bridge needs to be isolated.
+
+## 2026-04-17 - 0.7.56-alpha - backend-plan-schema-pass-1
+
+### Files Changed
+- `app/backend/plan_schema.py`
+- `app/backend/plan_bridge.py`
+- `app/backend/plan_validator.py`
+- `app/backend/pipeline.py`
+- `tests/test_backend_plan_schema.py`
+- `CHANGELOG.md`
+
+### Summary
+- Added a canonical backend plan schema and validation layer between family normalization and deterministic generation.
+- Bridged current family-specific normalized plans into the canonical plan structure without changing the successful generation path.
+- Added focused tests for canonical bridge creation, validation success/failure, and pre-generation rejection of invalid canonical plans.
+
+### Verification
+- Backend unit tests to run after implementation.
+
+### Known Limitations
+- Current geometry generation still uses the established family-shaped plan after canonical validation.
+- Canonical validation currently covers the supported alpha family/object subset only.
+
+### Rollback / Review Notes
+- Remove the canonical bridge and validator insertion from `app/backend/pipeline.py` to return to the prior flow.
 
 ## 2026-04-17 - 0.7.56-alpha - dark-mode-surface-token-pass
 
