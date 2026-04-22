@@ -73,6 +73,18 @@ def save_model_library(library: dict) -> Path:
     return MODEL_LIBRARY_PATH
 
 
+def _saved_model_has_editable_context(plan: dict, editable_params: list[dict] | None = None) -> bool:
+    if editable_params:
+        return True
+    if not isinstance(plan, dict) or not plan:
+        return False
+    if plan.get("intent") or plan.get("construction_mode"):
+        return True
+    if plan.get("dimensions") or plan.get("components") or plan.get("composition") or plan.get("hybrid_details"):
+        return True
+    return False
+
+
 def add_saved_model_entry(
     *,
     generation_id: str,
@@ -93,6 +105,21 @@ def add_saved_model_entry(
     final_model_path: str = "",
     final_model_url: str = "",
     final_output_source: str = "",
+    editable_params: list[dict] | None = None,
+    interpretation_summary: str = "",
+    decision_summary: str = "",
+    style_summary: str = "",
+    current_saved_model_id: str = "",
+    current_saved_model_editable: bool = False,
+    last_opened_model_id: str = "",
+    edited_plan_summary: str = "",
+    reopened_plan_summary: str = "",
+    regeneration_source: str = "",
+    source_generation_id: str = "",
+    stl_export_path: str = "",
+    stl_export_status: str = "",
+    stl_export_message: str = "",
+    stl_source_model_path: str = "",
     script_path: str,
     preview_model_path: str,
     preview_model_url: str = "",
@@ -101,6 +128,7 @@ def add_saved_model_entry(
     """Append a saved model entry after a successful generation."""
     library = load_model_library()
     timestamp = datetime.now().isoformat(timespec="seconds")
+    editable_plan_available = _saved_model_has_editable_context(plan, editable_params)
     entry = {
         "id": f"model-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:6]}",
         "generation_id": generation_id,
@@ -109,6 +137,7 @@ def add_saved_model_entry(
         "family": family,
         "family_label": family_label,
         "plan": plan,
+        "validation": validation,
         "validation_summary": validation.get("summary", ""),
         "recipe": recipe or {},
         "recipe_summary": recipe_summary,
@@ -119,9 +148,26 @@ def add_saved_model_entry(
         "generation_fallback_reason": generation_fallback_reason,
         "implementation_id": implementation_id,
         "execution_recipe": execution_recipe,
+        "interpretation_summary": interpretation_summary,
+        "decision_summary": decision_summary,
+        "style_summary": style_summary,
         "final_model_path": final_model_path or preview_model_path,
         "final_model_url": final_model_url or preview_model_url,
         "final_output_source": final_output_source or execution_path,
+        "editable_params": list(editable_params or []),
+        "editable_plan_available": editable_plan_available,
+        "is_editable": editable_plan_available,
+        "current_saved_model_id": current_saved_model_id,
+        "current_saved_model_editable": bool(current_saved_model_editable),
+        "last_opened_model_id": last_opened_model_id,
+        "edited_plan_summary": edited_plan_summary,
+        "reopened_plan_summary": reopened_plan_summary,
+        "regeneration_source": regeneration_source,
+        "source_generation_id": source_generation_id,
+        "stl_export_path": stl_export_path,
+        "stl_export_status": stl_export_status,
+        "stl_export_message": stl_export_message,
+        "stl_source_model_path": stl_source_model_path,
         "script_path": script_path,
         "preview_model_path": preview_model_path,
         "preview_model_url": preview_model_url,
@@ -134,10 +180,31 @@ def add_saved_model_entry(
     return entry
 
 
+def update_saved_model_entry(model_id: str, updates: dict) -> dict | None:
+    """Update one saved model entry and persist the library."""
+    if not model_id:
+        return None
+
+    library = load_model_library()
+    saved_models = library.get("saved_models", [])
+    updated_entry = None
+    for entry in saved_models:
+        if entry.get("id") == model_id:
+            entry.update(updates)
+            updated_entry = entry
+            break
+
+    if updated_entry is None:
+        return None
+
+    save_model_library(library)
+    return updated_entry
+
+
 def get_library_summary() -> dict:
     """Return a compact summary for the desktop shell."""
     library = load_model_library()
-    saved_models = library.get("saved_models", [])
+    saved_models = [_annotate_saved_model_entry(entry) for entry in library.get("saved_models", [])]
     return {
         "saved_model_count": len(saved_models),
         "recent_saved_models": saved_models[:8],
@@ -150,7 +217,7 @@ def get_library_summary() -> dict:
 def list_saved_models(limit: int | None = None) -> list[dict]:
     """Return saved model entries in persisted order."""
     library = load_model_library()
-    saved_models = library.get("saved_models", [])
+    saved_models = [_annotate_saved_model_entry(entry) for entry in library.get("saved_models", [])]
     if limit is None:
         return list(saved_models)
     return list(saved_models[: max(limit, 0)])
@@ -170,3 +237,17 @@ def delete_saved_model_entry(model_id: str) -> bool:
     library["saved_models"] = filtered_models
     save_model_library(library)
     return True
+
+
+def _annotate_saved_model_entry(entry: dict) -> dict:
+    annotated = dict(entry or {})
+    plan = annotated.get("plan") if isinstance(annotated.get("plan"), dict) else {}
+    editable_params = annotated.get("editable_params") if isinstance(annotated.get("editable_params"), list) else []
+    editable_plan_available = _saved_model_has_editable_context(plan, editable_params)
+    if "editable_plan_available" not in annotated:
+        annotated["editable_plan_available"] = editable_plan_available
+    if "is_editable" not in annotated:
+        annotated["is_editable"] = bool(editable_plan_available)
+    if "current_saved_model_editable" not in annotated:
+        annotated["current_saved_model_editable"] = bool(annotated["is_editable"])
+    return annotated

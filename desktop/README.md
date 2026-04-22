@@ -6,9 +6,11 @@ The desktop app is the intended product surface for Geomancer alpha. It now has 
 
 - top shell modes: `Workspace`, `Models`, `Projects`, and `Templates`
 - Workspace mode: left rail conversation thread, center viewer/review stage, right rail properties/actions
-- Models mode: real saved-model library with search, sorting, single-select browsing, explicit multi-select deletion mode, selected-model Workspace reopen support, and a compact synced sidebar list for faster browsing
+- Models mode: real saved-model library with search, sorting, single-select browsing, explicit multi-select deletion mode, selected-model Workspace reopen/edit support, and a compact synced sidebar list for faster browsing
 - Projects mode: alpha project browser with in-memory project creation, project selection/deletion controls, derived saved-model containers, open-project navigation, and model cards reused from the Models visual language
 - Templates mode: curated starter blueprint library with category filtering, geometric starter-card previews, and one-click prompt launch into Workspace
+
+Geomancer now supports deterministic functional objects, compositional props, bounded hybrid builds, a deterministic style layer, right-rail parameter editing/regeneration, and truthful saved-model reopen/edit workflows.
 
 Viewer presentation notes:
 

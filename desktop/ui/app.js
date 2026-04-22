@@ -6,6 +6,7 @@ let OrbitControls = null;
 let GLTFLoader = null;
 
 const promptInput = document.getElementById("prompt-input");
+const composerHelper = document.getElementById("composer-helper");
 const generateButton = document.getElementById("generate-button");
 const appNewSessionButton = document.getElementById("app-new-session-button");
 const appResetWorkspaceButton = document.getElementById("app-reset-workspace-button");
@@ -26,6 +27,8 @@ const promptImproverSuggestion = document.getElementById("prompt-improver-sugges
 const usePromptSuggestionButton = document.getElementById("use-prompt-suggestion");
 const keepOriginalPromptButton = document.getElementById("keep-original-prompt");
 const openBlenderButton = document.getElementById("open-blender-button");
+const exportStlButton = document.getElementById("export-stl-button");
+const exportStlStatus = document.getElementById("export-stl-status");
 const backendStatus = document.getElementById("backend-status");
 const systemAiStatus = document.getElementById("system-ai-status");
 const systemBlenderStatus = document.getElementById("system-blender-status");
@@ -54,6 +57,25 @@ const conversationThread = document.getElementById("conversation-thread");
 const generationStatus = document.getElementById("generation-status");
 const readinessState = document.getElementById("readiness-state");
 const propertiesEmptyState = document.getElementById("properties-empty-state");
+const propertiesObservabilitySection = document.getElementById("properties-observability-section");
+const propertiesInterpretationCard = document.getElementById("properties-interpretation-card");
+const propertiesNeedsCard = document.getElementById("properties-needs-card");
+const propertiesAssumptionsCard = document.getElementById("properties-assumptions-card");
+const propertiesWarningsCard = document.getElementById("properties-warnings-card");
+const propertiesBuildCard = document.getElementById("properties-build-card");
+const propertiesEditSection = document.getElementById("properties-edit-section");
+const propertiesStatePill = document.getElementById("properties-state-pill");
+const propertiesInterpretationSummary = document.getElementById("properties-interpretation-summary");
+const propertiesInterpretationMeta = document.getElementById("properties-interpretation-meta");
+const propertiesNeedsList = document.getElementById("properties-needs-list");
+const propertiesAssumptionsList = document.getElementById("properties-assumptions-list");
+const propertiesWarningsList = document.getElementById("properties-warnings-list");
+const propertiesBuildDetails = document.getElementById("properties-build-details");
+const editPlanSummary = document.getElementById("edit-plan-summary");
+const editPlanHint = document.getElementById("edit-plan-hint");
+const editParametersList = document.getElementById("edit-parameters-list");
+const resetPlanButton = document.getElementById("reset-plan-button");
+const regeneratePlanButton = document.getElementById("regenerate-plan-button");
 const propertiesDimensionsSection = document.getElementById("properties-dimensions-section");
 const propertiesWallsSection = document.getElementById("properties-walls-section");
 const propertiesFeaturesSection = document.getElementById("properties-features-section");
@@ -135,6 +157,7 @@ const templatesCategoryList = document.getElementById("templates-category-list")
 const templatesGrid = document.getElementById("templates-grid");
 const templatesEmptyState = document.getElementById("templates-empty-state");
 let generationInFlight = false;
+let stlExportInFlight = false;
 let activeSession = createEmptySession();
 let librarySummary = { saved_model_count: 0, recent_saved_models: [], project_count: 0, template_count: 0, templates: [] };
 let savedModels = [];
@@ -161,12 +184,19 @@ let activeTemplateCategory = "all";
 let modelsSearchQuery = "";
 let modelsSortMode = "newest";
 let activeModelFamilyFilter = "all";
+let editablePlanBaseline = null;
+let editablePlanDraft = null;
+let editablePlanDirty = false;
 const STARTUP_EXAMPLE_PROMPTS = [
   "Wall bracket with four holes",
-  "Desk cable clip",
-  "Small electronics enclosure",
-  "Planter with 3 mm walls",
+  "Simple phone stand",
+  "Tray 120 x 80 x 20 mm",
+  "Low poly crate",
+  "Industrial barrel",
+  "Simple pedestal prop",
 ];
+const STARTUP_GUIDANCE_TEXT = "Describe a practical part or a simple prop to begin.";
+const STARTUP_CAPABILITY_HINT = "Geomancer builds practical parts and bounded primitive-based props.";
 
 const FALLBACK_TEMPLATE_ENTRIES = [
   {
@@ -539,8 +569,23 @@ function modelLibraryDimensions(entry = {}) {
 }
 
 function normalizeSavedModelEntry(entry = {}) {
-  return {
-    ...entry,
+    const hasEditablePlan = Boolean(
+      entry.editable_plan_available
+      || entry.is_editable
+      || entry.current_saved_model_editable
+      || ((entry.plan && typeof entry.plan === "object")
+        ? (entry.editable_params?.length
+          || entry.plan.intent
+          || entry.plan.construction_mode
+          || entry.plan.dimensions
+          || entry.plan.components
+          || entry.plan.composition
+          || entry.plan.hybrid_details)
+        : false)
+    );
+    const isEditable = Boolean(hasEditablePlan);
+    return {
+      ...entry,
     id: entry.id || "",
     name: modelLibraryName(entry),
     familyDisplay: modelLibraryFamily(entry),
@@ -551,8 +596,10 @@ function normalizeSavedModelEntry(entry = {}) {
     executionRecipe: entry.execution_recipe || "",
     generationPath: entry.generation_path || "",
     generationRoute: entry.generation_route || "",
-    generationFallbackReason: entry.generation_fallback_reason || "",
-  };
+      generationFallbackReason: entry.generation_fallback_reason || "",
+      isEditable,
+      editabilityLabel: isEditable ? "Editable" : "View only",
+    };
 }
 
 function latestLibraryTimestamp(models = []) {
@@ -740,16 +787,17 @@ function renderModelsSidebarList(models = filteredSavedModels()) {
     const isSingleSelected = !modelsSelectionMode && model.id === selectedSavedModelId;
     const isBulkSelected = modelsSelectionMode && bulkSelectedSavedModelIds.has(model.id);
     return `
-    <button
-      class="models-sidebar-item${isSingleSelected ? " is-selected" : ""}${isBulkSelected ? " is-multi-selected" : ""}"
-      type="button"
-      data-model-select="${escapeHtml(model.id)}"
-      aria-label="Select ${escapeHtml(model.name)}"
-    >
-      <span class="models-sidebar-item-name">${escapeHtml(model.name)}</span>
-      <span class="models-sidebar-item-meta">${escapeHtml(model.familyDisplay)}</span>
-    </button>
-  `;
+      <button
+        class="models-sidebar-item${isSingleSelected ? " is-selected" : ""}${isBulkSelected ? " is-multi-selected" : ""}"
+        type="button"
+        data-model-select="${escapeHtml(model.id)}"
+        aria-label="Select ${escapeHtml(model.name)}"
+      >
+        <span class="models-sidebar-item-name">${escapeHtml(model.name)}</span>
+        <span class="models-sidebar-item-meta">${escapeHtml(model.familyDisplay)}</span>
+        <span class="models-sidebar-item-meta">${escapeHtml(model.editabilityLabel || "View only")}</span>
+      </button>
+    `;
   }).join("");
 }
 
@@ -770,7 +818,7 @@ function renderModelsSelection(model) {
 
   modelsSelectedName.textContent = model?.name || "No model selected";
   modelsSelectedName.title = model?.name || "No model selected";
-  modelsSelectedFamily.textContent = model ? `Family ${model.familyDisplay}` : "Family -";
+  modelsSelectedFamily.textContent = model ? `Family ${model.familyDisplay} · ${model.editabilityLabel || "View only"}` : "Family -";
   modelsSelectedCreated.textContent = model ? `Created ${model.createdDisplay}` : "Created -";
   modelsSelectedDimensions.textContent = model ? `Size ${model.dimensionsDisplay}` : "Size -";
   modelsSelectionOpen.disabled = !model?.script_path;
@@ -820,6 +868,7 @@ function renderModelsGrid() {
           <h3 class="model-card-title">${escapeHtml(model.name)}</h3>
           <p class="model-card-meta">${escapeHtml(model.createdDisplay)}</p>
           <p class="model-card-submeta">${escapeHtml(model.dimensionsDisplay)}</p>
+          <p class="model-card-submeta">${escapeHtml(model.editabilityLabel || "View only")}</p>
         </div>
       </button>
     </article>
@@ -1134,52 +1183,85 @@ async function openSelectedModelInWorkspace() {
   if (!model) {
     return;
   }
+  let restoredState = null;
+  let reopenMessage = "";
+  let reopenEditable = Boolean(model.isEditable);
+  if (bridge && typeof bridge.openSavedModelForWorkspace === "function") {
+    try {
+      appendLog(`Opening saved model in Workspace: ${model.name}`);
+      const result = await resolveBridgeJson(bridge.openSavedModelForWorkspace(model.id), "openSavedModelForWorkspace");
+      restoredState = result?.state || null;
+      reopenMessage = result?.message || "";
+      reopenEditable = Boolean(result?.is_editable ?? result?.isEditable ?? model.isEditable);
+      appendLog(reopenMessage || "Saved model restored into Workspace.");
+    } catch (error) {
+      appendLog(`Saved model workspace restore failed: ${error}`);
+    }
+  }
 
-  const previewKey = `library-${model.id || model.generation_id || "saved-model"}`;
-  const previewModelPath = model.final_model_path || model.preview_model_path || "";
-  const previewModelUrl = model.final_model_url || model.preview_model_url || normalizePreviewArtifactUrl(previewModelPath);
-  const validation = model.validation_summary ? { summary: model.validation_summary } : null;
-  applyActiveSession({
+  const restoredSession = restoredState ? sessionFromPersistedState(restoredState) : null;
+  const sessionUpdate = restoredSession || {
     generationId: model.generation_id || model.id || "",
     requestText: model.prompt || model.plan?.request_text || model.name,
     promptText: model.prompt || model.plan?.request_text || model.name,
     plan: model.plan || null,
-    validation,
+    validation: model.validation ? model.validation : (model.validation_summary ? { summary: model.validation_summary } : null),
     classification: model.plan?.classification || null,
     resultStatus: "ready",
+    rawStatus: "ready",
     message: model.validation_summary || "Saved model loaded from the local library.",
+    interpretationSummary: model.interpretation_summary || model.validation_summary || "",
+    decisionSummary: model.decision_summary || model.edited_plan_summary || model.reopened_plan_summary || model.validation_summary || "",
+    styleSummary: model.style_summary || "",
+    validationSummary: model.validation_summary || "",
+    currentSavedModelId: model.id || "",
+    currentSavedModelEditable: reopenEditable,
+    lastOpenedModelId: model.id || "",
+    reopenSource: "saved_model",
+    reopenedPlanSummary: model.reopened_plan_summary || model.edited_plan_summary || model.validation_summary || "",
+    currentEditableParams: Array.isArray(model.editable_params) ? model.editable_params : [],
+    lastEditableParams: Array.isArray(model.editable_params) ? model.editable_params : [],
+    lastRegenerationSource: "",
+    editedPlanSummary: "",
     previewStatus: model.preview_export_status || "",
     previewMessage: "",
-    previewModelPath,
-    previewModelUrl,
-    previewSource: previewModelUrl ? "artifact" : "missing",
-    previewArtifactPath: previewModelPath,
-    previewArtifactUrl: previewModelUrl,
+    previewModelPath: model.final_model_path || model.preview_model_path || "",
+    previewModelUrl: model.final_model_url || model.preview_model_url || normalizePreviewArtifactUrl(model.final_model_path || model.preview_model_path || ""),
+    previewSource: (model.final_model_path || model.preview_model_path) ? "artifact" : "missing",
+    previewArtifactPath: model.final_model_path || model.preview_model_path || "",
+    previewArtifactUrl: model.final_model_url || model.preview_model_url || normalizePreviewArtifactUrl(model.final_model_path || model.preview_model_path || ""),
     previewLoadError: "",
     previewAssetVersion: "",
-    previewKey,
+    previewKey: `library-${model.id || model.generation_id || "saved-model"}`,
     generationPath: model.generationPath || model.generation_path || model.execution_path || "",
     generationRoute: model.generationRoute || model.generation_route || "",
     generationFallbackReason: model.generationFallbackReason || model.generation_fallback_reason || "",
     executionRecipe: model.executionRecipe || model.execution_recipe || model.recipe?.execution_recipe || model.plan?.recipe || "",
     implementationId: model.implementationId || model.implementation_id || "",
-  });
-  setGenerationStatusText("Library model");
-  setReadinessStateText(model.validation_summary || "Saved model loaded from the local library.");
+    recipeSummary: model.recipe_summary || "",
+    stlExportPath: model.stl_export_path || "",
+    stlExportStatus: model.stl_export_status || "",
+    stlExportMessage: model.stl_export_message || "",
+    stlSourceModelPath: model.stl_source_model_path || "",
+  };
+
+  applyActiveSession(sessionUpdate);
+  setGenerationStatusText(reopenEditable ? "Saved model editable" : "Library model");
+  setReadinessStateText(sessionUpdate.reopenedPlanSummary || model.validation_summary || "Saved model loaded from the local library.");
   setActiveTab("workspace");
 
   if (viewer.initialized) {
     try {
       const loaded = await viewer.loadPreview({
-        promptText: model.prompt || model.name,
-        plan: model.plan || null,
-        previewModelPath,
-        previewModelUrl,
+        promptText: sessionUpdate.requestText,
+        plan: sessionUpdate.plan || null,
+        previewModelPath: sessionUpdate.previewModelPath,
+        previewModelUrl: sessionUpdate.previewModelUrl,
         previewAssetVersion: "",
-        previewKey,
-        previewSource: previewModelUrl ? "artifact" : "missing",
-        previewArtifactPath: previewModelPath,
-        previewArtifactUrl: previewModelUrl,
+        previewKey: sessionUpdate.previewKey,
+        previewSource: sessionUpdate.previewSource,
+        previewArtifactPath: sessionUpdate.previewArtifactPath,
+        previewArtifactUrl: sessionUpdate.previewArtifactUrl,
       });
       if (!loaded) {
         appendLog("Saved model preview could not be loaded.");
@@ -1266,7 +1348,7 @@ function seedStartupConversationIfReady() {
   }
   hasSeededStartupConversation = true;
   addChatMessage("assistant", "Geomancer systems check completed. Local AI and Blender are ready.");
-  addChatMessage("assistant", "Hello! What would you like to create today?\nNeed a starting point? Try one of these:", {
+  addChatMessage("assistant", `Hello! What would you like to create today?\n${STARTUP_CAPABILITY_HINT}\nNeed a starting point? Try one of these:`, {
     examples: STARTUP_EXAMPLE_PROMPTS,
   });
 }
@@ -1319,6 +1401,7 @@ function createEmptySession() {
     validation: null,
     classification: null,
     resultStatus: "",
+    rawStatus: "",
     message: "",
     previewStatus: "",
     previewMessage: "",
@@ -1330,6 +1413,29 @@ function createEmptySession() {
     generationFallbackReason: "",
     executionRecipe: "",
     implementationId: "",
+    interpretationSummary: "",
+    decisionSummary: "",
+    styleSummary: "",
+    validationSummary: "",
+    recipeSummary: "",
+    currentSavedModelId: "",
+    currentSavedModelEditable: false,
+    lastOpenedModelId: "",
+    reopenSource: "",
+    reopenedPlanSummary: "",
+    currentEditableParams: [],
+    lastEditableParams: [],
+    lastRegenerationSource: "",
+    editedPlanSummary: "",
+    missingInfo: [],
+    assumptions: [],
+    warnings: [],
+    finalModelPath: "",
+    finalModelUrl: "",
+    stlExportPath: "",
+    stlExportStatus: "",
+    stlExportMessage: "",
+    stlSourceModelPath: "",
   };
 }
 
@@ -1404,6 +1510,147 @@ function toSummaryLines(plan, validation, classification, resultStatus, previewS
   return lines.slice(0, 6);
 }
 
+function sessionHasObservability(session = {}) {
+  return Boolean(
+    session.interpretationSummary
+    || session.decisionSummary
+    || session.styleSummary
+    || session.validationSummary
+    || session.reopenedPlanSummary
+    || session.editedPlanSummary
+    || (Array.isArray(session.missingInfo) && session.missingInfo.length)
+    || (Array.isArray(session.assumptions) && session.assumptions.length)
+    || (Array.isArray(session.warnings) && session.warnings.length)
+    || session.recipeSummary
+    || session.executionRecipe
+    || session.implementationId
+    || session.stlExportStatus
+    || session.generationPath
+    || session.generationRoute
+  );
+}
+
+function normalizeSessionState(state = {}) {
+  return {
+    interpretationSummary: state.interpretationSummary || state.lastInterpretationSummary || state.last_interpretation_summary || "",
+    decisionSummary: state.decisionSummary || state.lastDecisionSummary || state.last_decision_summary || "",
+    styleSummary: state.styleSummary || state.lastStyleSummary || state.last_style_summary || "",
+    validationSummary: state.validationSummary || state.lastValidationSummary || state.last_validation_summary || "",
+    currentSavedModelId: state.currentSavedModelId || state.current_saved_model_id || "",
+    currentSavedModelEditable: Boolean(state.currentSavedModelEditable ?? state.current_saved_model_editable ?? false),
+    lastOpenedModelId: state.lastOpenedModelId || state.last_opened_model_id || "",
+    reopenSource: state.reopenSource || state.reopen_source || "",
+    reopenedPlanSummary: state.reopenedPlanSummary || state.reopened_plan_summary || "",
+    currentEditableParams: state.currentEditableParams || state.current_editable_params || [],
+    lastEditableParams: state.lastEditableParams || state.last_editable_params || [],
+    lastRegenerationSource: state.lastRegenerationSource || state.last_regeneration_source || "",
+    editedPlanSummary: state.editedPlanSummary || state.edited_plan_summary || "",
+    missingInfo: state.missingInfo || state.lastMissingInfo || state.last_missing_info || [],
+    assumptions: state.assumptions || state.lastAssumptions || state.last_assumptions || [],
+    warnings: state.warnings || state.lastWarnings || state.last_warnings || [],
+    recipeSummary: state.recipeSummary || state.lastRecipeSummary || state.last_recipe_summary || "",
+    executionRecipe: state.executionRecipe || state.lastExecutionRecipe || state.last_execution_recipe || "",
+    implementationId: state.implementationId || state.lastImplementationId || state.last_implementation_id || "",
+    generationPath: state.generationPath || state.lastGenerationPath || state.last_generation_path || "",
+    generationRoute: state.generationRoute || state.lastGenerationRoute || state.last_generation_route || "",
+    generationFallbackReason: state.generationFallbackReason || state.lastGenerationFallbackReason || state.last_generation_fallback_reason || "",
+    rawStatus: state.rawStatus || state.lastGenerationRawStatus || state.last_generation_raw_status || "",
+  };
+}
+
+function statusToneForResult(status = "", rawStatus = "") {
+  const normalized = String(status || rawStatus || "").toLowerCase();
+  if (normalized === "ready") {
+    return "is-success";
+  }
+  if (normalized === "unsupported") {
+    return "is-warning";
+  }
+  if (normalized === "validation_failed" || normalized === "clarify" || normalized === "invalid") {
+    return "is-warning";
+  }
+  if (normalized === "error") {
+    return "is-danger";
+  }
+  return "";
+}
+
+function statusLabelForResult(status = "", rawStatus = "") {
+  const normalized = String(status || rawStatus || "").toLowerCase();
+  if (normalized === "ready") {
+    return "Ready";
+  }
+  if (normalized === "unsupported") {
+    return "Unsupported";
+  }
+  if (normalized === "validation_failed" || normalized === "clarify") {
+    return "Needs input";
+  }
+  if (normalized === "invalid") {
+    return "Invalid";
+  }
+  if (normalized === "error") {
+    return "Error";
+  }
+  return "Idle";
+}
+
+function renderChipList(container, values = [], toneClass = "") {
+  if (!container) {
+    return;
+  }
+  const chips = Array.isArray(values) ? values.filter(Boolean) : [];
+  if (!chips.length) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = chips.map((value) => `<span class="observability-chip${toneClass ? ` ${toneClass}` : ""}">${escapeHtml(String(value))}</span>`).join("");
+}
+
+function renderObservabilityList(container, values = [], emptyText = "") {
+  if (!container) {
+    return;
+  }
+  const items = Array.isArray(values) ? values.filter(Boolean) : [];
+  if (!items.length) {
+    container.innerHTML = emptyText ? `<div class="observability-list-item">${escapeHtml(emptyText)}</div>` : "";
+    return;
+  }
+  container.innerHTML = items.map((value) => `<div class="observability-list-item">${escapeHtml(String(value))}</div>`).join("");
+}
+
+function renderObservabilityDetails(container, rows = []) {
+  if (!container) {
+    return;
+  }
+  const items = Array.isArray(rows) ? rows.filter((row) => Array.isArray(row) && row.length >= 2 && row[1]) : [];
+  if (!items.length) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = items.map(([label, value]) => (
+    `<div class="observability-detail-row"><span>${escapeHtml(label)}</span><strong title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</strong></div>`
+  )).join("");
+}
+
+function summarizeObservability(session = activeSession, validation = null, uiState = "idle") {
+  const statusLabel = statusLabelForResult(session.resultStatus, session.rawStatus);
+  const meta = [];
+  if (session.generationPath || session.generationRoute) {
+    meta.push([session.generationPath || "Path unavailable", session.generationRoute || "Route unavailable"]);
+  }
+  if (session.rawStatus) {
+    meta.push(["Raw status", sentenceCaseStatus(session.rawStatus)]);
+  }
+  if (validation?.summary) {
+    meta.push(["Validation", validation.summary]);
+  }
+  if (session.decisionSummary) {
+    meta.push(["Decision", session.decisionSummary]);
+  }
+  return { statusLabel, meta };
+}
+
 function dimensionEntries(plan) {
   const entries = Object.entries(plan?.dimensions || {});
   if (!entries.length) {
@@ -1466,6 +1713,23 @@ function familyDisplayLabel(plan) {
   return sentenceCaseLabel(prettifyKey(plan.family));
 }
 
+function constructionModeLabel(plan) {
+  const mode = String(plan?.construction_mode || plan?.constructionMode || "").toLowerCase();
+  if (mode === "hybrid") {
+    return "Hybrid / mixed construction";
+  }
+  if (mode === "compositional") {
+    return "Compositional / primitive-based";
+  }
+  if (mode === "constraint") {
+    return "Functional / constraint-driven";
+  }
+  if (plan?.intent?.object_type) {
+    return "Functional / constraint-driven";
+  }
+  return "Waiting";
+}
+
 function recipeDisplayLabel(plan) {
   if (!plan?.recipe) {
     return "";
@@ -1478,7 +1742,7 @@ function describeCurrentModel(plan, validation = null, uiState = "idle") {
     if (uiState === "generating") {
       return `${animatedStateLabel("Generating")}\nPreparing the current model for review.`;
     }
-    return "Ready to generate\nDescribe a part to begin.";
+    return "Ready to generate\nDescribe a practical part or simple prop to begin.";
   }
 
   const family = familyDisplayLabel(plan) || "Model";
@@ -1531,6 +1795,67 @@ function exportReadinessLabel(plan, previewStatus) {
     return "Review in Blender";
   }
   return runtimeHealth?.blenderDetected ? "Ready in Blender" : "Blender needed";
+}
+
+function hasExportableFinalArtifact(session = {}) {
+  return Boolean(session.finalModelPath);
+}
+
+function stlExportReadinessLabel(session = activeSession) {
+  if (stlExportInFlight) {
+    return "Exporting STL...";
+  }
+  if (!session?.resultStatus) {
+    return "Waiting for generation";
+  }
+  if (session.resultStatus !== "ready" || !hasExportableFinalArtifact(session)) {
+    return "STL unavailable";
+  }
+  if (session.stlExportStatus === "ready" && session.stlExportPath) {
+    return "STL exported";
+  }
+  if (session.stlExportStatus === "error") {
+    return "Export failed";
+  }
+  return runtimeHealth?.blenderDetected ? "Export STL ready" : "Blender needed";
+}
+
+function updateWorkspaceActionState() {
+  const canExport = !stlExportInFlight && !generationInFlight && runtimeReady() && activeSession.resultStatus === "ready" && hasExportableFinalArtifact(activeSession);
+  const hasEditablePlan = Boolean(editablePlanDraft && Array.isArray(activeSession.currentEditableParams) && activeSession.currentEditableParams.length);
+  const canRegenerate = hasEditablePlan && editablePlanDirty && !generationInFlight && runtimeReady();
+  if (exportStlButton) {
+    exportStlButton.disabled = !canExport;
+    exportStlButton.title = canExport
+      ? "Export the current final model artifact to STL"
+      : (stlExportInFlight
+        ? "STL export is already running"
+        : (activeSession.resultStatus === "ready"
+          ? "No exportable final model artifact is available"
+          : "Generate a model before exporting STL"));
+    exportStlButton.textContent = stlExportInFlight ? "Exporting STL..." : "Export STL";
+  }
+  if (exportStlStatus) {
+    exportStlStatus.textContent = stlExportReadinessLabel(activeSession);
+  }
+  if (resetPlanButton) {
+    resetPlanButton.disabled = !hasEditablePlan || !editablePlanDirty || generationInFlight;
+    resetPlanButton.title = hasEditablePlan
+      ? (editablePlanDirty ? "Revert the edited parameters to the current generated plan" : "No edits have been made yet")
+      : "Generate a model before editing parameters";
+  }
+  if (regeneratePlanButton) {
+    regeneratePlanButton.disabled = !canRegenerate;
+    regeneratePlanButton.title = canRegenerate
+      ? "Regenerate the model from the edited plan"
+      : (generationInFlight
+        ? "Generation is already running"
+        : (!runtimeReady()
+          ? "Finish local setup before regenerating"
+          : (editablePlanDirty ? "Regenerate is unavailable" : "Make a change before regenerating")));
+    regeneratePlanButton.textContent = generationInFlight ? "Regenerating..." : "Regenerate";
+  }
+  updateEditablePlanHint(activeSession);
 }
 
 function meshQualityLabel(plan, validation = null, uiState = "idle") {
@@ -1670,8 +1995,8 @@ function updateMetricsFromPlan(plan, validation, generationText, uiState = "read
   metricWidth.textContent = formatInstrumentMm(widthValue, hasPlan);
   metricHeight.textContent = formatInstrumentMm(heightValue, hasPlan);
   metricModelFamily.textContent = hasPlan
-    ? (familyDisplayLabel(plan) || "Waiting")
-    : (uiState === "generating" ? animatedStateLabel("Classifying") : "Waiting");
+    ? constructionModeLabel(plan)
+    : (uiState === "generating" ? animatedStateLabel("Routing") : "Waiting");
   reviewStatus.textContent = hasPlan
     ? compactBottomPrintabilityLabel(printability?.status, "Needs review")
     : (uiState === "generating" ? animatedStateLabel("Reviewing") : "Waiting");
@@ -1682,9 +2007,10 @@ function updateMetricsFromPlan(plan, validation, generationText, uiState = "read
     ? compactBottomPrintabilityLabel(printability?.overhangRisk, "Needs review")
     : (uiState === "generating" ? animatedStateLabel("Checking") : "Waiting");
   meshPreview.textContent = previewReadinessLabel(plan, activeSession.previewStatus, uiState);
-  meshExport.textContent = exportReadinessLabel(plan, activeSession.previewStatus);
+  meshExport.textContent = stlExportReadinessLabel(activeSession);
   meshQuality.textContent = meshQualityLabel(plan, validation, uiState);
   setGenerationStatusText(generationText || "Ready");
+  updateWorkspaceActionState();
 }
 
 function renderListRows(container, items, formatter, emptyText = "Unavailable") {
@@ -1706,6 +2032,366 @@ function renderDetailRows(container, items) {
 
 function detailValueForEntry([key, value]) {
   return key.endsWith("_mm") ? formatMm(value) : formatTextValue(value);
+}
+
+function cloneJsonValue(value) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+function resolvePlanPath(plan, path = []) {
+  if (!plan || !Array.isArray(path) || !path.length) {
+    return { parent: null, key: null, value: undefined };
+  }
+  let cursor = plan;
+  for (let index = 0; index < path.length; index += 1) {
+    const token = path[index];
+    const nextToken = path[index + 1];
+    if (cursor === null || cursor === undefined) {
+      return { parent: null, key: null, value: undefined };
+    }
+    if (index === path.length - 1) {
+      return { parent: cursor, key: token, value: cursor?.[token] };
+    }
+    if (Array.isArray(cursor[token])) {
+      const collection = cursor[token];
+      if (typeof nextToken === "string") {
+        const item = collection.find((entry) => String(entry?.id || "") === nextToken);
+        if (!item) {
+          return { parent: null, key: null, value: undefined };
+        }
+        cursor = item;
+        index += 1;
+        continue;
+      }
+      return { parent: null, key: null, value: undefined };
+    }
+    if (!(token in cursor) || cursor[token] === null || cursor[token] === undefined) {
+      cursor[token] = {};
+    }
+    cursor = cursor[token];
+  }
+  return { parent: null, key: null, value: undefined };
+}
+
+function readPlanValueAtPath(plan, path = []) {
+  if (!plan || !Array.isArray(path) || !path.length) {
+    return undefined;
+  }
+  let cursor = plan;
+  for (let index = 0; index < path.length; index += 1) {
+    const token = path[index];
+    const nextToken = path[index + 1];
+    if (cursor === null || cursor === undefined) {
+      return undefined;
+    }
+    if (index === path.length - 1) {
+      return cursor?.[token];
+    }
+    if (Array.isArray(cursor[token])) {
+      const collection = cursor[token];
+      if (typeof nextToken === "string") {
+        const item = collection.find((entry) => String(entry?.id || "") === nextToken);
+        if (!item) {
+          return undefined;
+        }
+        cursor = item;
+        index += 1;
+        continue;
+      }
+      return undefined;
+    }
+    cursor = cursor[token];
+  }
+  return undefined;
+}
+
+function setPlanValueAtPath(plan, path = [], value) {
+  if (!plan || !Array.isArray(path) || !path.length) {
+    return;
+  }
+  let cursor = plan;
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const token = path[index];
+    const nextToken = path[index + 1];
+    if (Array.isArray(cursor[token])) {
+      const collection = cursor[token];
+      if (typeof nextToken === "string") {
+        const item = collection.find((entry) => String(entry?.id || "") === nextToken);
+        if (!item) {
+          return;
+        }
+        cursor = item;
+        index += 1;
+        continue;
+      }
+      return;
+    }
+    if (!cursor[token] || typeof cursor[token] !== "object") {
+      cursor[token] = {};
+    }
+    cursor = cursor[token];
+  }
+  const lastToken = path[path.length - 1];
+  cursor[lastToken] = value;
+}
+
+function editableParamDisplayValue(param = {}) {
+  if (param.kind === "toggle") {
+    return param.value ? "Enabled" : "Disabled";
+  }
+  if (param.kind === "select") {
+    return formatTextValue(param.value);
+  }
+  if (param.kind === "number") {
+    return formatTextValue(param.value);
+  }
+  return formatTextValue(param.value);
+}
+
+function summarizeEditablePlanChanges(baseline = null, draft = null, params = []) {
+  if (!baseline || !draft || !Array.isArray(params) || !params.length) {
+    return "";
+  }
+  const changes = [];
+  params.forEach((param) => {
+    const baselineValue = readPlanValueAtPath(baseline, param.path);
+    const draftValue = readPlanValueAtPath(draft, param.path);
+    if (baselineValue === draftValue) {
+      return;
+    }
+    if (param.kind === "toggle") {
+      changes.push(`${param.label} ${draftValue ? "enabled" : "disabled"}`);
+      return;
+    }
+    if (param.kind === "select") {
+      changes.push(`${param.label} set to ${formatTextValue(draftValue)}`);
+      return;
+    }
+    const suffix = param.unit ? ` ${param.unit}` : "";
+    changes.push(`${param.label} ${formatTextValue(baselineValue)} → ${formatTextValue(draftValue)}${suffix}`);
+  });
+  if (!changes.length) {
+    return "";
+  }
+  return `Pending changes: ${changes.slice(0, 4).join(" · ")}`;
+}
+
+function syncEditablePlanDraft(session = activeSession) {
+  if (!session?.plan || !Array.isArray(session.currentEditableParams) || !session.currentEditableParams.length) {
+    editablePlanBaseline = null;
+    editablePlanDraft = null;
+    editablePlanDirty = false;
+    return;
+  }
+  editablePlanBaseline = cloneJsonValue(session.plan);
+  editablePlanDraft = cloneJsonValue(session.plan);
+  editablePlanDirty = false;
+}
+
+function updateEditablePlanHint(session = activeSession) {
+  if (!editPlanHint) {
+    return;
+  }
+  if (!editablePlanDraft || !session?.plan) {
+    editPlanHint.textContent = "Generate a successful model to unlock structured edits.";
+    return;
+  }
+  const summary = session.editedPlanSummary || summarizeEditablePlanChanges(editablePlanBaseline, editablePlanDraft, session.currentEditableParams || []);
+  editPlanHint.textContent = editablePlanDirty
+    ? (summary || "Edits are pending. Regenerate to rebuild the model.")
+    : (summary || "Adjust the supported values below, then regenerate the plan deterministically.");
+}
+
+function renderEditableParams(container, params = []) {
+  if (!container) {
+    return;
+  }
+  const items = Array.isArray(params) ? params.filter(Boolean) : [];
+  if (!items.length) {
+    container.innerHTML = '<div class="edit-empty-state">No editable parameters are available for this model.</div>';
+    return;
+  }
+  const groups = [];
+  items.forEach((param) => {
+    const groupName = param.group || "Parameters";
+    if (!groups.find((entry) => entry.groupName === groupName)) {
+      groups.push({ groupName, items: [] });
+    }
+    groups.find((entry) => entry.groupName === groupName).items.push(param);
+  });
+  container.innerHTML = groups.map((group) => `
+    <div class="edit-parameter-group">
+      <p class="edit-group-label">${escapeHtml(group.groupName)}</p>
+      <div class="edit-parameter-stack">
+        ${group.items.map((param) => renderEditableParamRow(param)).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderEditableParamRow(param) {
+  const metaParts = [];
+  if (param.unit) {
+    metaParts.push(param.unit === "count" ? "Count" : param.unit);
+  }
+  if (param.collection) {
+    metaParts.push(sentenceCaseLabel(param.collection.replace(/_/g, " ")));
+  }
+  const meta = metaParts.length ? `<p class="edit-param-meta">${escapeHtml(metaParts.join(" · "))}</p>` : "";
+  if (param.kind === "toggle") {
+    return `
+      <label class="edit-param-row edit-param-toggle" data-param-id="${escapeHtml(param.id)}">
+        <span class="edit-param-copy">
+          <span class="edit-param-label">${escapeHtml(param.label)}</span>
+          ${meta}
+        </span>
+        <span class="edit-toggle-control">
+          <input class="edit-input" type="checkbox" data-param-id="${escapeHtml(param.id)}" ${param.value ? "checked" : ""}>
+          <span class="edit-toggle-pill">${param.value ? "On" : "Off"}</span>
+        </span>
+      </label>
+    `;
+  }
+  if (param.kind === "select") {
+    const options = Array.isArray(param.options) ? param.options : [];
+    return `
+      <div class="edit-param-row" data-param-id="${escapeHtml(param.id)}">
+        <div class="edit-param-copy">
+          <span class="edit-param-label">${escapeHtml(param.label)}</span>
+          ${meta}
+        </div>
+        <select class="edit-input edit-select" data-param-id="${escapeHtml(param.id)}">
+          ${options.map((option) => `<option value="${escapeHtml(option)}"${String(option) === String(param.value) ? " selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+        </select>
+      </div>
+    `;
+  }
+  const step = typeof param.step === "number" ? param.step : 0.1;
+  const min = typeof param.min === "number" ? ` min="${param.min}"` : "";
+  const max = typeof param.max === "number" ? ` max="${param.max}"` : "";
+  const numericValue = Number(param.value);
+  return `
+    <div class="edit-param-row" data-param-id="${escapeHtml(param.id)}">
+      <div class="edit-param-copy">
+        <span class="edit-param-label">${escapeHtml(param.label)}</span>
+        ${meta}
+      </div>
+      <div class="edit-number-control">
+        <input class="edit-input edit-number" type="number" step="${escapeHtml(step)}"${min}${max} data-param-id="${escapeHtml(param.id)}" value="${escapeHtml(Number.isFinite(numericValue) ? numericValue : 0)}">
+        ${param.unit && param.unit !== "count" ? `<span class="edit-number-unit">${escapeHtml(param.unit)}</span>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function updateEditablePlanControls(session = activeSession) {
+  const params = Array.isArray(session.currentEditableParams) ? session.currentEditableParams : [];
+  const hasEditablePlan = Boolean(session.plan && params.length);
+  if (propertiesEditSection) {
+    propertiesEditSection.hidden = !hasEditablePlan;
+  }
+  if (!hasEditablePlan) {
+    if (editParametersList) {
+      editParametersList.innerHTML = "";
+    }
+    if (editPlanSummary) {
+      editPlanSummary.textContent = "";
+    }
+      if (editPlanHint) {
+        editPlanHint.textContent = session.currentSavedModelId
+          ? (session.currentSavedModelEditable
+            ? "Structured edits are unavailable for this reopened model."
+            : "This saved model can be viewed, but editable plan data is unavailable.")
+          : "Generate a successful model to unlock structured edits.";
+      }
+      return;
+    }
+  renderEditableParams(editParametersList, params);
+  if (editPlanSummary) {
+    const summary = session.editedPlanSummary || summarizeEditablePlanChanges(editablePlanBaseline, editablePlanDraft, params);
+    editPlanSummary.textContent = summary || "Edit parameters and regenerate deterministically.";
+  }
+  updateEditablePlanHint(session);
+  if (resetPlanButton) {
+    resetPlanButton.disabled = !editablePlanDirty || generationInFlight;
+  }
+  if (regeneratePlanButton) {
+    regeneratePlanButton.disabled = !editablePlanDirty || generationInFlight || !runtimeReady();
+  }
+}
+
+function getEditableParamDescriptor(paramId) {
+  const params = Array.isArray(activeSession.currentEditableParams) ? activeSession.currentEditableParams : [];
+  return params.find((param) => param.id === paramId) || null;
+}
+
+function normalizeEditableInputValue(descriptor, rawValue) {
+  if (!descriptor) {
+    return rawValue;
+  }
+  if (descriptor.kind === "toggle") {
+    return Boolean(rawValue);
+  }
+  if (descriptor.kind === "select") {
+    return String(rawValue || "");
+  }
+  if (rawValue === "" || rawValue === null || rawValue === undefined) {
+    return descriptor.value;
+  }
+  const numeric = Number(rawValue);
+  if (Number.isNaN(numeric)) {
+    return descriptor.value;
+  }
+  if (descriptor.unit === "count" || Number(descriptor.step) === 1) {
+    return Math.max(0, Math.round(numeric));
+  }
+  return numeric;
+}
+
+function applyEditableParamChange(paramId, rawValue) {
+  const descriptor = getEditableParamDescriptor(paramId);
+  if (!descriptor || !editablePlanDraft) {
+    return;
+  }
+  const value = normalizeEditableInputValue(descriptor, rawValue);
+  descriptor.value = value;
+  setPlanValueAtPath(editablePlanDraft, descriptor.path, value);
+  editablePlanDirty = Boolean(summarizeEditablePlanChanges(editablePlanBaseline, editablePlanDraft, activeSession.currentEditableParams || []));
+  if (editPlanSummary) {
+    const summary = activeSession.editedPlanSummary || summarizeEditablePlanChanges(editablePlanBaseline, editablePlanDraft, activeSession.currentEditableParams || []);
+    editPlanSummary.textContent = summary || "Edit parameters and regenerate deterministically.";
+  }
+  updateEditablePlanHint(activeSession);
+  updateWorkspaceActionState();
+}
+
+function resetEditablePlanDraft() {
+  if (!activeSession?.plan) {
+    return;
+  }
+  editablePlanBaseline = cloneJsonValue(activeSession.plan);
+  editablePlanDraft = cloneJsonValue(activeSession.plan);
+  const baselineParams = Array.isArray(activeSession.lastEditableParams) && activeSession.lastEditableParams.length
+    ? activeSession.lastEditableParams
+    : activeSession.currentEditableParams;
+  activeSession.currentEditableParams = cloneJsonValue(baselineParams || []);
+  editablePlanDirty = false;
+  updateEditablePlanControls(activeSession);
+  updateWorkspaceActionState();
+}
+
+function buildRegenerationPayload() {
+  return {
+    plan: editablePlanDraft ? cloneJsonValue(editablePlanDraft) : null,
+    source_plan: editablePlanBaseline ? cloneJsonValue(editablePlanBaseline) : null,
+    source_generation_id: activeSession.generationId || "",
+    source_request_text: activeSession.requestText || promptInput.value.trim() || "",
+    edited_plan_summary: summarizeEditablePlanChanges(editablePlanBaseline, editablePlanDraft, activeSession.currentEditableParams || []),
+    regeneration_source: "ui_edit",
+  };
 }
 
 function keyFeatureRowsForPlan(plan) {
@@ -1747,19 +2433,143 @@ function keyFeatureRowsForPlan(plan) {
 }
 
 function updateRightPanel(plan, validation = null, uiState = "idle") {
+  const session = activeSession || createEmptySession();
   const hasPlan = Boolean(plan);
+  const editableParams = Array.isArray(session.currentEditableParams) && session.currentEditableParams.length
+    ? session.currentEditableParams
+    : (Array.isArray(session.lastEditableParams) ? session.lastEditableParams : []);
+  const editableSession = {
+    ...session,
+    currentEditableParams: editableParams,
+  };
   const dims = plan?.dimensions || {};
   const lengthValue = dims.length_mm || dims.base_length_mm || dims.outer_diameter_mm || dims.large_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null;
   const widthValue = dims.width_mm || dims.depth_mm || dims.flange_width_mm || dims.small_diameter_mm || dims.clip_width_mm || dims.base_width_mm || null;
   const heightValue = dims.height_mm || dims.vertical_height_mm || dims.base_height_mm || null;
   const wallValue = wallThicknessValue(plan);
   const featureRows = keyFeatureRowsForPlan(plan).slice(0, 6);
+  const observabilitySummary = session.interpretationSummary || session.decisionSummary || validation?.summary || session.message || "";
+  const missingInfo = Array.from(new Set([
+    ...(session.missingInfo || []),
+    ...(validation?.clarification_needed || []),
+  ])).filter(Boolean);
+  const assumptions = Array.from(new Set([
+    ...(session.assumptions || []),
+    ...(plan?.assumptions || []),
+  ])).filter(Boolean);
+  const warnings = Array.from(new Set([
+    ...(session.warnings || []),
+    ...(validation?.warnings || []),
+  ])).filter(Boolean);
+  const hasObservability = sessionHasObservability({
+    ...editableSession,
+    missingInfo,
+    assumptions,
+    warnings,
+    interpretationSummary: observabilitySummary,
+  });
+  const hasEditablePlan = Boolean(hasPlan && editableParams.length);
 
   if (propertiesEmptyState) {
     propertiesEmptyState.dataset.state = hasPlan ? "ready" : uiState;
-    propertiesEmptyState.hidden = hasPlan || uiState === "generating";
-    propertiesEmptyState.textContent = "Generate a model to see dimensions, features, and print guidance.";
+    propertiesEmptyState.hidden = hasPlan || hasObservability || hasEditablePlan || uiState === "generating";
+    propertiesEmptyState.textContent = hasObservability
+      ? "Review the observability cards for interpretation, assumptions, and build details."
+      : hasEditablePlan
+        ? "Edit supported parameters in the right rail, then regenerate the model."
+      : "Generate a practical part or simple prop to see dimensions, features, and build guidance.";
+    propertiesEmptyState.classList.toggle("is-guidance", !hasPlan && !hasObservability && uiState !== "generating");
+    if (!hasPlan && uiState === "generating") {
+      propertiesEmptyState.hidden = false;
+      propertiesEmptyState.textContent = "Refreshing properties while the current model is prepared.";
+    }
   }
+
+  if (propertiesObservabilitySection) {
+    propertiesObservabilitySection.hidden = !hasObservability;
+  }
+
+  if (propertiesInterpretationCard) {
+    const shouldShowInterpretation = Boolean(observabilitySummary || session.resultStatus || session.rawStatus || validation?.summary);
+    propertiesInterpretationCard.hidden = !shouldShowInterpretation;
+    if (propertiesInterpretationSummary) {
+      propertiesInterpretationSummary.textContent = observabilitySummary || "Waiting for a generation result.";
+    }
+    if (propertiesInterpretationMeta) {
+      const metaLines = [];
+      const modeText = constructionModeLabel(plan);
+      if (modeText && modeText !== "Waiting") {
+        metaLines.push(`Build path ${modeText}`);
+      }
+      if (session.generationPath || session.generationRoute) {
+        metaLines.push(`Path ${sentenceCaseLabel(session.generationPath || "Unavailable")} · Route ${sentenceCaseLabel(session.generationRoute || "Unavailable")}`);
+      }
+      if (validation?.summary) {
+        metaLines.push(validation.summary);
+      } else if (session.validationSummary) {
+        metaLines.push(session.validationSummary);
+      }
+      propertiesInterpretationMeta.textContent = metaLines.join(" · ");
+    }
+    if (propertiesStatePill) {
+      propertiesStatePill.textContent = statusLabelForResult(session.resultStatus, session.rawStatus);
+      propertiesStatePill.className = `observability-pill ${statusToneForResult(session.resultStatus, session.rawStatus)}`.trim();
+    }
+  }
+
+  if (propertiesNeedsCard) {
+    propertiesNeedsCard.hidden = !missingInfo.length;
+    renderObservabilityList(
+      propertiesNeedsList,
+      missingInfo.map((item) => prettifyKey(String(item))),
+      hasPlan ? "No additional information is required." : "No missing information recorded."
+    );
+  }
+
+  if (propertiesAssumptionsCard) {
+    propertiesAssumptionsCard.hidden = !assumptions.length;
+    renderChipList(propertiesAssumptionsList, assumptions);
+  }
+
+  if (propertiesWarningsCard) {
+    propertiesWarningsCard.hidden = !warnings.length;
+    renderObservabilityList(propertiesWarningsList, warnings, "No warnings detected.");
+  }
+
+  if (propertiesBuildCard) {
+    const buildRows = [
+      ["Recipe summary", session.recipeSummary || "Unavailable"],
+      ["Execution recipe", session.executionRecipe || plan?.recipe || "Unavailable"],
+      ["Implementation ID", session.implementationId || "Unavailable"],
+      ["Style", session.styleSummary || plan?.style?.style_profile || "Unavailable"],
+      ["Build path", constructionModeLabel(plan)],
+      ["Generation path", session.generationPath || "Unavailable"],
+      ["Generation route", session.generationRoute || "Unavailable"],
+      ["Saved model", session.currentSavedModelId ? (session.currentSavedModelEditable ? "Editable" : "View only") : "Not reopened"],
+      ["Final model", session.finalModelPath || "Unavailable"],
+      ["STL export", session.stlExportStatus || "not_requested"],
+      ["STL path", session.stlExportPath || "Unavailable"],
+    ];
+    if (validation?.summary || session.validationSummary) {
+      buildRows.push(["Validation", validation?.summary || session.validationSummary]);
+    }
+    if (session.editedPlanSummary) {
+      buildRows.push(["Edit summary", session.editedPlanSummary]);
+    }
+    if (session.lastRegenerationSource) {
+      buildRows.push(["Regeneration source", session.lastRegenerationSource]);
+    }
+    if (session.reopenedPlanSummary) {
+      buildRows.push(["Reopen summary", session.reopenedPlanSummary]);
+    }
+    if (session.stlExportMessage) {
+      buildRows.push(["Export message", session.stlExportMessage]);
+    }
+    propertiesBuildCard.hidden = !buildRows.some(([, value]) => value && value !== "Unavailable");
+    renderObservabilityDetails(propertiesBuildDetails, buildRows);
+  }
+
+  updateEditablePlanControls(editableSession);
 
   if (propertiesDimensionsSection) {
     propertiesDimensionsSection.hidden = !hasPlan;
@@ -1772,51 +2582,46 @@ function updateRightPanel(plan, validation = null, uiState = "idle") {
   }
 
   if (!hasPlan) {
-    if (propertiesEmptyState && uiState === "generating") {
-      propertiesEmptyState.hidden = false;
-      propertiesEmptyState.textContent = "Refreshing properties while the current model is prepared.";
-    }
     if (currentModelDimensions) {
       currentModelDimensions.innerHTML = "";
     }
     if (currentModelWalls) {
       currentModelWalls.innerHTML = "";
     }
-  if (currentModelFeatures) {
-    currentModelFeatures.innerHTML = "";
-  }
-  if (currentModelImplementation) {
-    currentModelImplementation.innerHTML = "";
-  }
-  return;
-  }
+    if (currentModelFeatures) {
+      currentModelFeatures.innerHTML = "";
+    }
+    if (currentModelImplementation) {
+      currentModelImplementation.innerHTML = "";
+    }
+  } else {
+    renderDetailRows(currentModelDimensions, [
+      ["Length", formatInstrumentMm(lengthValue, true)],
+      ["Width", formatInstrumentMm(widthValue, true)],
+      ["Height", formatInstrumentMm(heightValue, true)],
+    ]);
 
-  renderDetailRows(currentModelDimensions, [
-    ["Length", formatInstrumentMm(lengthValue, true)],
-    ["Width", formatInstrumentMm(widthValue, true)],
-    ["Height", formatInstrumentMm(heightValue, true)],
-  ]);
+    if (wallValue && currentModelWalls) {
+      renderDetailRows(currentModelWalls, [["Thickness", formatMm(Number(wallValue))]]);
+    }
 
-  if (wallValue && currentModelWalls) {
-    renderDetailRows(currentModelWalls, [["Thickness", formatMm(Number(wallValue))]]);
-  }
+    if (currentModelFeatures) {
+      renderDetailRows(currentModelFeatures, featureRows.map(([label, value]) => [label, value || "Yes"]));
+    }
 
-  if (currentModelFeatures) {
-    renderDetailRows(currentModelFeatures, featureRows.map(([label, value]) => [label, value || "Yes"]));
-  }
-
-  if (currentModelImplementation) {
-    const implementationRows = [
-      ["Generation path", activeSession.generationPath || "Unavailable"],
-      ["Generation route", activeSession.generationRoute || "Unavailable"],
-      ["Execution recipe", activeSession.executionRecipe || plan?.recipe || "Unavailable"],
-      ["Implementation ID", activeSession.implementationId || "Unavailable"],
-    ];
-    renderDetailRows(currentModelImplementation, implementationRows);
+    if (currentModelImplementation) {
+      const implementationRows = [
+        ["Generation path", session.generationPath || "Unavailable"],
+        ["Generation route", session.generationRoute || "Unavailable"],
+        ["Execution recipe", session.executionRecipe || plan?.recipe || "Unavailable"],
+        ["Implementation ID", session.implementationId || "Unavailable"],
+      ];
+      renderDetailRows(currentModelImplementation, implementationRows);
+    }
   }
 
   if (propertiesImplementationSection) {
-    propertiesImplementationSection.hidden = !(hasPlan || activeSession.generationPath || activeSession.executionRecipe || activeSession.implementationId);
+    propertiesImplementationSection.hidden = !(hasPlan || session.generationPath || session.executionRecipe || session.implementationId);
   }
 }
 
@@ -1830,9 +2635,23 @@ function updateHistoryPanel({ promptText = "", plan = null, validation = null, c
 function applyBackendSnapshot({ promptText = "", plan = null, validation = null, classification = null, resultStatus = "", message = "", previewStatus = "", previewMessage = "" }) {
   updateHistoryPanel({ promptText, plan, validation, classification, resultStatus, message, previewStatus });
   const uiState = resultStatus === "generating" ? "generating" : (plan ? "ready" : "idle");
+  const effectiveEditableParams = Array.isArray(activeSession.currentEditableParams) && activeSession.currentEditableParams.length
+    ? activeSession.currentEditableParams
+    : (Array.isArray(activeSession.lastEditableParams) && activeSession.lastEditableParams.length ? activeSession.lastEditableParams : []);
+  if (plan) {
+    activeSession.currentEditableParams = effectiveEditableParams;
+  }
+  if (plan && effectiveEditableParams.length) {
+    syncEditablePlanDraft(activeSession);
+  } else if (!plan || !effectiveEditableParams.length) {
+    editablePlanBaseline = null;
+    editablePlanDraft = null;
+    editablePlanDirty = false;
+  }
   updateRightPanel(plan, validation, uiState);
   updateMetricsFromPlan(plan, validation, resultStatus === "ready" ? "Generation complete" : (resultStatus || "Ready"), uiState);
-  setReadinessStateText(validation?.summary || message || previewMessage || "Review the current model here, then open it in Blender for local editing.");
+  setReadinessStateText(activeSession.decisionSummary || validation?.summary || message || previewMessage || "Review the current model here, then open it in Blender for local editing.");
+  updateWorkspaceActionState();
 }
 
 function normalizeTerminalResult(result = {}) {
@@ -1848,6 +2667,27 @@ function normalizeTerminalResult(result = {}) {
     plan: result.plan || null,
     validation: result.validation || null,
     classification: result.classification || null,
+    interpretationSummary: result.interpretation_summary || result.interpretationSummary || "",
+    decisionSummary: result.decision_summary || result.decisionSummary || "",
+    styleSummary: result.style_summary || result.styleSummary || "",
+    validationSummary: result.validation_summary || result.validationSummary || "",
+    currentSavedModelId: result.current_saved_model_id || result.currentSavedModelId || "",
+    currentSavedModelEditable: Boolean(result.current_saved_model_editable ?? result.currentSavedModelEditable ?? false),
+    lastOpenedModelId: result.last_opened_model_id || result.lastOpenedModelId || "",
+    reopenSource: result.reopen_source || result.reopenSource || "",
+    reopenedPlanSummary: result.reopened_plan_summary || result.reopenedPlanSummary || "",
+    currentEditableParams: result.current_editable_params || result.currentEditableParams || result.editable_params || result.editableParams || [],
+    lastEditableParams: result.last_editable_params || result.lastEditableParams || [],
+    lastRegenerationSource: result.last_regeneration_source || result.lastRegenerationSource || "",
+    editedPlanSummary: result.edited_plan_summary || result.editedPlanSummary || "",
+    missingInfo: result.missing_info || result.missingInfo || [],
+    assumptions: result.assumptions || [],
+    warnings: result.warnings || [],
+    recipeSummary: result.recipe_summary || result.recipeSummary || "",
+    stlExportPath: result.stl_export_path || result.stlExportPath || "",
+    stlExportStatus: result.stl_export_status || result.stlExportStatus || "",
+    stlExportMessage: result.stl_export_message || result.stlExportMessage || "",
+    stlSourceModelPath: result.stl_source_model_path || result.stlSourceModelPath || "",
     previewModelPath,
     previewModelUrl,
     previewSource: result.preview_source || result.previewSource || (previewModelPath ? "artifact" : "none"),
@@ -1869,15 +2709,64 @@ function normalizeTerminalResult(result = {}) {
   };
 }
 
+function sessionFromPersistedState(state = {}) {
+  return {
+    generationId: state.generationId || state.lastGenerationId || state.last_generation_id || "",
+    requestText: state.lastUserRequest || state.last_user_request || "",
+    promptText: state.lastUserRequest || state.last_user_request || "",
+    plan: state.lastPlan || state.last_plan || null,
+    validation: state.lastValidation || state.last_validation || null,
+    classification: state.lastClassification || state.last_classification || null,
+    resultStatus: state.lastGenerationStatus || state.last_generation_status || "",
+    rawStatus: state.lastGenerationRawStatus || state.last_generation_raw_status || "",
+    message: state.lastGenerationMessage || state.last_generation_message || "",
+    interpretationSummary: state.lastInterpretationSummary || state.last_interpretation_summary || "",
+    decisionSummary: state.lastDecisionSummary || state.last_decision_summary || "",
+    styleSummary: state.lastStyleSummary || state.last_style_summary || "",
+    validationSummary: state.lastValidationSummary || state.last_validation_summary || "",
+    currentSavedModelId: state.currentSavedModelId || state.current_saved_model_id || "",
+    currentSavedModelEditable: Boolean(state.currentSavedModelEditable ?? state.current_saved_model_editable ?? false),
+    lastOpenedModelId: state.lastOpenedModelId || state.last_opened_model_id || "",
+    reopenSource: state.reopenSource || state.reopen_source || "",
+    reopenedPlanSummary: state.reopenedPlanSummary || state.reopened_plan_summary || "",
+    currentEditableParams: state.currentEditableParams || state.current_editable_params || [],
+    lastEditableParams: state.lastEditableParams || state.last_editable_params || [],
+    lastRegenerationSource: state.lastRegenerationSource || state.last_regeneration_source || "",
+    editedPlanSummary: state.editedPlanSummary || state.edited_plan_summary || "",
+    missingInfo: state.lastMissingInfo || state.last_missing_info || [],
+    assumptions: state.lastAssumptions || state.last_assumptions || [],
+    warnings: state.lastWarnings || state.last_warnings || [],
+    recipeSummary: state.lastRecipeSummary || state.last_recipe_summary || "",
+    previewStatus: state.lastPreviewExportStatus || state.last_preview_export_status || "",
+    previewMessage: state.lastPreviewExportMessage || state.last_preview_export_message || "",
+    previewModelPath: state.lastPreviewModelPath || state.last_preview_model_path || "",
+    previewModelUrl: state.lastPreviewModelUrl || state.last_preview_model_url || "",
+    previewAssetVersion: state.lastPreviewAssetVersion || state.last_preview_asset_version || "",
+    finalModelPath: state.lastFinalModelPath || state.last_final_model_path || "",
+    finalModelUrl: state.lastFinalModelUrl || state.last_final_model_url || "",
+    generationPath: state.lastGenerationPath || state.last_generation_path || "",
+    generationRoute: state.lastGenerationRoute || state.last_generation_route || "",
+    generationFallbackReason: state.lastGenerationFallbackReason || state.last_generation_fallback_reason || "",
+    executionRecipe: state.lastExecutionRecipe || state.last_execution_recipe || "",
+    implementationId: state.lastImplementationId || state.last_implementation_id || "",
+    outputSource: state.lastOutputSource || state.last_output_source || "",
+    stlExportPath: state.lastStlExportPath || state.last_stl_export_path || "",
+    stlExportStatus: state.lastStlExportStatus || state.last_stl_export_status || "",
+    stlExportMessage: state.lastStlExportMessage || state.last_stl_export_message || "",
+    stlSourceModelPath: state.lastStlSourceModelPath || state.last_stl_source_model_path || "",
+    savedModelEntry: state.lastSavedModelEntry || state.last_saved_model_entry || null,
+  };
+}
+
 function terminalStatusLabel(status) {
   if (status === "ready") {
     return "Generation complete";
   }
   if (status === "unsupported") {
-    return "Request not supported yet";
+    return "Outside current capability";
   }
   if (status === "validation_failed") {
-    return "Request needs revision";
+    return "Needs a few details";
   }
   return "Generation error";
 }
@@ -1891,10 +2780,10 @@ function setLogsModalOpen(isOpen) {
 
 function terminalViewerMessage(result) {
   if (result.status === "unsupported") {
-    return result.message || "That request falls outside the current alpha geometry families.";
+    return result.decisionSummary || result.interpretationSummary || result.message || "Geomancer handles practical parts and bounded primitive-based props, but this request is outside the current supported surface.";
   }
   if (result.status === "validation_failed") {
-    return result.message || "Add clearer supported dimensions or family details, then try again.";
+    return result.decisionSummary || result.interpretationSummary || result.message || "Geomancer needs a few more details before it can build this request.";
   }
   if (result.previewStatus === "error") {
     return result.previewMessage || "Preview export failed. Geomancer will fall back to a lightweight viewer preview when possible.";
@@ -1921,7 +2810,20 @@ async function applyTerminalResult(rawResult) {
     validation: result.validation,
     classification: result.classification,
     resultStatus: result.status,
+    rawStatus: result.rawStatus,
     message: result.message,
+    interpretationSummary: result.interpretationSummary,
+    decisionSummary: result.decisionSummary,
+    styleSummary: result.styleSummary,
+    validationSummary: result.validationSummary,
+    currentEditableParams: result.currentEditableParams,
+    lastEditableParams: result.lastEditableParams,
+    lastRegenerationSource: result.lastRegenerationSource,
+    editedPlanSummary: result.editedPlanSummary,
+    missingInfo: result.missingInfo,
+    assumptions: result.assumptions,
+    warnings: result.warnings,
+    recipeSummary: result.recipeSummary,
     previewStatus: result.previewStatus,
     previewMessage: result.previewMessage,
     previewModelPath: result.previewModelPath,
@@ -1944,9 +2846,23 @@ async function applyTerminalResult(rawResult) {
     addChatMessage("assistant", `Detected family: ${result.plan?.family_label || result.classification.family_key}.`);
   }
   if (summaryLines.length) {
-    addChatMessage("assistant", result.validation?.summary || "Normalization complete.", {
+    const generationSummary = result.status === "ready"
+      ? (result.validation?.summary || "Normalization complete.")
+      : (result.decisionSummary || result.interpretationSummary || result.message || "Generation update.");
+    addChatMessage("assistant", generationSummary, {
       title: "Generation update",
       checklist: summaryLines.slice(0, 5),
+    });
+  }
+  if (result.status === "unsupported") {
+    addChatMessage("assistant", "Try a practical part like a bracket or enclosure, or a simple prop like a crate or canister.", {
+      title: "Supported prompts",
+      examples: ["Wall bracket with four holes", "Low poly crate", "Simple phone stand"],
+    });
+  } else if (result.status === "validation_failed" && result.missingInfo?.length) {
+    addChatMessage("assistant", "Geomancer needs the missing dimensions listed in the right rail before it can continue.", {
+      title: "Add the missing details",
+      checklist: result.missingInfo.slice(0, 5).map((item) => prettifyKey(String(item))),
     });
   }
   if (result.savedModelEntry?.id) {
@@ -2011,18 +2927,35 @@ async function handleTerminalFailure(message, options = {}) {
     classification: options.classification || {},
     plan: null,
     validation: null,
+    interpretation_summary: "",
+    decision_summary: message,
+    validation_summary: message,
+    current_editable_params: [],
+    last_editable_params: [],
+    last_regeneration_source: "",
+    edited_plan_summary: "",
+    missing_info: [],
+    assumptions: [],
+    warnings: [],
+    recipe_summary: "",
+    final_model_path: "",
+    final_model_url: "",
     preview_model_path: "",
     preview_asset_version: "",
     preview_export_status: "error",
     preview_export_message: message,
+    stl_export_path: "",
+    stl_export_status: "error",
+    stl_export_message: message,
+    stl_source_model_path: "",
   };
   await applyTerminalResult(failureResult);
 }
 
-function setIdleSessionUI(reasonText = "Start a new generation when ready.") {
+function setIdleSessionUI(reasonText = STARTUP_GUIDANCE_TEXT) {
   updateRightPanel(null);
   updateMetricsFromPlan(null, null, "Waiting", "idle");
-  setReadinessStateText("Submit a dimensional prompt to start a new local generation.");
+  setReadinessStateText("Submit a practical part or simple prop prompt to start a new local generation.");
   if (!chatMessages.length && runtimeReady()) {
     seedStartupConversationIfReady();
   } else if (!chatMessages.length && !runtimeReady()) {
@@ -2031,8 +2964,12 @@ function setIdleSessionUI(reasonText = "Start a new generation when ready.") {
 }
 
 function resetActiveSession(options = {}) {
-  const { reasonText = "Start a new generation when ready.", clearPrompt = true } = options;
+  const { reasonText = STARTUP_GUIDANCE_TEXT, clearPrompt = true } = options;
   activeSession = createEmptySession();
+  editablePlanBaseline = null;
+  editablePlanDraft = null;
+  editablePlanDirty = false;
+  stlExportInFlight = false;
   setSessionTitle("Untitled");
   setGenerationInFlight(false);
   if (clearPrompt) {
@@ -2112,6 +3049,7 @@ function applyRuntimeGate(state = {}) {
   systemAiStatus.textContent = aiReady ? "Ready" : (normalizedHealth.ollamaInstalled ? "Setup needed" : "Not ready");
   systemBlenderStatus.textContent = blenderReady ? "Connected" : "Not configured";
   updateFooterRuntimeStatus(normalizedHealth);
+  updateWorkspaceActionState();
   if (ready) {
     seedStartupConversationIfReady();
   }
@@ -2126,6 +3064,14 @@ function updatePassiveShellState(state) {
   renderProjects();
   renderTemplates();
   applyRuntimeGate(state);
+  const persistedSession = sessionFromPersistedState(state);
+  if (persistedSession.plan || persistedSession.resultStatus || persistedSession.interpretationSummary || persistedSession.decisionSummary) {
+    activeSession = {
+      ...activeSession,
+      ...persistedSession,
+    };
+    applyBackendSnapshot(activeSession);
+  }
 }
 
 function setActiveTab(tabName) {
@@ -2408,8 +3354,8 @@ class GeomancerViewer {
     this.animate();
     setViewerOverlay(
       "empty",
-      "Ready for a model",
-      "Generate a part to review it here."
+      "Ready to build",
+      "Describe a practical part or simple prop to review it here."
     );
   }
 
@@ -3750,7 +4696,6 @@ class GeomancerViewer {
     const previewKind = getPromptPreviewKind(promptText, plan);
     this.previewObject = loadedObject;
     this.rootGroup.add(this.previewObject);
-    this.normalizeRestingOrientation(this.previewObject, previewKind);
     const placement = this.placeObjectOnStage(this.previewObject);
     this.setRenderMode(this.renderMode);
     this.fitCameraToObject(this.previewObject, previewKind, placement);
@@ -3771,8 +4716,8 @@ class GeomancerViewer {
     this.lastPreviewKey = "";
     setViewerOverlay(
       "empty",
-      "Ready for a model",
-      "Generate a part to review it here."
+      "Ready to build",
+      "Describe a practical part or simple prop to review it here."
     );
   }
 
@@ -3787,26 +4732,31 @@ async function applyState(rawState) {
   const state = await resolveBridgeJson(rawState, "getInitialState/stateChanged");
   appendLog(`Debug: restored state applied -> status=${state.lastGenerationStatus || "idle"}, raw_status=${state.lastGenerationRawStatus || "none"}, family=${state.lastGenerationFamily || "none"}, generation_id=${state.generationId || "none"}, path=${state.lastGenerationPath || "none"}, route=${state.lastGenerationRoute || "none"}, impl=${state.lastImplementationId || "none"}, recipe=${state.lastExecutionRecipe || "none"}, saved_models=${state.librarySummary?.saved_model_count || 0}`);
   updatePassiveShellState(state);
+  const restoredSession = sessionFromPersistedState(state);
   if (!hasLoadedInitialState) {
     hasLoadedInitialState = true;
-    resetActiveSession({
-      reasonText: runtimeReady()
-        ? (state.librarySummary?.saved_model_count
-          ? `${state.librarySummary.saved_model_count} saved model(s) are available in the local library.`
-          : "No active generation is loaded yet.")
-        : (state.runtimeHealthMessage || "Finish local setup before using the main workspace."),
-      clearPrompt: true,
-    });
+    if (!restoredSession.plan && !restoredSession.resultStatus && !restoredSession.interpretationSummary && !restoredSession.decisionSummary) {
+      resetActiveSession({
+        reasonText: runtimeReady()
+          ? (state.librarySummary?.saved_model_count
+            ? `${state.librarySummary.saved_model_count} saved model(s) are available in the local library.`
+            : "No active generation is loaded yet.")
+          : (state.runtimeHealthMessage || "Finish local setup before using the main workspace."),
+        clearPrompt: true,
+      });
+    }
     promptInput.focus();
     return;
   }
   appendLog(`Passive backend refresh applied. Saved models: ${state.librarySummary?.saved_model_count || 0}`);
+  updateWorkspaceActionState();
 }
 
 function setGenerating(isGenerating) {
   generateButton.disabled = isGenerating || !runtimeReady();
   updateGenerateButtonState(isGenerating);
   updateFooterRuntimeStatus(runtimeHealth);
+  updateWorkspaceActionState();
 }
 
 function connectBridge() {
@@ -4046,6 +4996,9 @@ bindClick(generateButton, () => {
     requestText: promptText,
     promptText,
   };
+  editablePlanBaseline = null;
+  editablePlanDraft = null;
+  editablePlanDirty = false;
   updateHistoryPanel({
     promptText,
     plan: null,
@@ -4097,6 +5050,141 @@ bindClick(openBlenderButton, async () => {
     appendLog(result.message);
   } catch (error) {
     appendLog(`Failed to launch Blender: ${error}`);
+  }
+});
+
+bindClick(exportStlButton, async () => {
+  if (!bridge) {
+    appendLog("Desktop bridge is not ready.");
+    return;
+  }
+  if (stlExportInFlight) {
+    appendLog("STL export is already running.");
+    return;
+  }
+  if (activeSession.resultStatus !== "ready" || !hasExportableFinalArtifact(activeSession)) {
+    appendLog("STL export is unavailable for the current model.");
+    return;
+  }
+  if (typeof bridge.exportCurrentModelAsStl !== "function") {
+    appendLog("Desktop bridge export entrypoint is unavailable.");
+    return;
+  }
+
+  stlExportInFlight = true;
+  updateWorkspaceActionState();
+  try {
+    const result = await resolveBridgeJson(bridge.exportCurrentModelAsStl(), "exportCurrentModelAsStl");
+    appendLog(result.message || "STL export completed.");
+    addChatMessage("assistant", result.message || "STL export completed.", {
+      title: result.success ? "STL export complete" : "STL export unavailable",
+    });
+  } catch (error) {
+    appendLog(`Failed to export STL: ${error}`);
+    addChatMessage("assistant", `STL export failed: ${error}`, {
+      title: "STL export failed",
+    });
+  } finally {
+    stlExportInFlight = false;
+    updateWorkspaceActionState();
+  }
+});
+
+if (editParametersList) {
+  editParametersList.addEventListener("input", (event) => {
+    const target = event.target;
+    const paramId = target?.dataset?.paramId || target?.closest?.("[data-param-id]")?.dataset?.paramId;
+    if (!paramId) {
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.type === "checkbox") {
+      applyEditableParamChange(paramId, target.checked);
+      const pill = target.closest(".edit-param-row")?.querySelector(".edit-toggle-pill");
+      if (pill) {
+        pill.textContent = target.checked ? "On" : "Off";
+      }
+      return;
+    }
+    if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) {
+      applyEditableParamChange(paramId, target.value);
+    }
+  });
+  editParametersList.addEventListener("change", (event) => {
+    const target = event.target;
+    const paramId = target?.dataset?.paramId || target?.closest?.("[data-param-id]")?.dataset?.paramId;
+    if (!paramId) {
+      return;
+    }
+    if (target instanceof HTMLInputElement && target.type === "checkbox") {
+      applyEditableParamChange(paramId, target.checked);
+      const pill = target.closest(".edit-param-row")?.querySelector(".edit-toggle-pill");
+      if (pill) {
+        pill.textContent = target.checked ? "On" : "Off";
+      }
+      return;
+    }
+    if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) {
+      applyEditableParamChange(paramId, target.value);
+    }
+  });
+}
+
+bindClick(resetPlanButton, () => {
+  resetEditablePlanDraft();
+});
+
+bindClick(regeneratePlanButton, () => {
+  if (!bridge) {
+    appendLog("Desktop bridge is not ready.");
+    return;
+  }
+  if (!editablePlanDraft || !editablePlanDirty) {
+    appendLog("No edited parameters to regenerate yet.");
+    return;
+  }
+  if (generationInFlight) {
+    appendLog("Regeneration is already running.");
+    return;
+  }
+  if (!runtimeReady()) {
+    appendLog("Finish local setup before regenerating.");
+    return;
+  }
+  if (typeof bridge.regenerateFromPlan !== "function") {
+    appendLog("Desktop bridge regeneration entrypoint is unavailable.");
+    return;
+  }
+
+  const promptText = activeSession.requestText || promptInput.value.trim() || "edited plan";
+  const payload = buildRegenerationPayload();
+  appendLog(`[UI] regeneration requested: source_generation_id=${payload.source_generation_id || "none"}, request_text=${promptText}`);
+  setGenerationInFlight(true);
+  setSessionTitle(generateSessionTitle(promptText));
+  addChatMessage("assistant", "Applying your edited parameters...");
+  addChatMessage("assistant", "Rebuilding the model from the edited plan.", {
+    title: "Regeneration in progress",
+    checklist: [
+      "Validating the edited plan",
+      "Rebuilding deterministic recipe ops",
+      "Executing the recipe",
+      "Refreshing the preview",
+    ],
+  });
+  setGenerationStatusText("Regenerating...");
+  setReadinessStateText("Regenerating the current model from the edited plan.");
+  updateWorkspaceActionState();
+  try {
+    bridge.regenerateFromPlan(JSON.stringify(payload));
+  } catch (error) {
+    appendLog(`[UI] bridge.regenerateFromPlan call threw: ${error}`);
+    void handleTerminalFailure(`Bridge regeneration call failed: ${error}`, {
+      rawStatus: "bridge_call_exception",
+      status: "error",
+      requestText: promptText,
+    }).finally(() => {
+      setGenerationInFlight(false);
+      updateWorkspaceActionState();
+    });
   }
 });
 

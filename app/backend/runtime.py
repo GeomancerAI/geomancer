@@ -8,3 +8,4 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 GENERATED_SCRIPT_PATH = PROJECT_ROOT / "blender" / "generated_model.py"
 PREVIEWS_DIR = PROJECT_ROOT / "data" / "previews"
+EXPORTS_DIR = PROJECT_ROOT / "data" / "exports"

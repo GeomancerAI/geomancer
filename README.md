@@ -1,20 +1,20 @@
 # Geomancer
 
-Geomancer is a local-first desktop geometry tool. Local AI interprets requests, Geomancer owns deterministic geometry generation, and Blender remains the local preview and editing target.
+Geomancer is a local-first AI-assisted 3D modeling tool. Local AI interprets requests, Geomancer owns deterministic geometry generation, and Blender remains the local preview and editing target.
 
 ## Current Status
 
-- Version: `0.7.56-alpha`
+- Version: `0.8.0-alpha`
 - Stage: `alpha`
 - Product direction: desktop shell -> local setup -> deterministic geometry pipeline -> Blender handoff
-- Core rule: AI interprets language, Geomancer owns geometry
+- Core rule: AI interprets language, Geomancer owns deterministic geometry
 
 ## Product Shape
 
 The current alpha experience is centered on one desktop shell with top-level modes:
 
 - Workspace: chat-style conversation thread, generation progress, viewer, read-only properties, actions, bottom summary surfaces, compact top-right app controls, and a cleaner runtime/footer status row
-- Models: saved local model library with search, sorting, single-select browsing, explicit multi-select deletion mode, selection-tied actions, Workspace reopen support, and a synced compact sidebar browser
+- Models: saved local model library with search, sorting, single-select browsing, explicit multi-select deletion mode, selection-tied actions, Workspace reopen/edit support, and a synced compact sidebar browser
 - Projects: alpha project containers with in-memory project creation, selection/deletion controls, and saved-model group browsing
 - Templates: curated starter blueprint library with category filtering, geometric starter cards, and Workspace prompt launch
 
@@ -39,10 +39,10 @@ The UI now prioritizes truthful state over placeholder polish. If dimensions, fe
 
 ### Geometry path
 
-- `app/backend/classifier.py`: supported-family classification
-- `app/backend/normalizer.py`: deterministic parameter extraction
-- `app/backend/geometry.py`: deterministic Blender Python generation
-- `app/backend/validation.py`: validation and review summaries
+- `app/backend/plan_schema.py`: authoritative Plan Schema v1 dataclasses
+- `app/backend/plan_validator.py`: conservative normalization and validation
+- `app/backend/recipe_builder.py`: deterministic recipe construction
+- `app/backend/recipe_executor.py`: deterministic Blender-facing execution
 - `app/backend/pipeline.py`: orchestration, preview export, and state updates
 
 ## First-Run Flow
@@ -60,11 +60,14 @@ The workspace remains gated until runtime health is complete.
 ## Generation Flow
 
 1. The user submits a dimensional part request.
-2. Local AI interprets the request.
-3. Geomancer classifies the request into a supported family.
-4. Geomancer normalizes dimensions and features.
-5. Geomancer generates deterministic Blender Python.
+2. Local AI interprets the request into a structured plan.
+3. Geomancer validates and normalizes the plan.
+4. Geomancer builds a deterministic recipe from the validated plan.
+5. Geomancer executes the recipe into deterministic geometry.
 6. Blender is used locally for preview export and handoff, with the desktop viewer showing a grounded review preview first.
+7. Supported parameters can be edited in the right rail and regenerated deterministically from the edited plan, including reopened saved models when truthful plan data is available.
+
+Geomancer now covers bounded functional objects, compositional props, hybrid combinations, a deterministic style layer, right-rail parameter editing and regeneration, and truthful saved-model reopen/edit workflows.
 
 Geomancer does not use arbitrary AI-written Blender code as the main path.
 
@@ -110,7 +113,7 @@ OLLAMA_MODEL=qwen2.5:7b
 - Export, save-project, and deeper plan-inspection actions remain staged for later passes.
 - The new conversation rail is still compact and alpha-oriented; it does not yet support threaded clarifications, message actions, or rich plan drill-down.
 - Blender detection is still Windows-oriented.
-- Deterministic geometry coverage is still limited to supported alpha families.
+- Deterministic geometry coverage now includes the existing functional families, a small compositional prop foundation, bounded hybrid combinations, and a deterministic style layer, but it is still bounded and deterministic rather than freeform.
 - Viewer framing is deterministic and family-aware, but still based on lightweight heuristics rather than deep geometry analysis.
 - The compact telemetry strip is optimized for glanceability, so deeper inspection still belongs in later detail views rather than the main workspace chrome.
 - Viewer support placement is still a lightweight sampled heuristic from preview geometry, not a semantic understanding of real-world load-bearing faces.

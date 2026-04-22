@@ -123,6 +123,21 @@ class GeomancerBridge(QObject):
                 "lastGenerationRawStatus": status.get("last_generation_raw_status", ""),
                 "lastGenerationMessage": status.get("last_generation_message", ""),
                 "lastGenerationTimestamp": status.get("last_generation_timestamp", ""),
+                "lastInterpretationSummary": status.get("last_interpretation_summary", ""),
+                "lastDecisionSummary": status.get("last_decision_summary", ""),
+                "lastStyleSummary": status.get("last_style_summary", ""),
+                "currentSavedModelId": status.get("current_saved_model_id", ""),
+                "currentSavedModelEditable": status.get("current_saved_model_editable", False),
+                "lastOpenedModelId": status.get("last_opened_model_id", ""),
+                "reopenSource": status.get("reopen_source", ""),
+                "reopenedPlanSummary": status.get("reopened_plan_summary", ""),
+                "currentEditableParams": status.get("current_editable_params", []),
+                "lastEditableParams": status.get("last_editable_params", []),
+                "lastRegenerationSource": status.get("last_regeneration_source", ""),
+                "editedPlanSummary": status.get("edited_plan_summary", ""),
+                "lastMissingInfo": status.get("last_missing_info", []),
+                "lastAssumptions": status.get("last_assumptions", []),
+                "lastWarnings": status.get("last_warnings", []),
                 "lastValidationSummary": status.get("last_validation_summary", ""),
                 "lastPlan": status.get("last_plan", {}),
                 "lastValidation": status.get("last_validation", {}),
@@ -131,6 +146,10 @@ class GeomancerBridge(QObject):
                 "lastFinalModelPath": status.get("last_final_model_path", ""),
                 "lastFinalModelUrl": status.get("last_final_model_url", ""),
                 "lastOutputSource": status.get("last_output_source", ""),
+                "lastStlExportPath": status.get("last_stl_export_path", ""),
+                "lastStlExportStatus": status.get("last_stl_export_status", ""),
+                "lastStlExportMessage": status.get("last_stl_export_message", ""),
+                "lastStlSourceModelPath": status.get("last_stl_source_model_path", ""),
                 "lastGenerationPath": status.get("last_generation_path", ""),
                 "lastGenerationRoute": status.get("last_generation_route", ""),
                 "lastGenerationFallbackReason": status.get("last_generation_fallback_reason", ""),
@@ -180,6 +199,21 @@ class GeomancerBridge(QObject):
                 "lastGenerationRawStatus": fallback.get("raw_status", "bridge_state_failure"),
                 "lastGenerationMessage": fallback.get("message", ""),
                 "lastGenerationTimestamp": "",
+                "lastInterpretationSummary": "",
+                "lastDecisionSummary": "",
+                "lastStyleSummary": "",
+                "currentSavedModelId": "",
+                "currentSavedModelEditable": False,
+                "lastOpenedModelId": "",
+                "reopenSource": "",
+                "reopenedPlanSummary": "",
+                "currentEditableParams": [],
+                "lastEditableParams": [],
+                "lastRegenerationSource": "",
+                "editedPlanSummary": "",
+                "lastMissingInfo": [],
+                "lastAssumptions": [],
+                "lastWarnings": [],
                 "lastValidationSummary": fallback.get("message", ""),
                 "lastPlan": {},
                 "lastValidation": {},
@@ -188,6 +222,10 @@ class GeomancerBridge(QObject):
                 "lastFinalModelPath": "",
                 "lastFinalModelUrl": "",
                 "lastOutputSource": "",
+                "lastStlExportPath": "",
+                "lastStlExportStatus": "error",
+                "lastStlExportMessage": fallback.get("message", ""),
+                "lastStlSourceModelPath": "",
                 "lastGenerationPath": "",
                 "lastGenerationRoute": "",
                 "lastGenerationFallbackReason": "",
@@ -244,6 +282,31 @@ class GeomancerBridge(QObject):
             self._emit_terminal_failure(
                 prompt_text=cleaned_prompt,
                 message=f"Bridge generateModel failed: {error}",
+            )
+
+    @Slot(str)
+    def regenerateFromPlan(self, plan_payload: str) -> None:
+        """Start a regeneration request from a structured edited plan."""
+        try:
+            self._log_bridge("[BRIDGE] regenerateFromPlan slot entered")
+            parsed = json.loads(plan_payload) if isinstance(plan_payload, str) else plan_payload
+            if not isinstance(parsed, dict):
+                raise TypeError(f"Unsupported plan payload type: {type(parsed).__name__}")
+            if self._active_generation_future is not None and not self._active_generation_future.done():
+                self._log_bridge("[BRIDGE] regenerateFromPlan early return: generation already running")
+                self._emit_terminal_failure(prompt_text=str(parsed.get("source_request_text") or parsed.get("request_text") or ""), message="Generation is already running.")
+                return
+            self._active_request_text = str(parsed.get("source_request_text") or parsed.get("request_text") or "")
+            self._generation_job_started = False
+            future = self._generation_executor.submit(self._run_regeneration_job, parsed)
+            self._active_generation_future = future
+            future.add_done_callback(self._on_generation_future_done)
+        except Exception as error:
+            self._log_bridge(f"[BRIDGE] regenerateFromPlan slot exception: {error!r}")
+            self._log_bridge(traceback.format_exc())
+            self._emit_terminal_failure(
+                prompt_text=self._active_request_text,
+                message=f"Bridge regenerateFromPlan failed: {error}",
             )
 
     @Slot()
@@ -303,10 +366,24 @@ class GeomancerBridge(QObject):
         self.refreshState()
         return json.dumps({"success": success, "message": message})
 
+    @Slot(result=str)
+    def exportCurrentModelAsStl(self) -> str:
+        """Export the current final model artifact to STL."""
+        result = self._controller.export_current_model_stl()
+        self.refreshState()
+        return self._safe_json_dumps(result)
+
     @Slot(str, result=str)
     def openSavedModelInBlender(self, model_id: str) -> str:
         """Launch Blender for a selected saved model entry."""
         result = self._controller.open_saved_model_in_blender(model_id.strip())
+        self.refreshState()
+        return self._safe_json_dumps(result)
+
+    @Slot(str, result=str)
+    def openSavedModelForWorkspace(self, model_id: str) -> str:
+        """Restore a saved model's workspace state for editing or viewing."""
+        result = self._controller.open_saved_model_for_workspace(model_id.strip())
         self.refreshState()
         return self._safe_json_dumps(result)
 
@@ -507,6 +584,24 @@ class GeomancerBridge(QObject):
             "plan": normalized.get("plan", {}),
             "validation": normalized.get("validation", {}),
             "classification": normalized.get("classification", {}),
+            "interpretation_summary": normalized.get("interpretation_summary", ""),
+            "decision_summary": normalized.get("decision_summary", ""),
+            "style_summary": normalized.get("style_summary", ""),
+            "validation_summary": normalized.get("validation_summary", ""),
+            "current_saved_model_id": normalized.get("current_saved_model_id", ""),
+            "current_saved_model_editable": normalized.get("current_saved_model_editable", False),
+            "last_opened_model_id": normalized.get("last_opened_model_id", ""),
+            "reopen_source": normalized.get("reopen_source", ""),
+            "reopened_plan_summary": normalized.get("reopened_plan_summary", ""),
+            "missing_info": normalized.get("missing_info", []),
+            "assumptions": normalized.get("assumptions", []),
+            "warnings": normalized.get("warnings", []),
+            "recipe_summary": normalized.get("recipe_summary", ""),
+            "editable_params": normalized.get("editable_params", []),
+            "current_editable_params": normalized.get("current_editable_params", []),
+            "last_editable_params": normalized.get("last_editable_params", []),
+            "last_regeneration_source": normalized.get("last_regeneration_source", ""),
+            "edited_plan_summary": normalized.get("edited_plan_summary", ""),
             "script_path": normalized.get("script_path", ""),
             "preview_model_path": normalized.get("preview_model_path", ""),
             "preview_asset_version": normalized.get("preview_asset_version", ""),
@@ -518,9 +613,48 @@ class GeomancerBridge(QObject):
             "execution_recipe": normalized.get("execution_recipe", ""),
             "implementation_id": normalized.get("implementation_id", ""),
             "output_source": normalized.get("output_source", ""),
+            "stl_export_path": normalized.get("stl_export_path", ""),
+            "stl_export_status": normalized.get("stl_export_status", ""),
+            "stl_export_message": normalized.get("stl_export_message", ""),
+            "stl_source_model_path": normalized.get("stl_source_model_path", ""),
             "saved_model_entry": normalized.get("saved_model_entry", {}),
             "supported_families": normalized.get("supported_families", []),
         }
+
+    def _run_regeneration_job(self, plan_payload: dict) -> dict:
+        logs: list[str] = []
+
+        def append_log(message: str) -> None:
+            logs.append(str(message))
+
+        try:
+            append_log("[WORKER] python regeneration job start")
+            result = self._controller.regenerate_model_from_plan(plan_payload, log=append_log)
+            safe_payload = self._controller.make_json_safe(result)
+            append_log("[WORKER] backend regeneration returned")
+            return {
+                "failed": False,
+                "payload": safe_payload,
+                "logs": logs,
+            }
+        except Exception as error:  # pragma: no cover - runtime guard
+            tb = traceback.format_exc()
+            append_log(f"[WORKER] run exception: {str(error)}")
+            append_log(tb)
+            failure_payload = self._controller.record_terminal_failure(
+                prompt_text=str(plan_payload.get("source_request_text") or plan_payload.get("request_text") or ""),
+                message=f"Regeneration job failed: {error}",
+                status="error",
+                raw_status="thread_exception",
+            )
+            safe_payload = self._controller.make_json_safe(failure_payload)
+            safe_payload.setdefault("raw_status", "thread_exception")
+            safe_payload.setdefault("preview_export_status", "error")
+            return {
+                "failed": True,
+                "payload": safe_payload,
+                "logs": logs,
+            }
 
     def _emit_completion_payload(self, payload: str | dict) -> None:
         serialized = self._safe_json_dumps(self._normalize_terminal_payload(payload))

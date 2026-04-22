@@ -19,6 +19,7 @@ RECIPE_OP_VOCABULARY = {
     "phone_stand_body",
     "boolean_union",
     "boolean_difference",
+    "apply_bevel",
 }
 
 

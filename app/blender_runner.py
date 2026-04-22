@@ -268,3 +268,105 @@ def export_preview_model(script_path: Path, preview_path: Path, export_format: s
         return False, f"Preview export completed without writing a file to: {preview_path}"
 
     return True, f"Preview exported successfully to {preview_path}."
+
+
+def export_model_to_stl(source_path: Path, stl_path: Path) -> tuple[bool, str]:
+    """Export the current final model artifact to STL through Blender."""
+    blender_path = get_blender_path()
+    source_path = Path(source_path)
+    stl_path = Path(stl_path)
+
+    if not blender_path.exists():
+        return False, (
+            f"Blender was not found at: {blender_path}. "
+            "Create or update a .env file in the project root with "
+            r"BLENDER_PATH=C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
+        )
+
+    if not source_path.exists():
+        return False, f"Source model artifact not found at: {source_path}"
+
+    stl_path.parent.mkdir(parents=True, exist_ok=True)
+    wrapper_text = textwrap.dedent(
+        f"""
+        import addon_utils
+        import runpy
+        import traceback
+
+        import bpy
+
+        SOURCE_PATH = {str(source_path)!r}
+        STL_PATH = {str(stl_path)!r}
+
+        try:
+            bpy.ops.wm.read_factory_settings(use_empty=True)
+            if SOURCE_PATH.lower().endswith((".glb", ".gltf")):
+                addon_utils.enable("io_scene_gltf2", default_set=True, persistent=True)
+                bpy.ops.import_scene.gltf(filepath=SOURCE_PATH)
+            elif SOURCE_PATH.lower().endswith(".py"):
+                runpy.run_path(SOURCE_PATH, run_name="__main__")
+            else:
+                raise RuntimeError(f"Unsupported source artifact format for STL export: {{SOURCE_PATH}}")
+
+            mesh_objects = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
+            if not mesh_objects:
+                raise RuntimeError("No mesh objects were available for STL export.")
+
+            bpy.ops.object.select_all(action='DESELECT')
+            for obj in mesh_objects:
+                obj.select_set(True)
+            bpy.context.view_layer.objects.active = mesh_objects[0]
+
+            if hasattr(bpy.ops.wm, "stl_export"):
+                bpy.ops.wm.stl_export(filepath=STL_PATH, export_selected_objects=True)
+            elif hasattr(bpy.ops.export_mesh, "stl"):
+                bpy.ops.export_mesh.stl(filepath=STL_PATH, use_selection=True)
+            else:
+                raise RuntimeError("No STL export operator is available in this Blender build.")
+
+            print(f"STL export complete: {{STL_PATH}}")
+        except Exception:
+            traceback.print_exc()
+            raise
+        """
+    ).strip()
+
+    temp_script_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile("w", suffix="_geomancer_stl_export.py", delete=False, encoding="utf-8") as handle:
+            handle.write(wrapper_text)
+            temp_script_path = Path(handle.name)
+
+        command = [
+            str(blender_path),
+            "--background",
+            "--factory-startup",
+            "--python",
+            str(temp_script_path),
+        ]
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=300,
+        )
+    except subprocess.TimeoutExpired:
+        return False, f"STL export timed out after 300 seconds for source artifact: {source_path}"
+    except OSError as error:
+        return False, f"Blender could not be started from {blender_path}. Details: {error}"
+    finally:
+        if temp_script_path is not None:
+            temp_script_path.unlink(missing_ok=True)
+
+    if result.returncode != 0:
+        stderr_text = result.stderr.strip() or result.stdout.strip() or "No export output was returned."
+        return False, (
+            f"STL export failed with exit code {result.returncode} while running {source_path}. "
+            f"Details: {stderr_text}"
+        )
+
+    if not stl_path.exists():
+        return False, f"STL export completed without writing a file to: {stl_path}"
+
+    return True, f"STL exported successfully to {stl_path}."

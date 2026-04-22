@@ -1,211 +1,110 @@
+import copy
 import unittest
-import tempfile
+import importlib.util
 from pathlib import Path
 from unittest.mock import patch
 
-from app.state import DEFAULT_STATE
-from app.backend.classifier import classify_request
-from app.backend.geometry import build_script
-from app.backend.models import GenerationPlan
-from app.backend.normalizer import normalize_request
-from app.backend.pipeline import generate_model_request
-from app.blender_runner import open_generated_model_file
-from app.backend.recipe_executor import RecipeExecutionResult
-from app.path_utils import to_file_url
-from desktop.backend_controller import BackendController
+import app.backend.pipeline as pipeline
+
+from app.backend.pipeline import generate_model_from_plan, generate_model_request, interpret_prompt_to_plan
+from app.backend.plan_validator import validate_plan
+from app.backend.recipe_builder import build_deterministic_recipe
+from app.backend.recipe_executor import execute_recipe
 
 
 class BackendAlphaPipelineTests(unittest.TestCase):
-    def test_classifier_maps_supported_family(self):
-        result = classify_request("Create a 120 x 80 x 50 mm enclosure with 3 mm walls")
-        self.assertEqual(result.status, "ready")
-        self.assertEqual(result.family_key, "enclosure")
+    def test_pipeline_success_path_does_not_call_legacy_routing(self):
+        self.assertFalse(hasattr(pipeline, "classify_request"))
+        self.assertFalse(hasattr(pipeline, "select_archetype"))
+        self.assertFalse(hasattr(pipeline, "build_phone_stand_generation_plan"))
+        self.assertFalse(hasattr(pipeline, "normalize_request"))
 
-    def test_normalizer_extracts_bracket_dimensions(self):
-        request = "Make a bracket 100 x 30 x 80 mm with 6 mm thickness"
-        classification = classify_request(request)
-        status, _, plan = normalize_request(request, classification)
-        self.assertEqual(status, "ready")
-        assert plan is not None
-        self.assertEqual(plan.family, "bracket")
-        self.assertEqual(plan.dimensions["base_length_mm"], 100.0)
-        self.assertEqual(plan.dimensions["thickness_mm"], 6.0)
-
-    def test_geometry_builds_family_specific_script(self):
-        plan = GenerationPlan(
-            family="panel_plate",
-            family_label="panel / plate",
-            recipe="panel_plate",
-            request_text="plate",
-            dimensions={"width_mm": 100.0, "height_mm": 60.0, "thickness_mm": 3.0},
-            features={"hole_diameter_mm": 4.0, "corner_holes": True},
-        )
-        script = build_script(plan)
-        self.assertIn("Geomancer_Final", script)
-        self.assertIn("PanelHole", script)
-
-    def test_bracket_geometry_reads_as_hardware_bracket(self):
-        plan = GenerationPlan(
-            family="bracket",
-            family_label="bracket",
-            recipe="bracket",
-            request_text="mounting bracket",
-            dimensions={"base_length_mm": 120.0, "flange_width_mm": 30.0, "vertical_height_mm": 80.0, "thickness_mm": 6.0},
-            features={"hole_diameter_mm": 5.0, "hole_count": 4, "gusset": True},
-        )
-        script = build_script(plan)
-        self.assertIn("base_leg", script)
-        self.assertIn("vertical_leg", script)
-        self.assertIn("JoinBracket", script)
-        self.assertIn("final_obj = base_leg", script)
-        self.assertNotIn("final_obj = join_objects([base_leg, vertical_leg", script)
-        self.assertIn("BaseHole", script)
-        self.assertIn("VerticalHole", script)
-        self.assertIn("location=(mm(60.0), mm(15.0), mm(3.0))", script)
-        self.assertIn("location=(mm(3.0), mm(15.0), mm(40.0))", script)
-        self.assertNotIn("BracketBevel", script)
-
-    def test_classifier_prefers_tray_for_open_top_box_language(self):
-        result = classify_request("Create an open top parts box 140 x 90 x 35 mm with 3 mm walls")
-        self.assertEqual(result.status, "ready")
-        self.assertEqual(result.family_key, "tray_box")
-        self.assertGreater(result.confidence, 0.5)
-
-    def test_pipeline_returns_tray_payload_for_open_top_prompt(self):
-        with patch("app.backend.pipeline.save_generated_script") as save_script, patch(
-            "app.backend.pipeline.export_preview_model",
-            return_value=(True, "Preview exported successfully."),
-        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
-            "app.backend.pipeline.add_saved_model_entry",
-            return_value={"id": "saved-tray-1"},
+        with patch(
+            "app.backend.pipeline.save_generated_script"
+        ), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", return_value={}
+        ), patch(
+            "app.backend.pipeline.save_state", return_value=Path("ignored")
         ):
-            result = generate_model_request("make a tray", log=lambda _msg: None)
-
-        save_script.assert_called_once()
-        self.assertEqual(result["status"], "ready")
-        self.assertEqual(result["family"], "tray_box")
-        self.assertEqual(result["generation_path"], "recipe")
-        self.assertEqual(result["generation_route"], "recipe_success")
-        self.assertEqual(result["implementation_id"], "tray_box_shell_v1")
-        self.assertEqual(result["execution_recipe"], "tray_box")
-        self.assertEqual(result["output_source"], "recipe")
-        saved_state = save_state.call_args.args[0]
-        self.assertEqual(saved_state["last_generation_path"], "recipe")
-        self.assertEqual(saved_state["last_generation_route"], "recipe_success")
-        self.assertEqual(saved_state["last_implementation_id"], "tray_box_shell_v1")
-        self.assertEqual(saved_state["last_execution_recipe"], "tray_box")
-
-    def test_panel_plate_normalizer_supports_four_hole_pattern(self):
-        request = "Make a panel plate 120 x 80 x 4 mm with four 5 mm mounting holes"
-        classification = classify_request(request)
-        status, _, plan = normalize_request(request, classification)
-        self.assertEqual(status, "ready")
-        assert plan is not None
-        self.assertEqual(plan.family, "panel_plate")
-        self.assertEqual(plan.features["hole_pattern"], "corners")
-        self.assertEqual(plan.features["hole_diameter_mm"], 5.0)
-
-    def test_panel_plate_normalizer_infers_holes_from_count_only_prompt(self):
-        request = "120 mm plate with 4 holes"
-        classification = classify_request(request)
-        status, _, plan = normalize_request(request, classification)
-        self.assertEqual(status, "ready")
-        assert plan is not None
-        self.assertEqual(plan.family, "panel_plate")
-        self.assertEqual(plan.features["hole_count"], 4)
-        self.assertEqual(plan.features["hole_diameter_mm"], 5.0)
-        self.assertEqual(plan.features["hole_pattern"], "corners")
-
-    def test_standoff_normalizer_supports_hex_profile(self):
-        request = "Create a hex standoff 12 mm outer diameter 5 mm inner diameter 25 mm tall"
-        classification = classify_request(request)
-        status, _, plan = normalize_request(request, classification)
-        self.assertEqual(status, "ready")
-        assert plan is not None
-        self.assertEqual(plan.family, "spacer_standoff")
-        self.assertEqual(plan.features["profile"], "hex")
-        self.assertEqual(plan.dimensions["length_mm"], 25.0)
-
-    def test_enclosure_geometry_supports_front_opening(self):
-        plan = GenerationPlan(
-            family="enclosure",
-            family_label="enclosure",
-            recipe="box_shell",
-            request_text="enclosure",
-            dimensions={"width_mm": 120.0, "depth_mm": 80.0, "height_mm": 50.0},
-            features={
-                "wall_thickness_mm": 3.0,
-                "base_thickness_mm": 4.0,
-                "open_top": False,
-                "front_opening": True,
-                "opening_width_mm": 60.0,
-                "opening_height_mm": 25.0,
-            },
-        )
-        script = build_script(plan)
-        self.assertIn("InnerCavity", script)
-        self.assertIn("FrontOpening", script)
-        self.assertIn("ShellBevel", script)
-        self.assertNotIn("open_top = False", script)
-
-    def test_enclosure_geometry_handles_small_shells_without_collapsing(self):
-        plan = GenerationPlan(
-            family="enclosure",
-            family_label="enclosure",
-            recipe="box_shell",
-            request_text="small enclosure",
-            dimensions={"width_mm": 20.0, "depth_mm": 18.0, "height_mm": 14.0},
-            features={
-                "wall_thickness_mm": 8.0,
-                "base_thickness_mm": 8.0,
-                "open_top": False,
-                "front_opening": False,
-            },
-        )
-        script = build_script(plan)
-        self.assertIn("ShellBevel", script)
-        self.assertIn("inner_box", script)
-
-    def test_pipeline_returns_preview_payload_for_target_family(self):
-        with patch("app.backend.pipeline.save_generated_script") as save_script, patch(
-            "app.backend.pipeline.export_preview_model",
-            return_value=(True, "Preview exported successfully."),
-        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
-            "app.backend.pipeline.add_saved_model_entry",
-            return_value={"id": "saved-model-1"},
-        ) as add_saved_model_entry:
             result = generate_model_request("Create a 120 x 80 x 50 mm enclosure with 3 mm walls", log=lambda _msg: None)
 
-        save_script.assert_called_once()
-        self.assertEqual(save_state.call_count, 2)
         self.assertEqual(result["status"], "ready")
-        self.assertEqual(result["family"], "enclosure")
-        self.assertEqual(result["preview_export_status"], "ready")
-        self.assertIn("validation", result)
-        self.assertTrue(result["generation_id"].startswith("gen-"))
-        self.assertEqual(result["preview_asset_version"], result["generation_id"])
-        self.assertIn(result["generation_id"], result["preview_model_path"])
-        self.assertEqual(result["final_model_path"], result["preview_model_path"])
-        self.assertEqual(result["output_source"], "recipe")
+
+    def test_plan_bridge_module_is_deleted(self):
+        self.assertIsNone(importlib.util.find_spec("app.backend.plan_bridge"))
+
+    def test_pipeline_returns_desktop_compatible_result_keys(self):
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", return_value={}
+        ), patch(
+            "app.backend.pipeline.save_state", return_value=Path("ignored")
+        ):
+            result = generate_model_request("make a bracket 120 x 40 x 90 mm with 6mm thick legs", log=lambda _msg: None)
+
+        expected_keys = {
+            "generation_id",
+            "request_text",
+            "status",
+            "raw_status",
+            "is_terminal",
+            "plan",
+            "validation",
+            "recipe",
+            "recipe_summary",
+            "execution_path",
+            "execution_summary",
+            "generation_path",
+            "generation_route",
+            "generation_fallback_reason",
+            "implementation_id",
+            "execution_recipe",
+            "validation_summary",
+            "interpretation_summary",
+            "decision_summary",
+            "style_summary",
+            "editable_params",
+            "current_editable_params",
+            "last_editable_params",
+            "last_regeneration_source",
+            "edited_plan_summary",
+            "missing_info",
+            "assumptions",
+            "warnings",
+            "preview_model_path",
+            "preview_model_url",
+            "preview_asset_version",
+            "preview_export_status",
+            "preview_export_message",
+            "final_model_path",
+            "final_model_url",
+            "output_source",
+            "stl_export_path",
+            "stl_export_status",
+            "stl_export_message",
+            "stl_source_model_path",
+            "saved_model_entry",
+            "supported_families",
+        }
+
+        self.assertTrue(expected_keys.issubset(result.keys()))
         self.assertEqual(result["generation_path"], "recipe")
         self.assertEqual(result["generation_route"], "recipe_success")
-        self.assertEqual(result["implementation_id"], "enclosure_open_top_shell_v1")
-        self.assertEqual(result["execution_recipe"], "box_shell")
-        self.assertTrue(result["preview_model_url"].startswith("file:///"))
-        self.assertEqual(result["preview_model_url"], result["final_model_url"])
-        saved_state = save_state.call_args.args[0]
-        self.assertEqual(saved_state["last_generation_id"], result["generation_id"])
-        self.assertEqual(saved_state["last_preview_asset_version"], result["generation_id"])
-        self.assertEqual(saved_state["last_final_model_path"], result["preview_model_path"])
-        self.assertEqual(saved_state["last_output_source"], "recipe")
-        self.assertEqual(saved_state["last_generation_path"], "recipe")
-        self.assertEqual(saved_state["last_generation_route"], "recipe_success")
-        self.assertEqual(saved_state["last_implementation_id"], "enclosure_open_top_shell_v1")
-        self.assertEqual(saved_state["last_execution_recipe"], "box_shell")
-        self.assertEqual(add_saved_model_entry.call_args.kwargs["implementation_id"], "enclosure_open_top_shell_v1")
-        self.assertEqual(add_saved_model_entry.call_args.kwargs["execution_recipe"], "box_shell")
+        self.assertIn("recipe", result["decision_summary"])
+        self.assertEqual(result["stl_export_status"], "not_requested")
+        self.assertEqual(result["stl_export_path"], "")
+        self.assertTrue(result["editable_params"])
+        self.assertEqual(result["current_editable_params"], result["last_editable_params"])
+        self.assertEqual(result["last_regeneration_source"], "")
 
-    def test_generation_context_resets_between_requests(self):
+    def test_pipeline_persists_expected_state_keys_after_generation_attempt(self):
         state: dict = {}
 
         def load_state() -> dict:
@@ -217,324 +116,570 @@ class BackendAlphaPipelineTests(unittest.TestCase):
             return Path("ignored")
 
         with patch("app.backend.pipeline.save_generated_script"), patch(
-            "app.backend.pipeline.export_preview_model",
-            return_value=(True, "Preview exported successfully."),
-        ), patch("app.backend.pipeline.load_state", side_effect=load_state), patch("app.backend.pipeline.save_state", side_effect=save_state), patch(
-            "app.backend.pipeline.add_saved_model_entry",
-            return_value={"id": "saved-model-reset"},
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
         ):
-            first = generate_model_request("make me a phone stand", log=lambda _msg: None)
-            second = generate_model_request("120 mm plate with 4 holes", log=lambda _msg: None)
+            result = generate_model_request("120 x 80 x 4 mm plate with 4 holes", log=lambda _msg: None)
 
-        self.assertEqual(first["family"], "phone_stand")
+        self.assertEqual(result["status"], "ready")
+        expected_state_keys = {
+            "last_user_request",
+            "last_generation_id",
+            "last_generated_script_path",
+            "last_preview_model_path",
+            "last_preview_model_url",
+            "last_preview_asset_version",
+            "last_preview_export_status",
+            "last_preview_export_message",
+            "last_final_model_path",
+            "last_final_model_url",
+            "last_output_source",
+            "last_stl_export_path",
+            "last_stl_export_status",
+            "last_stl_export_message",
+            "last_stl_source_model_path",
+            "last_generation_timestamp",
+            "last_generation_status",
+            "last_generation_message",
+            "last_generation_raw_status",
+            "last_run_status",
+            "last_generation_family",
+            "last_validation_summary",
+            "last_plan",
+            "last_recipe",
+            "last_recipe_summary",
+            "last_execution_path",
+            "last_execution_summary",
+            "last_generation_path",
+            "last_generation_route",
+            "last_generation_fallback_reason",
+            "last_implementation_id",
+            "last_execution_recipe",
+            "last_validation",
+            "last_classification",
+            "last_saved_model_entry",
+            "last_interpretation_summary",
+            "last_decision_summary",
+            "last_style_summary",
+            "current_editable_params",
+            "last_editable_params",
+            "last_regeneration_source",
+            "edited_plan_summary",
+            "last_missing_info",
+            "last_assumptions",
+            "last_warnings",
+        }
+
+        self.assertTrue(expected_state_keys.issubset(state.keys()))
+        self.assertEqual(state["last_generation_family"], "plate")
+        self.assertEqual(state["last_generation_path"], "recipe")
+        self.assertEqual(state["last_generation_route"], "recipe_success")
+        self.assertEqual(state["last_validation"]["status"], "ready")
+        self.assertEqual(state["last_execution_recipe"], "panel_plate")
+        self.assertTrue(state["last_interpretation_summary"])
+        self.assertTrue(state["last_decision_summary"])
+        self.assertEqual(state["last_missing_info"], [])
+        self.assertTrue(state["last_assumptions"])
+        self.assertIn("minimum wall thickness", " ".join(state["last_assumptions"]))
+        self.assertTrue(isinstance(state["last_warnings"], list))
+        self.assertTrue(state["last_style_summary"])
+        self.assertEqual(state["last_stl_export_status"], "not_requested")
+        self.assertEqual(state["last_stl_export_path"], "")
+
+    def test_pipeline_success_path_exposes_editable_surface(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request(
+                "make a phone stand 90 x 85 x 120 mm with 5mm thick walls and cable cutout",
+                log=lambda _msg: None,
+            )
+
+        self.assertEqual(result["status"], "ready")
+        editable_ids = {item["id"] for item in result["editable_params"]}
+        self.assertIn("dimension:overall_width_mm", editable_ids)
+        self.assertIn("dimension:material_thickness_mm", editable_ids)
+        self.assertIn("style:style_profile", editable_ids)
+        self.assertEqual(result["current_editable_params"], result["last_editable_params"])
+        self.assertTrue(result["edited_plan_summary"] == "" or result["edited_plan_summary"].startswith("No parameter changes"))
+
+    def test_pipeline_regenerates_from_edited_plan_deterministically(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            base = generate_model_request(
+                "make a bracket 120 x 40 x 90 mm with 6mm thick legs and four 5 mm mounting holes",
+                log=lambda _msg: None,
+            )
+            edited_plan = copy.deepcopy(base["plan"])
+            edited_plan["dimensions"]["overall_width_mm"] = 150
+            edited_plan["style"]["style_profile"] = "industrial"
+            regenerated = generate_model_from_plan(
+                edited_plan,
+                log=lambda _msg: None,
+                source_generation_id=base["generation_id"],
+                source_request_text=base["request_text"],
+                source_plan=base["plan"],
+                current_saved_model_id="saved-model-1",
+                current_saved_model_editable=True,
+                last_opened_model_id="saved-model-1",
+                reopen_source="saved_model",
+                reopened_plan_summary="Reopened saved model saved-model-1 for editing.",
+            )
+
+        self.assertEqual(base["status"], "ready")
+        self.assertEqual(regenerated["status"], "ready")
+        self.assertEqual(regenerated["generation_route"], "edited_plan_success")
+        self.assertEqual(regenerated["plan"]["dimensions"]["overall_width_mm"], 150)
+        self.assertEqual(regenerated["plan"]["style"]["style_profile"], "industrial")
+        self.assertTrue(regenerated["decision_summary"].startswith("Updated "))
+        self.assertIn("Ready bracket", regenerated["decision_summary"])
+        self.assertIn("overall width", regenerated["edited_plan_summary"].lower())
+        self.assertTrue(regenerated["editable_params"])
+        self.assertEqual(regenerated["last_regeneration_source"], "edited_plan:{}".format(base["generation_id"]))
+        self.assertEqual(regenerated["current_saved_model_id"], "saved-model-1")
+        self.assertTrue(regenerated["current_saved_model_editable"])
+        self.assertEqual(regenerated["last_opened_model_id"], "saved-model-1")
+        self.assertEqual(regenerated["reopen_source"], "saved_model")
+        self.assertIn("Reopened saved model", regenerated["reopened_plan_summary"])
+
+    def test_pipeline_invalid_edited_parameters_return_validation_failure(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            base = generate_model_request("make a phone stand 90 x 85 x 120 mm with 5mm thick walls and cable cutout", log=lambda _msg: None)
+            edited_plan = copy.deepcopy(base["plan"])
+            opening_index = next(
+                index for index, component in enumerate(edited_plan["components"])
+                if component.get("type") == "opening"
+            )
+            edited_plan["components"][opening_index]["params"]["width_mm"] = 1000
+            regenerated = generate_model_from_plan(
+                edited_plan,
+                log=lambda _msg: None,
+                source_generation_id=base["generation_id"],
+                source_request_text=base["request_text"],
+                source_plan=base["plan"],
+            )
+
+        self.assertEqual(regenerated["status"], "validation_failed")
+        self.assertEqual(regenerated["raw_status"], "invalid")
+        self.assertTrue(regenerated["message"])
+        self.assertIn("opening", regenerated["message"].lower())
+        self.assertEqual(regenerated["plan"]["components"][opening_index]["params"]["width_mm"], 1000)
+        self.assertTrue(regenerated["current_editable_params"])
+
+    def test_pipeline_phone_stand_recipe_identity_is_deterministic(self):
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", return_value={}
+        ), patch(
+            "app.backend.pipeline.save_state", return_value=Path("ignored")
+        ):
+            first = generate_model_request(
+                "make a phone stand 90 x 85 x 120 mm with 5mm thick walls and a cable cutout",
+                log=lambda _msg: None,
+            )
+            second = generate_model_request(
+                "make a phone stand 90 x 85 x 120 mm with 5mm thick walls and a cable cutout",
+                log=lambda _msg: None,
+            )
+
+        self.assertEqual(first["execution_recipe"], "phone_stand")
         self.assertEqual(first["implementation_id"], "phone_stand_cradle_v1")
-        self.assertEqual(second["family"], "panel_plate")
-        self.assertEqual(state["last_generation_family"], "panel_plate")
-        self.assertEqual(state["last_classification"]["family_key"], "panel_plate")
-        self.assertEqual(state["last_plan"]["family"], "panel_plate")
+        self.assertEqual(first["recipe"]["recipe_version"], "1.0")
+        self.assertEqual(first["recipe"]["source_recipe"], "phone_stand")
+        self.assertEqual(first["recipe"]["execution_recipe"], "phone_stand")
+        self.assertEqual(first["plan"]["construction_mode"], "constraint")
+        self.assertEqual(second["execution_recipe"], first["execution_recipe"])
+        self.assertEqual(second["implementation_id"], first["implementation_id"])
 
-    def test_classifier_prefers_cable_clip_for_wire_clip_language(self):
-        result = classify_request("Create a wire clip for a 10 mm cable with a mounting base")
-        self.assertEqual(result.status, "ready")
-        self.assertEqual(result.family_key, "cable_clip")
-        self.assertGreater(result.confidence, 0.5)
+    def test_pipeline_simple_phone_stand_uses_safe_defaults_and_records_assumptions(self):
+        state: dict = {}
 
-    def test_bracket_normalizer_supports_four_holes_and_gusset(self):
-        request = "Make a reinforced mounting bracket 120 x 30 x 80 mm with four 5 mm holes and 6 mm thickness"
-        classification = classify_request(request)
-        status, _, plan = normalize_request(request, classification)
-        self.assertEqual(status, "ready")
-        assert plan is not None
-        self.assertEqual(plan.family, "bracket")
-        self.assertEqual(plan.features["hole_count"], 4)
-        self.assertTrue(plan.features["gusset"])
+        def load_state() -> dict:
+            return dict(state)
 
-    def test_small_bracket_geometry_remains_stable(self):
-        plan = GenerationPlan(
-            family="bracket",
-            family_label="bracket",
-            recipe="bracket",
-            request_text="small bracket",
-            dimensions={"base_length_mm": 22.0, "flange_width_mm": 12.0, "vertical_height_mm": 18.0, "thickness_mm": 8.0},
-            features={"hole_diameter_mm": 4.0, "hole_count": 2, "gusset": False},
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request("simple phone stand", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["plan"]["dimensions"]["overall_width_mm"], 90.0)
+        self.assertTrue(result["assumptions"])
+        self.assertIn("smartphone-scale", " ".join(result["assumptions"]))
+        self.assertIn("phone_stand", result["interpretation_summary"])
+        self.assertIn("phone_stand", result["decision_summary"])
+        self.assertEqual(state["last_assumptions"], result["assumptions"])
+        self.assertEqual(state["last_missing_info"], [])
+
+    def test_pipeline_routes_low_poly_crate_to_compositional_mode(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request("simple sci-fi crate", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["plan"]["construction_mode"], "compositional")
+        self.assertEqual(result["plan"]["intent"]["object_type"], "crate")
+        self.assertTrue(result["plan"]["composition"])
+        self.assertEqual(result["plan"]["style"]["style_profile"], "sci_fi")
+        self.assertEqual(result["execution_recipe"], "crate")
+        self.assertEqual(result["implementation_id"], "crate_v1")
+        self.assertTrue(result["assumptions"])
+        self.assertIn("compositional", result["interpretation_summary"])
+        self.assertIn("style", result["style_summary"].lower())
+
+    def test_pipeline_routes_rounded_phone_stand_to_styled_constraint_mode(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request(
+                "rounded phone stand 90 x 85 x 120 mm with 5mm thick walls",
+                log=lambda _msg: None,
+            )
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["plan"]["construction_mode"], "constraint")
+        self.assertEqual(result["plan"]["style"]["style_profile"], "rounded")
+        self.assertIn("rounded", result["style_summary"].lower())
+        self.assertTrue(any(op["op"] == "apply_bevel" for op in result["recipe"]["ops"]))
+
+    def test_pipeline_routes_industrial_canister_with_mounting_tabs_to_hybrid_mode(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request("industrial canister with mounting tabs", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["plan"]["construction_mode"], "hybrid")
+        self.assertEqual(result["plan"]["style"]["style_profile"], "industrial")
+        self.assertIn("industrial", result["style_summary"].lower())
+        self.assertTrue(result["plan"]["hybrid_details"])
+        self.assertTrue(any(op["op"] == "apply_bevel" for op in result["recipe"]["ops"]))
+
+    def test_pipeline_falls_back_cleanly_for_unsupported_style_pair(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request("rounded bracket 120 x 40 x 90 mm with 4mm thick legs", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["plan"]["style"]["style_profile"], "minimal")
+        self.assertTrue(any("not supported" in warning for warning in result["warnings"]))
+        self.assertIn("minimal style", result["style_summary"].lower())
+
+    def test_pipeline_routes_crate_with_mounting_holes_to_hybrid_mode(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request("crate with mounting holes", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["plan"]["construction_mode"], "hybrid")
+        self.assertEqual(result["plan"]["intent"]["object_type"], "crate")
+        self.assertTrue(result["plan"]["composition"])
+        self.assertTrue(result["plan"]["hybrid_details"])
+        self.assertIn("hybrid", result["interpretation_summary"].lower())
+        self.assertIn("hybrid", result["decision_summary"].lower())
+        self.assertTrue(result["implementation_id"].endswith("_hybrid"))
+        self.assertEqual(result["execution_recipe"], "crate")
+
+    def test_pipeline_routes_pedestal_with_cable_slot_to_hybrid_mode(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request("pedestal with a cable slot", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["plan"]["construction_mode"], "hybrid")
+        self.assertEqual(result["plan"]["intent"]["object_type"], "pedestal")
+        self.assertTrue(result["plan"]["hybrid_details"])
+        self.assertEqual(result["plan"]["hybrid_details"][0]["type"], "slot")
+        self.assertIn("hybrid", result["interpretation_summary"].lower())
+
+    def test_pipeline_routes_sci_fi_enclosure_with_raised_cylinder_details_to_hybrid_mode(self):
+        state: dict = {}
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("app.backend.pipeline.save_generated_script"), patch(
+            "app.backend.pipeline.export_preview_model", return_value=(True, "Preview exported successfully.")
+        ), patch(
+            "app.backend.pipeline.add_saved_model_entry", return_value={"id": "saved-model-1"}
+        ), patch(
+            "app.backend.pipeline.load_state", side_effect=load_state
+        ), patch(
+            "app.backend.pipeline.save_state", side_effect=save_state
+        ):
+            result = generate_model_request("sci-fi enclosure with raised cylinder details", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "validation_failed")
+        self.assertEqual(result["raw_status"], "clarify")
+        self.assertEqual(result["plan"]["construction_mode"], "hybrid")
+        self.assertEqual(result["plan"]["intent"]["object_type"], "enclosure")
+        self.assertTrue(result["plan"]["hybrid_details"])
+        self.assertEqual(result["plan"]["hybrid_details"][0]["source_mode"], "compositional")
+        self.assertIn("hybrid", result["interpretation_summary"].lower())
+        self.assertIn("clarification", result["decision_summary"].lower())
+
+    def test_pipeline_parses_barrel_dimensions_into_compositional_plan(self):
+        interpreted = interpret_prompt_to_plan("barrel 60 x 60 x 100 mm")
+
+        self.assertEqual(interpreted["status"], "ready")
+        self.assertEqual(interpreted["plan"].construction_mode, "compositional")
+        self.assertEqual(interpreted["plan"].intent.object_type, "barrel")
+        self.assertEqual(interpreted["plan"].dimensions["overall_width_mm"], 60.0)
+        self.assertEqual(interpreted["plan"].dimensions["overall_height_mm"], 100.0)
+        self.assertTrue(interpreted["plan"].composition)
+
+    def test_pipeline_returns_clarification_for_incomplete_supported_request(self):
+        with patch("app.backend.pipeline.load_state", return_value={}), patch(
+            "app.backend.pipeline.save_state", return_value=Path("ignored")
+        ):
+            result = generate_model_request("make a bracket", log=lambda _msg: None)
+
+        self.assertEqual(result["status"], "validation_failed")
+        self.assertEqual(result["raw_status"], "clarify")
+        self.assertIn("Provide overall width", result["message"])
+        self.assertEqual(
+            result["missing_info"],
+            ["overall_width_mm", "overall_depth_mm", "overall_height_mm", "material_thickness_mm"],
         )
-        script = build_script(plan)
-        self.assertIn("JoinBracket", script)
-        self.assertIn("final_obj = base_leg", script)
-        self.assertIn("BaseHole", script)
-        self.assertNotIn("BracketBevel", script)
+        self.assertIn("Clarification needed", result["decision_summary"])
 
-    def test_adapter_normalizer_supports_reducer_language(self):
-        request = "Create an adapter reducer from 40 mm to 24 mm diameter, 50 mm long with 12 mm through hole"
-        classification = classify_request(request)
-        status, _, plan = normalize_request(request, classification)
-        self.assertEqual(status, "ready")
-        assert plan is not None
-        self.assertEqual(plan.family, "adapter")
-        self.assertEqual(plan.dimensions["large_diameter_mm"], 40.0)
-        self.assertEqual(plan.features["center_hole_mm"], 12.0)
+    def test_pipeline_parses_explicit_natural_language_dimensions(self):
+        interpreted = interpret_prompt_to_plan("make a 22mm wide wall bracket with a 4mm depth and a 22mm height")
 
-    def test_cable_clip_normalizer_supports_mount_hole(self):
-        request = "Create a cable clip for 10 mm cable with 30 mm width, 18 mm depth, 4 mm thickness, and 4 mm mount hole"
-        classification = classify_request(request)
-        status, _, plan = normalize_request(request, classification)
-        self.assertEqual(status, "ready")
-        assert plan is not None
-        self.assertEqual(plan.family, "cable_clip")
-        self.assertEqual(plan.features["mount_hole_mm"], 4.0)
-        self.assertEqual(plan.features["cable_diameter_mm"], 10.0)
+        self.assertEqual(interpreted["status"], "clarify")
+        self.assertEqual(interpreted["plan"].dimensions["overall_width_mm"], 22.0)
+        self.assertEqual(interpreted["plan"].dimensions["overall_depth_mm"], 4.0)
+        self.assertEqual(interpreted["plan"].dimensions["overall_height_mm"], 22.0)
+        self.assertNotIn("overall_width_mm", interpreted["missing_info"])
+        self.assertNotIn("overall_depth_mm", interpreted["missing_info"])
+        self.assertNotIn("overall_height_mm", interpreted["missing_info"])
+        self.assertIn("material_thickness_mm", interpreted["missing_info"])
 
-    def test_hook_mount_pipeline_returns_preview_payload(self):
-        with patch("app.backend.pipeline.save_generated_script") as save_script, patch(
-            "app.backend.pipeline.export_preview_model",
-            return_value=(True, "Preview exported successfully."),
-        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
-            "app.backend.pipeline.add_saved_model_entry",
-            return_value={"id": "saved-model-hook"},
+    def test_pipeline_parses_thickness_only_plate_prompt(self):
+        interpreted = interpret_prompt_to_plan("3mm thick plate")
+
+        self.assertEqual(interpreted["status"], "clarify")
+        self.assertEqual(interpreted["plan"].dimensions["material_thickness_mm"], 3.0)
+        self.assertIn("overall_width_mm", interpreted["missing_info"])
+        self.assertIn("overall_height_mm", interpreted["missing_info"])
+        self.assertNotIn("material_thickness_mm", interpreted["missing_info"])
+
+    def test_pipeline_parses_compact_three_axis_dimensions_for_supported_objects(self):
+        interpreted = interpret_prompt_to_plan("tray 120 x 80 x 20 mm")
+
+        self.assertEqual(interpreted["status"], "clarify")
+        self.assertEqual(interpreted["plan"].dimensions["overall_width_mm"], 120.0)
+        self.assertEqual(interpreted["plan"].dimensions["overall_depth_mm"], 80.0)
+        self.assertEqual(interpreted["plan"].dimensions["overall_height_mm"], 20.0)
+        self.assertIn("material_thickness_mm", interpreted["missing_info"])
+
+    def test_pipeline_prefers_labeled_dimensions_over_compact_patterns(self):
+        interpreted = interpret_prompt_to_plan("bracket 120 x 80 x 20 mm width of 22mm")
+
+        self.assertEqual(interpreted["status"], "clarify")
+        self.assertEqual(interpreted["plan"].dimensions["overall_width_mm"], 22.0)
+        self.assertEqual(interpreted["plan"].dimensions["overall_depth_mm"], 80.0)
+        self.assertEqual(interpreted["plan"].dimensions["overall_height_mm"], 20.0)
+        self.assertIn("material_thickness_mm", interpreted["missing_info"])
+
+    def test_pipeline_rejects_unsupported_sculptural_request(self):
+        with patch("app.backend.pipeline.load_state", return_value={}), patch(
+            "app.backend.pipeline.save_state", return_value=Path("ignored")
         ):
-            result = generate_model_request("make a wall hook", log=lambda _msg: None)
-
-        save_script.assert_called_once()
-        self.assertEqual(save_state.call_count, 2)
-        self.assertEqual(result["status"], "ready")
-        self.assertEqual(result["family"], "hook_mount")
-        self.assertEqual(result["preview_export_status"], "ready")
-        self.assertEqual(result["final_model_path"], result["preview_model_path"])
-        self.assertEqual(result["output_source"], "recipe")
-        self.assertEqual(result["generation_path"], "recipe")
-        self.assertEqual(result["generation_route"], "recipe_success")
-        self.assertEqual(result["implementation_id"], "hook_mount_wall_hook_v1")
-        self.assertEqual(result["execution_recipe"], "hook_mount")
-        self.assertTrue(result["preview_model_url"].startswith("file:///"))
-
-    def test_pipeline_returns_preview_payload_for_bracket(self):
-        with patch("app.backend.pipeline.save_generated_script") as save_script, patch(
-            "app.backend.pipeline.export_preview_model",
-            return_value=(True, "Preview exported successfully."),
-        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
-            "app.backend.pipeline.add_saved_model_entry",
-            return_value={"id": "saved-model-2"},
-        ):
-            result = generate_model_request("Make a bracket 120 x 30 x 80 mm with four 5 mm holes and 6 mm thickness", log=lambda _msg: None)
-
-        save_script.assert_called_once()
-        self.assertEqual(save_state.call_count, 2)
-        self.assertEqual(result["status"], "ready")
-        self.assertEqual(result["family"], "bracket")
-        self.assertEqual(result["preview_export_status"], "ready")
-        self.assertEqual(result["final_model_path"], result["preview_model_path"])
-        self.assertEqual(result["output_source"], "recipe")
-        self.assertEqual(result["generation_path"], "recipe")
-        self.assertEqual(result["generation_route"], "recipe_success")
-        self.assertEqual(result["implementation_id"], "bracket_body_v1")
-        self.assertEqual(result["execution_recipe"], "bracket")
-        self.assertTrue(result["preview_model_url"].startswith("file:///"))
-
-    def test_pipeline_returns_preview_payload_for_golden_bracket_prompt(self):
-        with patch("app.backend.pipeline.save_generated_script") as save_script, patch(
-            "app.backend.pipeline.export_preview_model",
-            return_value=(True, "Preview exported successfully."),
-        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
-            "app.backend.pipeline.add_saved_model_entry",
-            return_value={"id": "saved-model-golden"},
-        ):
-            result = generate_model_request("make a bracket 120 x 40 x 90 mm", log=lambda _msg: None)
-
-        save_script.assert_called_once()
-        self.assertEqual(save_state.call_count, 2)
-        self.assertEqual(result["status"], "ready")
-        self.assertEqual(result["family"], "bracket")
-        self.assertEqual(result["preview_export_status"], "ready")
-        self.assertEqual(result["output_source"], "recipe")
-        self.assertEqual(result["generation_path"], "recipe")
-        self.assertEqual(result["generation_route"], "recipe_success")
-        self.assertEqual(result["implementation_id"], "bracket_body_v1")
-        self.assertEqual(result["execution_recipe"], "bracket")
-        self.assertTrue(result["preview_model_url"].startswith("file:///"))
-
-    def test_pipeline_returns_generation_identity_for_nonready_result(self):
-        with patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state:
-            result = generate_model_request("Make me a dragon sculpture", log=lambda _msg: None)
+            result = generate_model_request("Make me a dragon statue with mounting holes 120 x 80 x 20 mm", log=lambda _msg: None)
 
         self.assertEqual(result["status"], "unsupported")
-        self.assertTrue(result["is_terminal"])
-        self.assertTrue(result["generation_id"].startswith("gen-"))
-        self.assertEqual(result["request_text"], "Make me a dragon sculpture")
-        self.assertEqual(result["final_model_path"], "")
-        self.assertEqual(result["output_source"], "")
-        saved_state = save_state.call_args.args[0]
-        self.assertEqual(saved_state["last_generation_id"], result["generation_id"])
-        self.assertEqual(saved_state["last_preview_asset_version"], "")
+        self.assertEqual(result["raw_status"], "unsupported")
+        self.assertFalse(result["execution_path"])
+        self.assertFalse(result["recipe"])
+        self.assertIn("outside the current supported object vocabulary", result["interpretation_summary"])
 
-    def test_pipeline_returns_ready_when_preview_export_fails(self):
-        with patch("app.backend.pipeline.save_generated_script"), patch(
-            "app.backend.pipeline.export_preview_model",
-            return_value=(False, "Preview export failed."),
-        ), patch("app.backend.pipeline.load_state", return_value={}), patch("app.backend.pipeline.save_state") as save_state, patch(
-            "app.backend.pipeline.add_saved_model_entry",
-            return_value={"id": "saved-model-3"},
-        ) as add_saved_model_entry:
-            result = generate_model_request("Create a 120 x 80 x 50 mm enclosure with 3 mm walls", log=lambda _msg: None)
+    def test_interpret_prompt_to_plan_returns_plan_v1_object(self):
+        interpreted = interpret_prompt_to_plan("make a phone stand 90 x 85 x 120 mm with 5mm thick walls and cable cutout")
+        self.assertEqual(interpreted["status"], "ready")
+        self.assertEqual(interpreted["plan"].intent.object_type, "phone_stand")
+        self.assertTrue(any(component.type == "retaining_lip" for component in interpreted["plan"].components))
+        self.assertFalse(interpreted["missing_info"])
 
-        self.assertEqual(result["status"], "ready")
-        self.assertEqual(result["preview_export_status"], "error")
-        self.assertEqual(result["preview_model_path"], "")
-        self.assertEqual(result["preview_export_message"], "Preview export failed.")
-        self.assertEqual(result["generation_path"], "recipe")
-        self.assertEqual(result["generation_route"], "recipe_success")
-        self.assertEqual(result["implementation_id"], "enclosure_open_top_shell_v1")
-        self.assertEqual(result["execution_recipe"], "box_shell")
-        saved_state_payload = save_state.call_args.args[0]
-        self.assertEqual(saved_state_payload["last_generation_status"], "ready")
-        self.assertEqual(saved_state_payload["last_preview_export_status"], "error")
-        self.assertEqual(saved_state_payload["last_implementation_id"], "enclosure_open_top_shell_v1")
-        self.assertEqual(add_saved_model_entry.call_args.kwargs["implementation_id"], "enclosure_open_top_shell_v1")
-        self.assertEqual(add_saved_model_entry.call_args.kwargs["execution_recipe"], "box_shell")
-
-    def test_pipeline_returns_error_when_generation_raises(self):
-        unsupported_execution = RecipeExecutionResult(
-            executed=False,
-            fallback_required=True,
-            warnings=[],
-            unsupported_ops=["hole_pattern"],
-            unsupported_reasons=["Unsupported recipe op: hole_pattern."],
-            execution_path="legacy",
-            summary="Legacy fallback required for unsupported recipe execution details.",
-        )
-        with patch("app.backend.pipeline.execute_recipe", return_value=unsupported_execution), patch(
-            "app.backend.pipeline.build_script",
-            side_effect=RuntimeError("script build exploded"),
-        ), patch(
-            "app.backend.pipeline.load_state",
-            return_value={},
-        ), patch("app.backend.pipeline.save_state") as save_state:
-            result = generate_model_request("Create a 120 x 80 x 50 mm enclosure with 3 mm walls", log=lambda _msg: None)
-
-        self.assertEqual(result["status"], "error")
-        self.assertEqual(result["raw_status"], "error")
-        self.assertTrue(result["is_terminal"])
-        self.assertEqual(result["preview_export_status"], "not_requested")
-        self.assertEqual(result["generation_path"], "")
-        self.assertEqual(result["generation_route"], "")
-        saved_state_payload = save_state.call_args.args[0]
-        self.assertEqual(saved_state_payload["last_generation_status"], "error")
-        self.assertEqual(saved_state_payload["last_generation_raw_status"], "error")
-
-    def test_backend_controller_surfaces_terminal_status_fields(self):
-        controller = BackendController()
-        mocked_state = {
-            "last_generation_id": "gen-test-1",
-            "last_generated_script_path": "blender/generated_model.py",
-            "last_preview_model_path": "",
-            "last_preview_asset_version": "",
-            "last_preview_export_status": "error",
-            "last_preview_export_message": "Preview export failed.",
-            "last_user_request": "make something unsupported",
-            "last_generation_family": "",
-            "last_generation_status": "unsupported",
-            "last_generation_raw_status": "unsupported",
-            "last_generation_message": "Unsupported request.",
-            "last_generation_timestamp": "2026-04-07T12:00:00",
-            "last_validation_summary": "Unsupported request.",
-            "last_plan": {},
-            "last_validation": {},
-            "last_classification": {},
-            "last_saved_model_entry": {},
-            "last_run_status": "unsupported",
-            "last_generation_path": "recipe",
-            "last_generation_route": "recipe_success",
-            "last_generation_fallback_reason": "",
-            "last_implementation_id": "panel_plate_v1",
-            "last_execution_recipe": "panel_plate",
-        }
-        with patch("desktop.backend_controller.load_state", return_value=mocked_state), patch(
-            "desktop.backend_controller.get_library_summary",
-            return_value={"saved_model_count": 0, "recent_saved_models": [], "project_count": 0, "template_count": 0, "templates": []},
-        ), patch.object(controller, "refresh_runtime_health", return_value={"runtime_health_status": "setup_required"}):
-            status = controller.get_status()
-
-        self.assertEqual(status.generation_id, "gen-test-1")
-        self.assertEqual(status.last_generation_status, "unsupported")
-        self.assertEqual(status.last_generation_raw_status, "unsupported")
-        self.assertEqual(status.last_generation_path, "recipe")
-        self.assertEqual(status.last_generation_route, "recipe_success")
-        self.assertEqual(status.last_implementation_id, "panel_plate_v1")
-        self.assertEqual(status.last_execution_recipe, "panel_plate")
-        self.assertEqual(status.preview_export_status, "error")
-
-    def test_state_defaults_include_runtime_setup_fields(self):
-        required_keys = {
-            "setup_completed",
-            "first_run_completed",
-            "ollama_installed",
-            "ollama_running",
-            "ollama_version",
-            "ollama_model_name",
-            "ollama_model_ready",
-            "blender_detected",
-            "blender_path",
-            "runtime_health_status",
-            "runtime_health_message",
-            "last_final_model_path",
-            "last_output_source",
-        }
-        self.assertTrue(required_keys.issubset(DEFAULT_STATE))
-
-    def test_windows_path_normalizes_to_file_url(self):
-        raw_path = r"C:\Users\Studl\geomancer\geomancer\data\previews\generated_preview_xxx.glb"
-        self.assertEqual(
-            to_file_url(raw_path),
-            "file:///C:/Users/Studl/geomancer/geomancer/data/previews/generated_preview_xxx.glb",
-        )
-
-    def test_saved_model_open_uses_persisted_final_artifact(self):
-        controller = BackendController()
-        saved_models = [
-            {
-                "id": "saved-model-1",
-                "preview_model_path": "C:/models/generated_preview.glb",
-                "final_model_path": "C:/models/generated_preview.glb",
-                "script_path": "C:/models/generated_model.py",
-            }
-        ]
-        with patch("desktop.backend_controller.list_saved_models", return_value=saved_models), patch(
-            "desktop.backend_controller.open_generated_model_file",
-            return_value=(True, "Opened artifact."),
-        ) as open_artifact, patch(
-            "desktop.backend_controller.run_generated_script",
-            return_value=(True, "Opened script."),
-        ) as run_script, patch.object(
-            controller,
-            "get_runtime_health",
-            return_value={"blender_detected": True, "runtime_health_message": "ready"},
-        ):
-            result = controller.open_saved_model_in_blender("saved-model-1")
-
-        self.assertTrue(result["success"])
-        open_artifact.assert_called_once()
-        run_script.assert_not_called()
-
-    def test_open_generated_model_file_imports_glb_via_temporary_script(self):
-        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as handle:
-            model_path = Path(handle.name)
-
-        try:
-            with patch("app.blender_runner.get_blender_path", return_value=Path(__file__)), patch(
-                "app.blender_runner.subprocess.run"
-            ) as run_mock:
-                run_mock.return_value = type("Result", (), {"returncode": 0, "stderr": "", "stdout": ""})()
-
-                success, message = open_generated_model_file(model_path, interactive=False)
-
-            self.assertTrue(success)
-            self.assertIn("Blender completed successfully", message)
-            run_mock.assert_called_once()
-            command = run_mock.call_args.args[0]
-            self.assertIn("--python", command)
-            self.assertFalse(any(str(model_path) == arg for arg in command))
-            self.assertTrue(any(str(arg).endswith("_geomancer_model_open.py") for arg in command))
-        finally:
-            model_path.unlink(missing_ok=True)
+        validation = validate_plan(interpreted["plan"])
+        recipe_result = build_deterministic_recipe(validation.normalized_plan)
+        execution = execute_recipe(recipe_result.normalized_recipe)
+        self.assertTrue(execution.executed)
 
 
 if __name__ == "__main__":

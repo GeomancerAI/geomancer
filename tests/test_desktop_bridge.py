@@ -28,15 +28,31 @@ class FakeController:
             "last_generation_message": "",
             "last_generation_timestamp": datetime(2026, 4, 7, 12, 0, 0),
             "last_validation_summary": "ok",
+            "last_style_summary": "Applied sci-fi style with panelized forms.",
+            "current_editable_params": [{"id": "dimension:overall_width_mm", "label": "Overall Width"}],
+            "last_editable_params": [{"id": "dimension:overall_width_mm", "label": "Overall Width"}],
+            "last_regeneration_source": "edited_plan:gen-status-1",
+            "edited_plan_summary": "Updated Overall Width 90 mm -> 110 mm.",
+            "current_saved_model_id": "saved-1",
+            "current_saved_model_editable": True,
+            "last_opened_model_id": "saved-1",
+            "reopen_source": "saved_model",
+            "reopened_plan_summary": "Reopened saved model saved-1 for editing.",
             "last_plan": {"dims": {1, 2}},
             "last_validation": {"items": ("a", "b")},
             "last_classification": {"exc": ValueError("bad")},
             "last_saved_model_entry": {"path": Path("data/example.glb")},
+            "last_final_model_path": Path("data/example.glb"),
+            "last_final_model_url": "file:///data/example.glb",
             "last_generation_path": "recipe",
             "last_generation_route": "recipe_success",
             "last_generation_fallback_reason": "",
             "last_implementation_id": "panel_plate_v1",
             "last_execution_recipe": "panel_plate",
+            "last_stl_export_path": "data/exports/example.stl",
+            "last_stl_export_status": "not_requested",
+            "last_stl_export_message": "",
+            "last_stl_source_model_path": "data/example.glb",
             "library_summary": {"templates": {"a", "b"}, "recent_saved_models": ()},
             "last_run_status": "ready",
             "setup_completed": False,
@@ -64,6 +80,16 @@ class FakeController:
     def refresh_runtime_health(self):
         return {"runtime_health_status": "ready", "runtime_health_message": "Runtime is healthy."}
 
+    def open_saved_model_for_workspace(self, model_id):
+        return {
+            "success": True,
+            "message": "Saved model reopened for editing.",
+            "model_id": model_id,
+            "is_editable": True,
+            "editable_params": [{"id": "dimension:overall_width_mm", "label": "Overall Width"}],
+            "state": self.get_status_payload(),
+        }
+
     def maybe_detect_or_repair_environment(self):
         return self.refresh_runtime_health()
 
@@ -74,6 +100,28 @@ class FakeController:
         if progress_callback is not None:
             progress_callback({"status": "success", "model": model_name, "done": True})
         return {"pull_result": {"model_name": model_name, "done": True}, "runtime_health": self.refresh_runtime_health()}
+
+    def export_current_model_stl(self):
+        source_path = self.status_payload.get("last_final_model_path") or ""
+        if not source_path:
+            return {
+                "success": False,
+                "message": "No final model artifact is available for STL export.",
+                "export_status": "unavailable",
+                "stl_path": "",
+                "source_model_path": "",
+                "generation_id": self.status_payload.get("generation_id", ""),
+                "saved_model_id": (self.status_payload.get("last_saved_model_entry") or {}).get("id", ""),
+            }
+        return {
+            "success": True,
+            "message": "STL exported successfully to data/exports/example.stl.",
+            "export_status": "ready",
+            "stl_path": "data/exports/example.stl",
+            "source_model_path": str(source_path),
+            "generation_id": self.status_payload.get("generation_id", ""),
+            "saved_model_id": (self.status_payload.get("last_saved_model_entry") or {}).get("id", ""),
+        }
 
     def clean_dev_reload(self, log=None):
         if log is not None:
@@ -144,12 +192,22 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertEqual(payload["lastGenerationTimestamp"], "2026-04-07T12:00:00")
         self.assertEqual(payload["lastPlan"], {"dims": [1, 2]})
         self.assertEqual(payload["lastValidation"], {"items": ["a", "b"]})
+        self.assertEqual(payload["lastStyleSummary"], "Applied sci-fi style with panelized forms.")
+        self.assertEqual(payload["currentSavedModelId"], "saved-1")
+        self.assertTrue(payload["currentSavedModelEditable"])
+        self.assertEqual(payload["lastOpenedModelId"], "saved-1")
+        self.assertEqual(payload["reopenSource"], "saved_model")
+        self.assertEqual(payload["reopenedPlanSummary"], "Reopened saved model saved-1 for editing.")
         self.assertEqual(payload["lastSavedModelEntry"], {"path": str(Path("data/example.glb"))})
         self.assertEqual(payload["lastGenerationPath"], "recipe")
         self.assertEqual(payload["lastGenerationRoute"], "recipe_success")
         self.assertEqual(payload["lastGenerationFallbackReason"], "")
         self.assertEqual(payload["lastImplementationId"], "panel_plate_v1")
         self.assertEqual(payload["lastExecutionRecipe"], "panel_plate")
+        self.assertEqual(payload["currentEditableParams"], [{"id": "dimension:overall_width_mm", "label": "Overall Width"}])
+        self.assertEqual(payload["lastEditableParams"], [{"id": "dimension:overall_width_mm", "label": "Overall Width"}])
+        self.assertEqual(payload["lastRegenerationSource"], "edited_plan:gen-status-1")
+        self.assertEqual(payload["editedPlanSummary"], "Updated Overall Width 90 mm -> 110 mm.")
         self.assertEqual(payload["runtimeHealthStatus"], "ready")
         self.assertEqual(payload["runtimeHealth"]["runtime_health_status"], "ready")
 
@@ -193,6 +251,82 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertEqual(payload["execution_recipe"], "phone_stand")
         self.assertEqual(payload["implementation_id"], "phone_stand_cradle_v1")
         self.assertEqual(payload["output_source"], "recipe")
+        self.assertEqual(payload["current_editable_params"], [])
+        self.assertEqual(payload["last_editable_params"], [])
+        self.assertEqual(payload["last_regeneration_source"], "")
+        self.assertEqual(payload["edited_plan_summary"], "")
+
+    def test_terminal_payload_preserves_edit_regeneration_fields(self):
+        controller = FakeController()
+        bridge = GeomancerBridge(controller=controller)
+
+        payload = bridge._normalize_terminal_payload(
+            {
+                "generation_id": "gen-phone-1",
+                "request_text": "make a phone stand",
+                "status": "ready",
+                "raw_status": "ready",
+                "is_terminal": True,
+                "message": "",
+                "editable_params": [{"id": "dimension:overall_width_mm"}],
+                "current_editable_params": [{"id": "dimension:overall_width_mm"}],
+                "last_editable_params": [{"id": "dimension:overall_width_mm"}],
+                "last_regeneration_source": "edited_plan:gen-phone-1",
+                "edited_plan_summary": "Updated Overall Width 90 mm -> 110 mm.",
+                "generation_path": "recipe",
+                "generation_route": "recipe_success",
+                "generation_fallback_reason": "",
+                "execution_recipe": "phone_stand",
+                "implementation_id": "phone_stand_cradle_v1",
+                "output_source": "recipe",
+                "preview_export_status": "ready",
+                "preview_model_path": "data/previews/generated_preview.glb",
+            }
+        )
+
+        self.assertEqual(payload["editable_params"], [{"id": "dimension:overall_width_mm"}])
+        self.assertEqual(payload["current_editable_params"], [{"id": "dimension:overall_width_mm"}])
+        self.assertEqual(payload["last_editable_params"], [{"id": "dimension:overall_width_mm"}])
+        self.assertEqual(payload["last_regeneration_source"], "edited_plan:gen-phone-1")
+        self.assertEqual(payload["edited_plan_summary"], "Updated Overall Width 90 mm -> 110 mm.")
+
+    def test_export_current_model_as_stl_uses_final_model_artifact(self):
+        controller = FakeController()
+        controller.status_payload["last_final_model_path"] = Path("data/previews/final_model.glb")
+        controller.status_payload["last_preview_model_path"] = Path("data/previews/preview_only.glb")
+        bridge = GeomancerBridge(controller=controller)
+
+        payload = json.loads(bridge.exportCurrentModelAsStl())
+
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["source_model_path"], str(Path("data/previews/final_model.glb")))
+        self.assertEqual(payload["stl_path"], "data/exports/example.stl")
+
+    def test_export_current_model_as_stl_fails_without_final_model(self):
+        controller = FakeController()
+        controller.status_payload["last_final_model_path"] = ""
+        controller.status_payload["last_preview_model_path"] = Path("data/previews/preview_only.glb")
+        bridge = GeomancerBridge(controller=controller)
+
+        payload = json.loads(bridge.exportCurrentModelAsStl())
+
+        self.assertFalse(payload["success"])
+        self.assertEqual(payload["export_status"], "unavailable")
+        self.assertEqual(payload["source_model_path"], "")
+
+    def test_open_saved_model_for_workspace_preserves_editable_restore_state(self):
+        controller = FakeController()
+        bridge = GeomancerBridge(controller=controller)
+
+        payload = json.loads(bridge.openSavedModelForWorkspace("saved-1"))
+
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["model_id"], "saved-1")
+        self.assertTrue(payload["is_editable"])
+        self.assertEqual(payload["state"]["current_saved_model_id"], "saved-1")
+        self.assertTrue(payload["state"]["current_saved_model_editable"])
+        self.assertEqual(payload["state"]["last_opened_model_id"], "saved-1")
+        self.assertEqual(payload["state"]["reopen_source"], "saved_model")
 
     def test_clean_dev_reload_payload_is_preserved_by_bridge(self):
         controller = FakeController()
@@ -207,6 +341,59 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertEqual(payload["pycache_directories_cleared"], 1)
         self.assertTrue(any("Cleared preview artifact" in entry for entry in logs))
         self.assertTrue(any("UI reload triggered." in entry for entry in logs))
+
+
+class BackendControllerStlExportTests(unittest.TestCase):
+    def test_export_current_model_stl_fails_without_final_artifact(self):
+        controller = BackendController()
+        state = {
+            "last_final_model_path": "",
+            "last_preview_model_path": "data/previews/preview_only.glb",
+            "last_saved_model_entry": {},
+            "last_generation_id": "gen-1",
+        }
+
+        with patch("desktop.backend_controller.load_state", return_value=state), patch.object(
+            controller,
+            "get_runtime_health",
+            return_value={"blender_detected": True, "runtime_health_message": "Runtime is healthy."},
+        ), patch("desktop.backend_controller.export_model_to_stl") as export_mock, patch(
+            "desktop.backend_controller.save_state"
+        ) as save_state:
+            result = controller.export_current_model_stl()
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["export_status"], "unavailable")
+        export_mock.assert_not_called()
+        save_state.assert_called_once()
+
+    def test_export_current_model_stl_uses_final_artifact_not_preview(self):
+        controller = BackendController()
+        state = {
+            "last_final_model_path": "data/previews/final_model.glb",
+            "last_preview_model_path": "data/previews/preview_only.glb",
+            "last_saved_model_entry": {"id": "saved-1"},
+            "last_generation_id": "gen-1",
+        }
+
+        with patch("desktop.backend_controller.load_state", return_value=state), patch.object(
+            controller,
+            "get_runtime_health",
+            return_value={"blender_detected": True, "runtime_health_message": "Runtime is healthy."},
+        ), patch("desktop.backend_controller.export_model_to_stl", return_value=(True, "STL exported successfully.")) as export_mock, patch(
+            "desktop.backend_controller.update_saved_model_entry",
+            return_value={"id": "saved-1", "stl_export_status": "ready"},
+        ), patch("pathlib.Path.exists", return_value=True), patch("desktop.backend_controller.save_state") as save_state:
+            result = controller.export_current_model_stl()
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["export_status"], "ready")
+        self.assertEqual(Path(result["source_model_path"]), Path("data/previews/final_model.glb"))
+        export_args = export_mock.call_args.args
+        self.assertEqual(Path(export_args[0]), Path("data/previews/final_model.glb"))
+        self.assertEqual(Path(export_args[1]).name, "final_model.stl")
+        self.assertEqual(Path(export_args[1]).parent.name, "exports")
+        save_state.assert_called_once()
 
     def test_run_generation_job_returns_failure_payload_and_logs(self):
         controller = FakeController()
@@ -233,6 +420,77 @@ class DesktopBridgeTests(unittest.TestCase):
         self.assertEqual(bridge._active_request_text, "make a plate")
         submit_mock.assert_called_once()
         self.assertTrue(any("submitting generation job" in entry for entry in logs))
+
+    def test_regenerate_from_plan_submits_executor_job(self):
+        controller = FakeController()
+        bridge = GeomancerBridge(controller=controller)
+        logs = []
+        bridge.logMessage.connect(logs.append)
+        submitted_future = Future()
+        plan_payload = {
+            "plan": {
+                "request_text": "make a plate",
+                "intent": {"object_type": "plate"},
+                "construction_mode": "constraint",
+                "dimensions": {"overall_width_mm": 120, "overall_height_mm": 80, "material_thickness_mm": 4},
+            },
+            "source_generation_id": "gen-1",
+            "source_request_text": "make a plate",
+            "source_plan": {"request_text": "make a plate"},
+            "edited_plan_summary": "Updated Overall Width 120 mm -> 140 mm.",
+            "regeneration_source": "ui_edit",
+        }
+
+        with patch.object(bridge._generation_executor, "submit", return_value=submitted_future) as submit_mock:
+            bridge.regenerateFromPlan(json.dumps(plan_payload))
+
+        self.assertIs(bridge._active_generation_future, submitted_future)
+        submit_mock.assert_called_once()
+        self.assertTrue(any("regenerateFromPlan slot entered" in entry for entry in logs))
+
+    def test_open_saved_model_for_workspace_marks_artifact_only_entries_view_only(self):
+        controller = BackendController()
+        state = {}
+        saved_models = [
+            {
+                "id": "saved-view-only",
+                "generation_id": "gen-view-only",
+                "prompt": "artifact only",
+                "family": "crate",
+                "family_label": "Crate",
+                "plan": {},
+                "validation_summary": "Artifact-only entry.",
+                "editable_params": [],
+                "is_editable": False,
+                "editable_plan_available": False,
+                "preview_model_path": "data/previews/generated_preview.glb",
+                "final_model_path": "data/previews/final_model.glb",
+            }
+        ]
+
+        def load_state() -> dict:
+            return dict(state)
+
+        def save_state(payload: dict) -> Path:
+            state.clear()
+            state.update(payload)
+            return Path("ignored")
+
+        with patch("desktop.backend_controller.list_saved_models", return_value=saved_models), patch(
+            "desktop.backend_controller.load_state", side_effect=load_state
+        ), patch("desktop.backend_controller.save_state", side_effect=save_state), patch.object(
+            controller,
+            "get_runtime_health",
+            return_value={"blender_detected": True, "runtime_health_message": "Runtime is healthy."},
+        ):
+            result = controller.open_saved_model_for_workspace("saved-view-only")
+
+        self.assertTrue(result["success"])
+        self.assertFalse(result["is_editable"])
+        self.assertEqual(result["editable_params"], [])
+        self.assertEqual(state["current_saved_model_id"], "saved-view-only")
+        self.assertFalse(state["current_saved_model_editable"])
+        self.assertEqual(state["reopen_source"], "saved_model")
 
     def test_generate_model_rejects_when_job_is_active(self):
         controller = FakeController()

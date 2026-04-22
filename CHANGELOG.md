@@ -17,9 +17,215 @@ Use this pattern going forward:
 - Keep the stage suffix explicit while the project is pre-release, for example `0.4.0-alpha`.
 - Add a milestone label for each notable pass, for example `backend-pipeline-cleanup` or `desktop-bridge-contract-pass-1`.
 
+## 2026-04-22 - 0.8.0-alpha - capability-expansion-release
+
+### Summary
+- [H1] Hybrid generation is now a first-class deterministic path alongside functional and compositional generation.
+- [S1] A deterministic style system now applies bounded visual language across supported builds.
+- [P1] The right rail now supports bounded parameter editing and deterministic regenerate-from-plan behavior.
+- [R1] Saved models can reopen into truthful editable workspace context when plan data is available.
+- [R4] Artifact-only or incomplete saved models remain view-only rather than being mislabeled as editable.
+- The desktop payload, persisted state, export truth, and observability contract remain intact.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-22 - saved-model-reopen-edit-workflow
+
+### Summary
+- [R1] Saved model entries now preserve enough structured plan/context metadata to reopen truthful edit surfaces when a saved model is actually editable.
+- [R2] Opening a saved model in Workspace now restores the current plan, observability summaries, and saved-model provenance so the edit panel can reappear without inventing context.
+- [R3] Reopened editable models can regenerate through the same deterministic validate -> recipe -> execute pipeline as in-session edits.
+- [R4] Artifact-only or incomplete saved models are handled honestly as view-only instead of being relabeled as editable.
+- [R5] Export truth and observability truth remain tied to the restored or regenerated final artifact.
+- Desktop payload and persisted state contracts remain unchanged.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-22 - parameter-edit-regenerate-workflow
+
+### Summary
+- [P1] Exposed a bounded editable parameter surface derived from the current interpreted plan so users can adjust supported dimensions, style, and selected features without raw JSON editing.
+- [P2] Added a deterministic regenerate-from-plan workflow that routes edited plans back through the same validator, recipe builder, executor, and preview/export pipeline.
+- [P3] Kept edit handling validation-aware so invalid parameter changes still return honest clarification or validation failures rather than silently mutating geometry.
+- [P4] Added right-rail edit controls and regenerate/reset actions inside the existing observability/actions layout without changing the desktop contract.
+- [P5] Persisted edited-plan metadata and editable parameter state so the desktop can restore the last truthful edit surface after refresh or restart.
+- Desktop payload and persisted state contracts remain unchanged.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-22 - deterministic-style-system
+
+### Summary
+- [S1] Added an explicit deterministic style layer to Plan Schema v1 so supported plans can carry bounded style profiles and derived style metadata.
+- [S2] Updated prompt interpretation to route supported style signals like `sci-fi`, `industrial`, `low poly`, and `rounded` into the plan when they are supported for the selected object type.
+- [S3] Added style compatibility validation so unsupported object/style pairings fall back honestly with clear warnings and normalized style metadata.
+- [S4] Extended recipe building and execution with deterministic style modifiers such as beveling and style-sensitive primitive templates.
+- [S5] Style summaries now flow through interpretation, validation, build, and desktop observability state so the right rail can explain the applied visual language.
+- Desktop payload and persisted state contracts remain unchanged.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-22 - hybrid-constraint-compositional-generation
+
+### Summary
+- [H1] Added a bounded hybrid plan layer so a single plan can combine a primary functional or compositional base with supported secondary details.
+- [H2] Updated prompt interpretation to route mixed prompts like functional parts with decorative accents or compositional props with mounting features into the hybrid path when supported.
+- [H3] Extended validation to enforce a narrow supported hybrid matrix while keeping unsupported combinations honest.
+- [H4] Extended recipe building to emit deterministic hybrid ops through the same recipe pipeline and executor.
+- [H5] Hybrid builds now surface clearly in interpretation, decision, and build summaries without changing the desktop payload/state contract.
+- Desktop payload and persisted state contracts remain unchanged.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-22 - capability-aware-ux-guidance
+
+### Summary
+- [U1] Refined Workspace prompt guidance and example prompts so the composer now surfaces both practical functional objects and bounded compositional props.
+- [U2] Updated idle and empty-state copy to describe the expanded capability surface without overclaiming beyond the current supported modes.
+- [U3] Polished unsupported and clarification wording so they feel calmer, more actionable, and consistent with the plan-first backend contract.
+- [U4] Adjusted right-rail wording and build-path labeling so functional and compositional outputs read naturally in the same observability surface.
+- [U5] Improved discoverability of supported prompt types through compact helper copy and mixed example prompts.
+- Desktop payload and persisted state contracts remain unchanged.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-21 - compositional-geometry-foundation
+
+### Summary
+- [X1] Added an explicit `construction_mode` to Plan Schema v1 so plans can distinguish constraint-driven parts from compositional assets.
+- [X2] Added typed compositional plan items and deterministic template support for simple assets such as crates, barrels, canisters, pedestals, and primitive assemblies.
+- [X3] Updated prompt interpretation to route supported simple asset requests into compositional mode while keeping sculptural/organic requests unsupported.
+- [X4] Extended validation to handle compositional plans with deterministic primitive-item checks and envelope bounds while preserving strict constraint-mode validation.
+- [X5] Extended recipe building and execution to deterministically emit compositional primitive geometry through the existing recipe pipeline.
+- Desktop payload and persisted state contracts remain unchanged.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+- `python -m unittest tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-21 - stl-export-right-rail-action
+
+### Summary
+- [E5] Stabilized STL export around the current final model artifact so the app distinguishes preview, final, and exported STL truth cleanly.
+- Added an `Export STL` action to the Workspace right rail and wired it through the desktop bridge/controller path with honest success, unavailable, and failure states.
+- Preserved the existing desktop payload/state contract while adding STL export metadata for readiness, status, message, and source artifact tracking.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+- `python -m unittest tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-21 - backend-natural-language-dimensions
+
+### Summary
+- [B2] Natural-language dimension phrases such as `22mm wide`, `4mm depth`, `22mm height`, and `3mm thick` now map into canonical Plan v1 dimension fields during interpretation.
+- [B3] Clarification output now narrows to only the truly missing dimensions when partial size information is provided.
+- [C5] Compact dimension forms like `120 x 80 x 20 mm` are parsed conservatively for supported object types, while labeled dimensions take priority over ambiguous compact forms.
+- [G1] Interpretation now preserves partially recognized dimensions in the draft plan so the backend can explain exactly what it understood.
+- Desktop payload and persisted state contract remain unchanged.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+
+## 2026-04-21 - desktop-observability-right-rail
+
+### Summary
+- [G4] Surfaced interpretation, decision, validation, missing-info, assumption, warning, and build metadata in the existing Workspace right rail.
+- [G5] Upgraded the right rail with compact observability cards so clarification, unsupported, success, and error states explain themselves without dumping raw JSON.
+- Persisted backend metadata now renders from both fresh generation payloads and restored shell state.
+- Preserved the existing workspace layout, viewer balance, and desktop bridge/backend contract.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `node --check desktop/ui/app.js`
+
+## 2026-04-21 - backend-interpretation-clarification-observability
+
+### Summary
+- [B4] Unsupported and invalid prompts now fail honestly instead of being coerced into fake geometry, with clear unsupported and empty-prompt responses.
+- [B5] Interpretation now records assumptions, warnings, and missing info explicitly when defaults are used or clarification is required.
+- [C4] Validator compatibility checks were broadened for hole size, slot size, shell wall thickness, opening bounds, and related component relationships.
+- [C5] Clarification-mode output now carries partial plan context, missing info, assumptions, warnings, and concise summaries.
+- [G1] [G2] [G3] The backend now persists richer interpretation, decision, missing-info, assumption, and warning metadata for future UI inspection.
+- Desktop payload and persisted state keys remain compatible with the current shell contract.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+
+## 2026-04-21 - backend-legacy-cleanup-recipe-id-standardization
+
+### Summary
+- [D3] Standardized recipe naming around deterministic recipe identifiers derived from Plan Schema v1 instead of ad hoc family routing.
+- [D4] Standardized implementation IDs behind a single recipe-builder code path so the same plan always resolves to the same implementation metadata.
+- [F5] Deleted dead legacy backend modules and removed stale imports/re-exports from the live path where they were no longer needed.
+- Deleted `plan_bridge.py` rather than keeping a transitional shim, and updated documentation to reflect the plan -> validate -> recipe -> execute architecture.
+- Preserved the desktop payload/state contract, including the existing result keys and persisted generation metadata.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+
+## 2026-04-21 - plan-schema-v1-pipeline-rewrite
+
+### Summary
+- [A2] Introduced Plan Schema v1 as the authoritative backend plan format with `GeomancerIntent`, typed `GeomancerComponent` entries, `GeomancerPlan`, and structured validation results.
+- [A5] Aligned defaults and validation-ready plan structure around `mm` units, printable constraints, thickness minimums, and desktop-safe serialization.
+- [B1] Rewrote `pipeline.py` around a strict `interpret_prompt_to_plan(...) -> validate_plan(...) -> build_deterministic_recipe(...) -> execute_recipe(...)` entry boundary.
+- [C1] Replaced canonical-schema validation with conservative Plan v1 validation, including unknown-type rejection, thickness clamping, and clarification on printable plans with no components.
+- [D1] Updated the deterministic recipe builder to consume only validated Plan v1 data.
+- [F1] [F2] [F3] Removed classifier/archetype/normalizer routing from the live generation path while preserving desktop payload/state compatibility fields.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+
+## 2026-04-21 - plan-schema-v1-hardening-cleanup
+
+### Summary
+- Removed public canonical-plan aliases from `plan_schema.py` and dropped the deprecated `validate_canonical_plan(...)` shim so new code must use Plan Schema v1 directly.
+- Quarantined the old `plan_bridge.py` path behind explicit runtime errors instead of leaving transitional canonical helpers silently available.
+- Hardened `interpret_prompt_to_plan(...)` to reject unsupported sculptural prompts, stop inventing default overall dimensions for incomplete requests, and keep only recipe naming continuity for plate execution metadata.
+- Tightened `validate_plan(...)` with required-dimension checks, printable-envelope checks, and unrealistic component validation while preserving the desktop payload/state contract.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_backend_archetypes`
+
 Recommended entry format:
 
 ```md
+## 2026-04-20 - recipe-executor-mm-to-meter-direct-builds
+
+### Summary
+- Moved active recipe-path body construction for boxes, shells, brackets, phone stands, and hook mounts onto direct meter-space mesh creation so recipe output no longer depends on object scaling after creation.
+
+### Verification
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline`
+- `python -m compileall app/backend/recipe_executor.py tests/test_backend_plan_schema.py`
+
 ## 2026-04-19 - hook-mount-wall-hook-v1-profile-fix
 
 ### Summary

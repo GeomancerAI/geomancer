@@ -5,8 +5,11 @@ import math
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
 
-def mm(value):
+def mm_to_m(value):
     return value / 1000.0
+
+def mm(value):
+    return mm_to_m(value)
 
 def set_active(obj):
     bpy.ops.object.select_all(action='DESELECT')
@@ -32,7 +35,7 @@ def apply_bevel(obj, width_mm, segments=2, profile=0.7, modifier_name='Geomancer
     if obj is None or width_mm <= 0:
         return obj
     modifier = obj.modifiers.new(name=modifier_name, type='BEVEL')
-    modifier.width = mm(width_mm)
+    modifier.width = mm_to_m(width_mm)
     modifier.segments = segments
     modifier.profile = profile
     modifier.use_clamp_overlap = True
@@ -40,26 +43,95 @@ def apply_bevel(obj, width_mm, segments=2, profile=0.7, modifier_name='Geomancer
     bpy.ops.object.modifier_apply(modifier=modifier.name)
     return obj
 
-def make_bracket_body(base_length_mm, flange_width_mm, vertical_height_mm, thickness_mm, final_name='GeomancerBracket'):
+def make_box_body(size_x_mm, size_y_mm, size_z_mm, final_name='GeomancerBox', location_mm=(0.0, 0.0, 0.0)):
+    size_x = mm_to_m(size_x_mm)
+    size_y = mm_to_m(size_y_mm)
+    size_z = mm_to_m(size_z_mm)
+    location = (mm_to_m(location_mm[0]), mm_to_m(location_mm[1]), mm_to_m(location_mm[2]))
     mesh = bpy.data.meshes.new(final_name + "_mesh")
     obj = bpy.data.objects.new(final_name, mesh)
     bpy.context.collection.objects.link(obj)
 
     bm = bmesh.new()
+    hx = size_x / 2.0
+    hy = size_y / 2.0
+    hz = size_z / 2.0
+    verts = [
+        bm.verts.new((-hx, -hy, -hz)),
+        bm.verts.new((hx, -hy, -hz)),
+        bm.verts.new((hx, hy, -hz)),
+        bm.verts.new((-hx, hy, -hz)),
+        bm.verts.new((-hx, -hy, hz)),
+        bm.verts.new((hx, -hy, hz)),
+        bm.verts.new((hx, hy, hz)),
+        bm.verts.new((-hx, hy, hz)),
+    ]
+    bm.faces.new((verts[0], verts[1], verts[2], verts[3]))
+    bm.faces.new((verts[4], verts[5], verts[6], verts[7]))
+    bm.faces.new((verts[0], verts[1], verts[5], verts[4]))
+    bm.faces.new((verts[1], verts[2], verts[6], verts[5]))
+    bm.faces.new((verts[2], verts[3], verts[7], verts[6]))
+    bm.faces.new((verts[3], verts[0], verts[4], verts[7]))
+    bm.normal_update()
+    bm.to_mesh(mesh)
+    mesh.update()
+    bm.free()
+    obj.location = location
+    return obj
+
+def make_shell_body(width_mm, depth_mm, height_mm, wall_thickness_mm, base_thickness_mm=0.0, front_opening=False, opening_width_mm=0.0, opening_height_mm=0.0, final_name='GeomancerShell'):
+    width = mm_to_m(width_mm)
+    depth = mm_to_m(depth_mm)
+    height = mm_to_m(height_mm)
+    wall = mm_to_m(wall_thickness_mm)
+    base_thickness = mm_to_m(base_thickness_mm) if base_thickness_mm > 0 else wall
+    wall = max(wall, 0.0015)
+    wall = min(wall, max(min(width, depth) * 0.45, 0.0015), max((height - 0.0005) / 2.0, 0.0015))
+    base_thickness = max(base_thickness, wall)
+    base_thickness = min(base_thickness, max(height - wall - 0.0005, wall))
+    inner_width = max(width - (wall * 2.0), wall)
+    inner_depth = max(depth - (wall * 2.0), wall)
+    inner_height = max(height - base_thickness + wall, wall)
+    inner_bottom_z = -(height / 2.0) + base_thickness
+    inner_z = inner_bottom_z + (inner_height / 2.0)
+    bevel_m = max(min(wall * 0.18, 0.001), 0.00025)
+
+    outer_box = make_box_body(width_mm, depth_mm, height_mm, final_name=final_name)
+    inner_box = make_box_body(inner_width * 1000.0, inner_depth * 1000.0, inner_height * 1000.0, final_name=f"{final_name}_inner", location_mm=(0.0, 0.0, inner_z * 1000.0))
+    apply_boolean(outer_box, inner_box, modifier_name='InnerCavity')
+    if front_opening:
+        opening_width = mm_to_m(opening_width_mm) if opening_width_mm > 0 else inner_width
+        opening_height = mm_to_m(opening_height_mm) if opening_height_mm > 0 else inner_height
+        opening_center_z = max(base_thickness + (opening_height / 2.0), opening_height / 2.0)
+        front_cutter = make_box_body(opening_width * 1000.0, wall * 1000.0 * 1.6, opening_height * 1000.0, final_name=f"{final_name}_front", location_mm=(0.0, ((depth / 2.0) - (wall / 2.0)) * 1000.0, (opening_center_z - (height / 2.0)) * 1000.0))
+        apply_boolean(outer_box, front_cutter, modifier_name='FrontOpening')
+    apply_bevel(outer_box, bevel_m * 1000.0, modifier_name='ShellBevel')
+    return outer_box
+
+def make_bracket_body(base_length_mm, flange_width_mm, vertical_height_mm, thickness_mm, final_name='GeomancerBracket'):
+    mesh = bpy.data.meshes.new(final_name + "_mesh")
+    obj = bpy.data.objects.new(final_name, mesh)
+    bpy.context.collection.objects.link(obj)
+
+    base_length = mm_to_m(base_length_mm)
+    flange_width = mm_to_m(flange_width_mm)
+    vertical_height = mm_to_m(vertical_height_mm)
+    thickness = mm_to_m(thickness_mm)
+    bm = bmesh.new()
     profile = [
         (0.0, 0.0),
-        (base_length_mm, 0.0),
-        (base_length_mm, thickness_mm),
-        (thickness_mm, thickness_mm),
-        (thickness_mm, vertical_height_mm),
-        (0.0, vertical_height_mm),
+        (base_length, 0.0),
+        (base_length, thickness),
+        (thickness, thickness),
+        (thickness, vertical_height),
+        (0.0, vertical_height),
     ]
     face_verts = [bm.verts.new((x, 0.0, z)) for x, z in profile]
     bm.faces.new(face_verts)
     bm.normal_update()
     extruded = bmesh.ops.extrude_face_region(bm, geom=bm.faces[:])
     extruded_verts = [elem for elem in extruded['geom'] if isinstance(elem, bmesh.types.BMVert)]
-    bmesh.ops.translate(bm, verts=extruded_verts, vec=(0.0, flange_width_mm, 0.0))
+    bmesh.ops.translate(bm, verts=extruded_verts, vec=(0.0, flange_width, 0.0))
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.to_mesh(mesh)
     mesh.update()
@@ -72,12 +144,12 @@ def make_phone_stand_body(width_mm, depth_mm, height_mm, thickness_mm, viewing_a
     obj = bpy.data.objects.new(final_name, mesh)
     bpy.context.collection.objects.link(obj)
 
-    base_thickness = max(float(thickness_mm), 0.003)
-    lip_height = max(float(lip_height_mm), 0.003)
-    depth = max(float(depth_mm), base_thickness * 2.0)
-    width = max(float(width_mm), base_thickness * 2.0)
-    height = max(float(height_mm), base_thickness + lip_height + 0.003)
-    cradle_depth = max(min(float(cradle_depth_mm), depth * 0.45), base_thickness * 4.0)
+    base_thickness = max(mm_to_m(thickness_mm), 0.003)
+    lip_height = max(mm_to_m(lip_height_mm), 0.003)
+    depth = max(mm_to_m(depth_mm), base_thickness * 2.0)
+    width = max(mm_to_m(width_mm), base_thickness * 2.0)
+    height = max(mm_to_m(height_mm), base_thickness + lip_height + 0.003)
+    cradle_depth = max(min(mm_to_m(cradle_depth_mm), depth * 0.45), base_thickness * 4.0)
     edge_clearance = max(base_thickness * 0.9, 0.004)
     front_y = -(depth / 2.0)
     rear_y = depth / 2.0
@@ -130,38 +202,47 @@ def make_hook_mount_body(width_mm, height_mm, depth_mm, thickness_mm, base_thick
     obj = bpy.data.objects.new(final_name, mesh)
     bpy.context.collection.objects.link(obj)
 
-    width = max(float(width_mm), max(float(thickness_mm) * 3.0, 0.01))
-    height = max(float(height_mm), max(float(thickness_mm) * 4.0, 0.01))
-    depth = max(float(depth_mm), max(float(thickness_mm) * 3.0, 0.01))
-    thickness = max(float(thickness_mm), 0.01)
-    plate_depth = max(min(float(base_thickness_mm), depth * 0.58), thickness * 1.25)
-    hook_projection = max(min(float(hook_length_mm), max(depth - plate_depth, thickness * 2.5)), thickness * 2.5)
-    hook_radius = max(min(float(hook_radius_mm), hook_projection * 0.45), thickness * 0.75)
-    hook_angle = math.radians(max(min(float(hook_angle_deg), 35.0), 8.0))
-    hook_base_z = max(-height * 0.12, -(height / 2.0) + max(thickness * 1.8, 6.0))
-    hook_start_upper = min(hook_base_z + max(thickness * 0.9, 3.0), (height / 2.0) - max(thickness * 0.9, 3.0))
-    hook_start_lower = max(hook_base_z - max(thickness * 0.55, 1.0), -(height / 2.0) + max(thickness * 1.5, 4.0))
-    hook_tip_z = min(hook_start_upper + max(math.tan(hook_angle) * hook_projection, thickness * 1.2), (height / 2.0) - max(thickness * 0.6, 2.0))
-    hook_tip_return_z = max(hook_tip_z - max(hook_radius * 0.45, thickness * 0.8), hook_start_lower)
+    width = max(mm_to_m(width_mm), 0.012)
+    height = max(mm_to_m(height_mm), 0.024)
+    depth = max(mm_to_m(depth_mm), 0.01)
+    thickness = max(mm_to_m(thickness_mm), 0.003)
+    plate_thickness = max(min(mm_to_m(base_thickness_mm), depth * 0.45), thickness * 1.25)
+    hook_length = max(min(mm_to_m(hook_length_mm), depth - plate_thickness), max(depth * 0.28, 0.01))
+    hook_length = min(hook_length, max(depth * 0.58, plate_thickness + thickness * 2.5))
+    hook_radius = max(min(mm_to_m(hook_radius_mm), hook_length * 0.35), thickness * 0.75)
+    hook_angle = math.radians(max(min(float(hook_angle_deg), 35.0), 12.0))
+    plate_top_z = height / 2.0
+    plate_bottom_z = -(height / 2.0)
+    arm_base_z = max(plate_bottom_z + max(height * 0.24, thickness * 3.0), plate_bottom_z + thickness * 2.5)
+    arm_base_z = min(arm_base_z, plate_top_z - max(thickness * 2.5, height * 0.18))
+    arm_start_x = min(plate_thickness + max(hook_length * 0.42, thickness * 2.5), plate_thickness + hook_length * 0.72)
+    arm_tip_x = min(plate_thickness + hook_length, depth)
+    if arm_tip_x <= arm_start_x + max(thickness * 1.8, 0.003):
+        arm_tip_x = arm_start_x + max(thickness * 2.6, 0.01)
+    tip_backoff = max(min(hook_radius, (arm_tip_x - arm_start_x) * 0.3), thickness * 1.1)
+    hook_tip_z = min(arm_base_z + max(thickness * 1.15, min((arm_tip_x - arm_start_x) * math.tan(hook_angle) * 0.18, height * 0.12)), plate_top_z - max(thickness * 0.7, 0.002))
+    if hook_tip_z <= arm_base_z + thickness * 0.25:
+        hook_tip_z = min(arm_base_z + max(thickness * 1.25, 0.004), plate_top_z - max(thickness * 0.7, 0.002))
     profile = [
-        (0.0, -(height / 2.0)),
-        (0.0, height / 2.0),
-        (plate_depth, height / 2.0),
-        (plate_depth, hook_start_upper),
-        (plate_depth + hook_projection, hook_tip_z),
-        (plate_depth + hook_projection - hook_radius, hook_tip_return_z),
-        (plate_depth, hook_start_lower),
-        (plate_depth, -(height / 2.0)),
+        (0.0, plate_bottom_z),
+        (0.0, plate_top_z),
+        (plate_thickness, plate_top_z),
+        (plate_thickness, arm_base_z + thickness),
+        (arm_start_x, arm_base_z + thickness),
+        (arm_start_x, arm_base_z),
+        (arm_tip_x - tip_backoff, arm_base_z),
+        (arm_tip_x, hook_tip_z),
+        (plate_thickness, plate_bottom_z),
     ]
 
     bm = bmesh.new()
-    profile_verts = [bm.verts.new((0.0, y, z)) for y, z in profile]
+    profile_verts = [bm.verts.new((x, 0.0, z)) for x, z in profile]
     bm.faces.new(profile_verts)
     bm.normal_update()
     extruded = bmesh.ops.extrude_face_region(bm, geom=bm.faces[:])
     extruded_verts = [elem for elem in extruded['geom'] if isinstance(elem, bmesh.types.BMVert)]
-    bmesh.ops.translate(bm, verts=extruded_verts, vec=(width, 0.0, 0.0))
-    bmesh.ops.translate(bm, verts=bm.verts[:], vec=(-width / 2.0, 0.0, 0.0))
+    bmesh.ops.translate(bm, verts=extruded_verts, vec=(0.0, width, 0.0))
+    bmesh.ops.translate(bm, verts=bm.verts[:], vec=(0.0, -width / 2.0, 0.0))
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.to_mesh(mesh)
     mesh.update()
@@ -194,35 +275,33 @@ def finalize_object(obj, final_name='Geomancer_Final'):
     return obj
 
 # Recipe schema version: 1.0
-# Family: hook_mount
-# Recipe: hook_mount
-# Execution recipe: hook_mount
-# Family implementation: hook_mount
-# Implementation ID: hook_mount_wall_hook_v1
-# Generation ID: gen-20260419212526-2001c010
-# Object type: hook_mount
+# Family: crate
+# Recipe: crate
+# Execution recipe: crate
+# Family implementation: crate
+# Implementation ID: crate_v1
+# Generation ID: gen-20260422184358-f20f3b5a
+# Object type: crate
 
-hook_mount_body = make_hook_mount_body(
-    width_mm=mm(50.0),
-    height_mm=mm(80.0),
-    depth_mm=mm(35.0),
-    thickness_mm=mm(6.0),
-    base_thickness_mm=mm(7.5),
-    hook_length_mm=mm(25.2),
-    hook_radius_mm=mm(9.0),
-    hook_angle_deg=18.0,
-    final_name='hook_mount_body',
+crate_body = make_box_body(
+    size_x_mm=80.0,
+    size_y_mm=80.0,
+    size_z_mm=60.0,
+    final_name='crate_body',
+    location_mm=(-12.0, 0.0, 0.0),
 )
 
-for z_pos in (mm(-20.0), mm(20.0)):
-    bpy.ops.mesh.primitive_cylinder_add(radius=mm(2.5), depth=mm(18.75), location=(0.0, mm(3.75), z_pos))
-    mount_hole = bpy.context.active_object
-    mount_hole.rotation_euler = (math.radians(90.0), 0.0, 0.0)
-    apply_transforms(mount_hole)
-    apply_boolean(hook_mount_body, mount_hole, modifier_name='HookMountHole')
+crate_cap = make_box_body(
+    size_x_mm=67.2,
+    size_y_mm=67.2,
+    size_z_mm=10.799999999999999,
+    final_name='crate_cap',
+    location_mm=(6.4, 0.0, 9.0),
+)
 
+crate_body = join_objects([crate_body, crate_cap], final_name='union_crate_body_crate_cap')
 
-final_obj = hook_mount_body
+final_obj = crate_body
 
 final_obj = locals().get("final_obj")
 if final_obj is None:

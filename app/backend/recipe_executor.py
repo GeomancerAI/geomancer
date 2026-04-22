@@ -20,6 +20,11 @@ SUPPORTED_RECIPE_OBJECT_TYPES = {
     "standoff",
     "hook_mount",
     "phone_stand",
+    "primitive_assembly",
+    "crate",
+    "barrel",
+    "canister",
+    "pedestal",
     "assembly",
 }
 
@@ -36,6 +41,7 @@ SUPPORTED_RECIPE_OPS = {
     "phone_stand_body",
     "boolean_union",
     "boolean_difference",
+    "apply_bevel",
 }
 
 
@@ -121,7 +127,10 @@ def execute_recipe(recipe: DeterministicRecipe) -> RecipeExecutionResult:
         unsupported_ops=[],
         unsupported_reasons=[],
         execution_path="recipe",
-        summary=f"Executed recipe for {recipe.object_type} with {len(recipe.ops)} ops.",
+        summary=(
+            f"Executed {recipe.execution_recipe} ({recipe.implementation_id}) "
+            f"for {recipe.object_type} with {len(recipe.ops)} ops."
+        ),
     )
 
 
@@ -172,6 +181,7 @@ class _RecipeScriptEmitter:
             "phone_stand_body": self._emit_phone_stand_body,
             "boolean_union": self._emit_boolean_union,
             "boolean_difference": self._emit_boolean_difference,
+            "apply_bevel": self._emit_apply_bevel,
         }
         handler = handlers.get(op.op)
         if handler is None:
@@ -200,11 +210,14 @@ class _RecipeScriptEmitter:
             self.dims[op.id] = dims
         self.dims[var_name] = dims
         self.lines.append(
-            f"""bpy.ops.mesh.primitive_cube_add(size=1.0, location={_format_vector(origin)})
-{var_name} = bpy.context.active_object
-{var_name}.scale = (mm({size_x / 2.0}), mm({size_y / 2.0}), mm({size_z / 2.0}))"""
+            f"""{var_name} = make_box_body(
+    size_x_mm={size_x},
+    size_y_mm={size_y},
+    size_z_mm={size_z},
+    final_name={repr(var_name)},
+    location_mm=({origin[0]}, {origin[1]}, {origin[2]}),
+)"""
         )
-        self.lines.append(f"apply_transforms({var_name})")
         if rotation:
             self.lines.append(f"{var_name}.rotation_euler = {_format_rotation(rotation)}")
             self.lines.append(f"apply_transforms({var_name})")
@@ -266,10 +279,10 @@ class _RecipeScriptEmitter:
         }
         self.lines.append(
             f"""{var_name} = make_bracket_body(
-    base_length_mm=mm({base_length_mm}),
-    flange_width_mm=mm({flange_width_mm}),
-    vertical_height_mm=mm({vertical_height_mm}),
-    thickness_mm=mm({thickness_mm}),
+    base_length_mm={base_length_mm},
+    flange_width_mm={flange_width_mm},
+    vertical_height_mm={vertical_height_mm},
+    thickness_mm={thickness_mm},
     final_name={repr(var_name)},
 )"""
         )
@@ -306,14 +319,14 @@ class _RecipeScriptEmitter:
         }
         self.lines.append(
             f"""{var_name} = make_phone_stand_body(
-    width_mm=mm({width_mm}),
-    depth_mm=mm({depth_mm}),
-    height_mm=mm({height_mm}),
-    thickness_mm=mm({thickness_mm}),
+    width_mm={width_mm},
+    depth_mm={depth_mm},
+    height_mm={height_mm},
+    thickness_mm={thickness_mm},
     viewing_angle_deg={viewing_angle_deg},
-    lip_height_mm=mm({lip_height_mm}),
-    cradle_depth_mm=mm({cradle_depth_mm}),
-    device_width_mm=mm({device_width_mm}),
+    lip_height_mm={lip_height_mm},
+    cradle_depth_mm={cradle_depth_mm},
+    device_width_mm={device_width_mm},
     final_name={repr(var_name)},
 )"""
         )
@@ -350,13 +363,13 @@ class _RecipeScriptEmitter:
         }
         self.lines.append(
             f"""{var_name} = make_hook_mount_body(
-    width_mm=mm({width_mm}),
-    height_mm=mm({height_mm}),
-    depth_mm=mm({depth_mm}),
-    thickness_mm=mm({thickness_mm}),
-    base_thickness_mm=mm({base_thickness_mm}),
-    hook_length_mm=mm({hook_length_mm}),
-    hook_radius_mm=mm({hook_radius_mm}),
+    width_mm={width_mm},
+    height_mm={height_mm},
+    depth_mm={depth_mm},
+    thickness_mm={thickness_mm},
+    base_thickness_mm={base_thickness_mm},
+    hook_length_mm={hook_length_mm},
+    hook_radius_mm={hook_radius_mm},
     hook_angle_deg={hook_angle_deg},
     final_name={repr(var_name)},
 )"""
@@ -430,6 +443,8 @@ class _RecipeScriptEmitter:
             return self._emit_bracket_holes(target_var, count, diameter_mm)
         if self.recipe.object_type == "plate" and layout in {"corners", "pair_horizontal"}:
             return self._emit_plate_holes(target_var, count, diameter_mm, layout)
+        if layout == "corners":
+            return self._emit_corner_hole_pattern(target_var, count, diameter_mm)
         if layout in {"center", "center_bottom", "pair_horizontal", "vertical_pair"}:
             return self._emit_generic_hole_pattern(target_var, count, diameter_mm, layout)
 
@@ -484,6 +499,34 @@ for x_pos, y_pos, z_pos in base_hole_positions:
         apply_boolean({target_var}, vertical_hole, modifier_name='BracketVerticalHole')
 """
             )
+        self.final_var = target_var
+        return True
+
+    def _emit_corner_hole_pattern(self, target_var: str, count: int, diameter_mm: float) -> bool:
+        dims = self.dims.get(target_var, {})
+        width = float(dims.get("size_x_mm", 0.0))
+        depth = float(dims.get("size_y_mm", 0.0))
+        height = float(dims.get("size_z_mm", 0.0))
+        if width <= 0 or depth <= 0 or height <= 0:
+            self.last_error = "Corner hole pattern missing base dimensions."
+            return False
+
+        x_offset = max(width * 0.35, diameter_mm * 1.5)
+        y_offset = max(depth * 0.35, diameter_mm * 1.5)
+        z_pos = max(min(height * 0.38, height * 0.45), diameter_mm)
+        if count < 4:
+            return self._emit_generic_hole_pattern(target_var, max(count, 2), diameter_mm, "pair_horizontal")
+
+        self.lines.append(
+            f"""for x_pos in (mm({-x_offset}), mm({x_offset})):
+    for y_pos in (mm({-y_offset}), mm({y_offset})):
+        bpy.ops.mesh.primitive_cylinder_add(radius=mm({diameter_mm / 2.0}), depth=mm({max(diameter_mm * 2.5, 1.0)}), location=(x_pos, y_pos, mm({z_pos})))
+        corner_hole = bpy.context.active_object
+        corner_hole.rotation_euler = (math.radians(90.0), 0.0, 0.0)
+        apply_transforms(corner_hole)
+        apply_boolean({target_var}, corner_hole, modifier_name='CornerHole')
+"""
+        )
         self.final_var = target_var
         return True
 
@@ -632,44 +675,18 @@ apply_boolean({target_var}, bottom_hole, modifier_name='BottomHole')
         target_var = _safe_identifier(op.id or "shell")
         self.vars[op.id or target_var] = target_var
         self.dims[target_var] = {"size_x_mm": width, "size_y_mm": depth, "size_z_mm": height}
-        wall = max(wall, 1.5)
-        max_wall_by_span = max(min(width, depth) * 0.45, 1.5)
-        max_wall_by_height = max((height - 0.5) / 2.0, 1.5)
-        wall = min(wall, max_wall_by_span, max_wall_by_height)
-        base_thickness = max(base_thickness, wall)
-        max_base_by_height = max(height - wall - 0.5, wall)
-        base_thickness = min(base_thickness, max_base_by_height)
-        inner_width = max(width - (wall * 2.0), wall)
-        inner_depth = max(depth - (wall * 2.0), wall)
-        inner_height = max(height - base_thickness + wall, wall)
-        inner_bottom_z = -(height / 2.0) + base_thickness
-        inner_z = inner_bottom_z + (inner_height / 2.0)
-        inner_height_cut = inner_height
-        bevel_mm = max(min(wall * 0.18, 1.0), 0.25)
-
         self.lines.append(
-            f"""bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, 0.0))
-{target_var} = bpy.context.active_object
-{target_var}.scale = (mm({width / 2.0}), mm({depth / 2.0}), mm({height / 2.0}))
-
-bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 0.0, mm({inner_z})))
-{target_var}_inner = bpy.context.active_object
-{target_var}_inner.scale = (mm({inner_width / 2.0}), mm({inner_depth / 2.0}), mm({inner_height_cut / 2.0}))
-apply_boolean({target_var}, {target_var}_inner, modifier_name='InnerCavity')
+            f"""{target_var} = make_shell_body(
+    width_mm={width},
+    depth_mm={depth},
+    height_mm={height},
+    wall_thickness_mm={wall},
+    base_thickness_mm={base_thickness},
+    front_opening={front_opening},
+    final_name={repr(target_var)},
+)
 """
         )
-        if front_opening:
-            opening_width = float(params.get("opening_width_mm", max(width * 0.55, 20.0)))
-            opening_height = float(params.get("opening_height_mm", max(height * 0.45, 20.0)))
-            opening_center_z = max(height * 0.5 - (opening_height / 2.0), opening_height / 2.0)
-            self.lines.append(
-                f"""bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, mm({(depth / 2.0) - (wall / 2.0)}), mm({opening_center_z - (height / 2.0)})))
-{target_var}_front = bpy.context.active_object
-{target_var}_front.scale = (mm({opening_width / 2.0}), mm({wall * 1.6}), mm({opening_height / 2.0}))
-apply_boolean({target_var}, {target_var}_front, modifier_name='FrontOpening')
-"""
-            )
-        self.lines.append(f"apply_bevel({target_var}, {bevel_mm}, modifier_name='ShellBevel')")
         self.final_var = target_var
         return True
 
@@ -679,6 +696,24 @@ apply_boolean({target_var}, {target_var}_front, modifier_name='FrontOpening')
             self.last_error = "flatten_bottom could not resolve target variable."
             return False
         self.lines.append(f"# flatten_bottom preserved by deterministic recipe alignment for {target_var}")
+        self.final_var = target_var
+        return True
+
+    def _emit_apply_bevel(self, op: RecipeOp) -> bool:
+        target_var = self._resolve_var(op.target)
+        if not target_var:
+            self.last_error = "apply_bevel could not resolve target variable."
+            return False
+        width_mm = float(op.params.get("width_mm", 0.0))
+        if width_mm <= 0:
+            self.lines.append(f"# apply_bevel skipped for {target_var} because the bevel width was not positive.")
+            self.final_var = target_var
+            return True
+        segments = int(op.params.get("segments", 2))
+        profile = float(op.params.get("profile", 0.7))
+        self.lines.append(
+            f"apply_bevel({target_var}, width_mm={width_mm}, segments={segments}, profile={profile}, modifier_name={repr(_safe_identifier(op.id or f'{target_var}_bevel'))})"
+        )
         self.final_var = target_var
         return True
 
@@ -696,8 +731,11 @@ import math
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
 
-def mm(value):
+def mm_to_m(value):
     return value / 1000.0
+
+def mm(value):
+    return mm_to_m(value)
 
 def set_active(obj):
     bpy.ops.object.select_all(action='DESELECT')
@@ -723,7 +761,7 @@ def apply_bevel(obj, width_mm, segments=2, profile=0.7, modifier_name='Geomancer
     if obj is None or width_mm <= 0:
         return obj
     modifier = obj.modifiers.new(name=modifier_name, type='BEVEL')
-    modifier.width = mm(width_mm)
+    modifier.width = mm_to_m(width_mm)
     modifier.segments = segments
     modifier.profile = profile
     modifier.use_clamp_overlap = True
@@ -731,26 +769,95 @@ def apply_bevel(obj, width_mm, segments=2, profile=0.7, modifier_name='Geomancer
     bpy.ops.object.modifier_apply(modifier=modifier.name)
     return obj
 
-def make_bracket_body(base_length_mm, flange_width_mm, vertical_height_mm, thickness_mm, final_name='GeomancerBracket'):
+def make_box_body(size_x_mm, size_y_mm, size_z_mm, final_name='GeomancerBox', location_mm=(0.0, 0.0, 0.0)):
+    size_x = mm_to_m(size_x_mm)
+    size_y = mm_to_m(size_y_mm)
+    size_z = mm_to_m(size_z_mm)
+    location = (mm_to_m(location_mm[0]), mm_to_m(location_mm[1]), mm_to_m(location_mm[2]))
     mesh = bpy.data.meshes.new(final_name + "_mesh")
     obj = bpy.data.objects.new(final_name, mesh)
     bpy.context.collection.objects.link(obj)
 
     bm = bmesh.new()
+    hx = size_x / 2.0
+    hy = size_y / 2.0
+    hz = size_z / 2.0
+    verts = [
+        bm.verts.new((-hx, -hy, -hz)),
+        bm.verts.new((hx, -hy, -hz)),
+        bm.verts.new((hx, hy, -hz)),
+        bm.verts.new((-hx, hy, -hz)),
+        bm.verts.new((-hx, -hy, hz)),
+        bm.verts.new((hx, -hy, hz)),
+        bm.verts.new((hx, hy, hz)),
+        bm.verts.new((-hx, hy, hz)),
+    ]
+    bm.faces.new((verts[0], verts[1], verts[2], verts[3]))
+    bm.faces.new((verts[4], verts[5], verts[6], verts[7]))
+    bm.faces.new((verts[0], verts[1], verts[5], verts[4]))
+    bm.faces.new((verts[1], verts[2], verts[6], verts[5]))
+    bm.faces.new((verts[2], verts[3], verts[7], verts[6]))
+    bm.faces.new((verts[3], verts[0], verts[4], verts[7]))
+    bm.normal_update()
+    bm.to_mesh(mesh)
+    mesh.update()
+    bm.free()
+    obj.location = location
+    return obj
+
+def make_shell_body(width_mm, depth_mm, height_mm, wall_thickness_mm, base_thickness_mm=0.0, front_opening=False, opening_width_mm=0.0, opening_height_mm=0.0, final_name='GeomancerShell'):
+    width = mm_to_m(width_mm)
+    depth = mm_to_m(depth_mm)
+    height = mm_to_m(height_mm)
+    wall = mm_to_m(wall_thickness_mm)
+    base_thickness = mm_to_m(base_thickness_mm) if base_thickness_mm > 0 else wall
+    wall = max(wall, 0.0015)
+    wall = min(wall, max(min(width, depth) * 0.45, 0.0015), max((height - 0.0005) / 2.0, 0.0015))
+    base_thickness = max(base_thickness, wall)
+    base_thickness = min(base_thickness, max(height - wall - 0.0005, wall))
+    inner_width = max(width - (wall * 2.0), wall)
+    inner_depth = max(depth - (wall * 2.0), wall)
+    inner_height = max(height - base_thickness + wall, wall)
+    inner_bottom_z = -(height / 2.0) + base_thickness
+    inner_z = inner_bottom_z + (inner_height / 2.0)
+    bevel_m = max(min(wall * 0.18, 0.001), 0.00025)
+
+    outer_box = make_box_body(width_mm, depth_mm, height_mm, final_name=final_name)
+    inner_box = make_box_body(inner_width * 1000.0, inner_depth * 1000.0, inner_height * 1000.0, final_name=f"{{final_name}}_inner", location_mm=(0.0, 0.0, inner_z * 1000.0))
+    apply_boolean(outer_box, inner_box, modifier_name='InnerCavity')
+    if front_opening:
+        opening_width = mm_to_m(opening_width_mm) if opening_width_mm > 0 else inner_width
+        opening_height = mm_to_m(opening_height_mm) if opening_height_mm > 0 else inner_height
+        opening_center_z = max(base_thickness + (opening_height / 2.0), opening_height / 2.0)
+        front_cutter = make_box_body(opening_width * 1000.0, wall * 1000.0 * 1.6, opening_height * 1000.0, final_name=f"{{final_name}}_front", location_mm=(0.0, ((depth / 2.0) - (wall / 2.0)) * 1000.0, (opening_center_z - (height / 2.0)) * 1000.0))
+        apply_boolean(outer_box, front_cutter, modifier_name='FrontOpening')
+    apply_bevel(outer_box, bevel_m * 1000.0, modifier_name='ShellBevel')
+    return outer_box
+
+def make_bracket_body(base_length_mm, flange_width_mm, vertical_height_mm, thickness_mm, final_name='GeomancerBracket'):
+    mesh = bpy.data.meshes.new(final_name + "_mesh")
+    obj = bpy.data.objects.new(final_name, mesh)
+    bpy.context.collection.objects.link(obj)
+
+    base_length = mm_to_m(base_length_mm)
+    flange_width = mm_to_m(flange_width_mm)
+    vertical_height = mm_to_m(vertical_height_mm)
+    thickness = mm_to_m(thickness_mm)
+    bm = bmesh.new()
     profile = [
         (0.0, 0.0),
-        (base_length_mm, 0.0),
-        (base_length_mm, thickness_mm),
-        (thickness_mm, thickness_mm),
-        (thickness_mm, vertical_height_mm),
-        (0.0, vertical_height_mm),
+        (base_length, 0.0),
+        (base_length, thickness),
+        (thickness, thickness),
+        (thickness, vertical_height),
+        (0.0, vertical_height),
     ]
     face_verts = [bm.verts.new((x, 0.0, z)) for x, z in profile]
     bm.faces.new(face_verts)
     bm.normal_update()
     extruded = bmesh.ops.extrude_face_region(bm, geom=bm.faces[:])
     extruded_verts = [elem for elem in extruded['geom'] if isinstance(elem, bmesh.types.BMVert)]
-    bmesh.ops.translate(bm, verts=extruded_verts, vec=(0.0, flange_width_mm, 0.0))
+    bmesh.ops.translate(bm, verts=extruded_verts, vec=(0.0, flange_width, 0.0))
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.to_mesh(mesh)
     mesh.update()
@@ -763,12 +870,12 @@ def make_phone_stand_body(width_mm, depth_mm, height_mm, thickness_mm, viewing_a
     obj = bpy.data.objects.new(final_name, mesh)
     bpy.context.collection.objects.link(obj)
 
-    base_thickness = max(float(thickness_mm), 0.003)
-    lip_height = max(float(lip_height_mm), 0.003)
-    depth = max(float(depth_mm), base_thickness * 2.0)
-    width = max(float(width_mm), base_thickness * 2.0)
-    height = max(float(height_mm), base_thickness + lip_height + 0.003)
-    cradle_depth = max(min(float(cradle_depth_mm), depth * 0.45), base_thickness * 4.0)
+    base_thickness = max(mm_to_m(thickness_mm), 0.003)
+    lip_height = max(mm_to_m(lip_height_mm), 0.003)
+    depth = max(mm_to_m(depth_mm), base_thickness * 2.0)
+    width = max(mm_to_m(width_mm), base_thickness * 2.0)
+    height = max(mm_to_m(height_mm), base_thickness + lip_height + 0.003)
+    cradle_depth = max(min(mm_to_m(cradle_depth_mm), depth * 0.45), base_thickness * 4.0)
     edge_clearance = max(base_thickness * 0.9, 0.004)
     front_y = -(depth / 2.0)
     rear_y = depth / 2.0
@@ -821,36 +928,36 @@ def make_hook_mount_body(width_mm, height_mm, depth_mm, thickness_mm, base_thick
     obj = bpy.data.objects.new(final_name, mesh)
     bpy.context.collection.objects.link(obj)
 
-    width = max(float(width_mm), 12.0)
-    height = max(float(height_mm), 24.0)
-    depth = max(float(depth_mm), 10.0)
-    thickness = max(float(thickness_mm), 3.0)
-    plate_thickness = max(min(float(base_thickness_mm), depth * 0.45), thickness * 1.25)
-    hook_length = max(min(float(hook_length_mm), depth - plate_thickness), 10.0)
-    hook_radius = max(min(float(hook_radius_mm), hook_length * 0.45), thickness * 0.75)
+    width = max(mm_to_m(width_mm), 0.012)
+    height = max(mm_to_m(height_mm), 0.024)
+    depth = max(mm_to_m(depth_mm), 0.01)
+    thickness = max(mm_to_m(thickness_mm), 0.003)
+    plate_thickness = max(min(mm_to_m(base_thickness_mm), depth * 0.45), thickness * 1.25)
+    hook_length = max(min(mm_to_m(hook_length_mm), depth - plate_thickness), max(depth * 0.28, 0.01))
+    hook_length = min(hook_length, max(depth * 0.58, plate_thickness + thickness * 2.5))
+    hook_radius = max(min(mm_to_m(hook_radius_mm), hook_length * 0.35), thickness * 0.75)
     hook_angle = math.radians(max(min(float(hook_angle_deg), 35.0), 12.0))
     plate_top_z = height / 2.0
     plate_bottom_z = -(height / 2.0)
-    support_start_z = min(plate_top_z - max(thickness * 0.85, 3.0), plate_top_z - max(height * 0.08, 2.0))
-    support_start_z = max(support_start_z, plate_bottom_z + max(thickness * 2.0, 4.0))
-    arm_start_x = min(plate_thickness + max(hook_length * 0.22, thickness * 2.0), plate_thickness + hook_length * 0.6)
+    arm_base_z = max(plate_bottom_z + max(height * 0.24, thickness * 3.0), plate_bottom_z + thickness * 2.5)
+    arm_base_z = min(arm_base_z, plate_top_z - max(thickness * 2.5, height * 0.18))
+    arm_start_x = min(plate_thickness + max(hook_length * 0.42, thickness * 2.5), plate_thickness + hook_length * 0.72)
     arm_tip_x = min(plate_thickness + hook_length, depth)
-    if arm_tip_x <= arm_start_x + thickness * 0.75:
-        arm_tip_x = arm_start_x + max(thickness * 2.5, 10.0)
-    tip_rise = max(math.tan(hook_angle) * max(arm_tip_x - arm_start_x, thickness * 2.0), thickness * 1.5)
-    hook_tip_z = min(support_start_z + tip_rise, plate_top_z - max(thickness * 0.6, 2.0))
-    if hook_tip_z <= support_start_z + thickness * 0.5:
-        hook_tip_z = support_start_z + max(thickness * 1.5, 3.0)
-    arm_return_x = max(arm_tip_x - hook_radius, arm_start_x + thickness * 0.5)
-    hook_return_z = max(hook_tip_z - max(hook_radius * 0.6, thickness * 0.9), plate_bottom_z + max(thickness * 1.5, 4.0))
+    if arm_tip_x <= arm_start_x + max(thickness * 1.8, 0.003):
+        arm_tip_x = arm_start_x + max(thickness * 2.6, 0.01)
+    tip_backoff = max(min(hook_radius, (arm_tip_x - arm_start_x) * 0.3), thickness * 1.1)
+    hook_tip_z = min(arm_base_z + max(thickness * 1.15, min((arm_tip_x - arm_start_x) * math.tan(hook_angle) * 0.18, height * 0.12)), plate_top_z - max(thickness * 0.7, 0.002))
+    if hook_tip_z <= arm_base_z + thickness * 0.25:
+        hook_tip_z = min(arm_base_z + max(thickness * 1.25, 0.004), plate_top_z - max(thickness * 0.7, 0.002))
     profile = [
         (0.0, plate_bottom_z),
         (0.0, plate_top_z),
         (plate_thickness, plate_top_z),
-        (plate_thickness, support_start_z),
-        (arm_start_x, support_start_z),
+        (plate_thickness, arm_base_z + thickness),
+        (arm_start_x, arm_base_z + thickness),
+        (arm_start_x, arm_base_z),
+        (arm_tip_x - tip_backoff, arm_base_z),
         (arm_tip_x, hook_tip_z),
-        (arm_return_x, hook_return_z),
         (plate_thickness, plate_bottom_z),
     ]
 
