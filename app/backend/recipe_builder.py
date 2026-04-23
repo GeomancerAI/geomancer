@@ -326,7 +326,7 @@ def _build_adapter_recipe(plan: GeomancerPlan, warnings: list[str]) -> list[Reci
 def _build_composition_recipe(plan: GeomancerPlan, warnings: list[str]) -> list[RecipeOp]:
     items = list(plan.composition)
     if not items and plan.components:
-        warnings.append("Compositional recipe fell back to legacy component entries.")
+        warnings.append("Compositional recipe fell back to compatibility component entries.")
         items = [_component_to_composition_item(component) for component in plan.components]
 
     ops: list[RecipeOp] = []

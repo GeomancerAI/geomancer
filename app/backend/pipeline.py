@@ -60,18 +60,6 @@ COMPOSITIONAL_OBJECT_TYPES = {
     "canister",
     "pedestal",
 }
-FUNCTIONAL_OBJECT_TYPES = {
-    "phone_stand",
-    "bracket",
-    "tray",
-    "enclosure",
-    "plate",
-    "standoff",
-    "hook_mount",
-    "adapter",
-}
-HYBRID_ACCENT_TYPES = {"cube", "cylinder", "sphere"}
-HYBRID_FEATURE_TYPES = {"hole_pattern", "mount_hole", "through_hole", "slot", "tab", "opening"}
 NUMBER_WORDS = {
     "one": 1,
     "two": 2,
@@ -1681,7 +1669,7 @@ def _extract_dimension_hints(request_text: str, object_type: str) -> dict[str, o
         for key, value in mapped.items():
             dimensions.setdefault(key, value)
         if mapped:
-            notes.append("Mapped compact dimension form to canonical fields.")
+            notes.append("Mapped compact dimension form to normalized fields.")
 
     return {
         "dimensions": dimensions,
@@ -1729,7 +1717,7 @@ def _extract_labeled_dimensions(request_text: str) -> tuple[dict[str, float], li
             if any(abs(candidate - matches[0]) > 1e-6 for candidate in matches[1:]):
                 warnings.append(f"Conflicting {key.replace('_', ' ')} values were reduced to the clearest match.")
     if dimensions:
-        notes.append("Mapped labeled dimension phrases to canonical fields.")
+        notes.append("Mapped labeled dimension phrases to normalized fields.")
     return dimensions, notes, warnings
 
 

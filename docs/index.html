@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta
     name="description"
-    content="Geomancer turns natural language prompts into functional parts, creative models, and Blender-ready geometry using local AI and a deterministic geometry engine."
+    content="Geomancer is a local-first AI-assisted 3D modeling tool for structured, editable, deterministic geometry and Blender-ready export."
   >
-  <title>Geomancer | AI 3D Model Creator</title>
+  <title>Geomancer | Local-First AI 3D Modeling</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -61,16 +61,15 @@
       <section class="hero-section">
         <div class="container hero-grid">
           <div class="hero-copy">
-            <div class="eyebrow">AI 3D Model Creator</div>
-            <h1>Turn ideas into 3D geometry</h1>
+            <div class="eyebrow">Local-First 3D Modeling</div>
+            <h1>Turn ideas into structured 3D models</h1>
             <p class="hero-subheadline">
-              Generate parts, props, assets, and printable models in seconds using local AI.
+              Local AI interprets your request, Geomancer builds deterministic geometry, and you refine the result through an editable workflow.
             </p>
             <p class="hero-description">
-              Geomancer interprets intent with a local LLM, translates it into structured modeling
-              parameters, and produces deterministic Blender output for functional parts, creative
-              models, and geometry you can refine, export, print, or build on.
+              Move from prompt to plan to model without leaving your machine. Geomancer keeps the geometry structured, explainable, and export-ready for printing or further work in Blender.
             </p>
+            <p class="hero-meta">Predictable, editable, export-ready.</p>
 
             <form class="signup-form" id="hero-signup" novalidate>
               <label class="sr-only" for="hero-email">Email address</label>
@@ -85,7 +84,7 @@
               <button type="submit">Request Early Access</button>
             </form>
             <p class="form-support">
-              Alpha Preview targeted for June 1. Local-first workflow, Windows alpha, and no CAD experience required.
+              Windows alpha. Local-first workflow. Deterministic output you can reopen and refine when plan data is available.
             </p>
             <p class="form-message" id="hero-message" role="status" aria-live="polite"></p>
           </div>
@@ -95,30 +94,117 @@
               <img
                 class="hero-preview-image"
                 src="assets/images/hero-ui-preview.png"
-                alt="Geomancer interface preview showing the prompt-to-model workflow"
+                alt="Geomancer interface preview showing the structured prompt-to-model workflow"
               >
             </div>
           </div>
         </div>
       </section>
 
-      <section class="feature-section" id="features">
+      <section class="feature-section" id="what-you-can-create">
         <div class="container">
           <div class="section-heading">
-            <p class="eyebrow">Why Geomancer</p>
-            <h2>Local AI paired with a deterministic geometry engine</h2>
+            <p class="eyebrow">What You Can Create</p>
+            <h2>Structured models for practical parts and hybrid props</h2>
+          </div>
+          <div class="use-case-grid homepage-use-case-grid">
+            <article class="feature-card use-case-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z"></path>
+                  <path d="M8 10.5h8"></path>
+                  <path d="M8 13.5h5"></path>
+                </svg>
+              </div>
+              <h3>Brackets</h3>
+              <p>Mounting parts, support pieces, and other functional hardware starters.</p>
+            </article>
+            <article class="feature-card use-case-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="7" width="16" height="12" rx="2"></rect>
+                  <path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"></path>
+                </svg>
+              </div>
+              <h3>Enclosures</h3>
+              <p>Cases, shells, housings, and controlled-volume containers.</p>
+            </article>
+            <article class="feature-card use-case-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="7" width="12" height="10" rx="2"></rect>
+                  <path d="M8 11h8"></path>
+                  <path d="M10 15h4"></path>
+                </svg>
+              </div>
+              <h3>Trays</h3>
+              <p>Organizers, holders, and shallow utility geometry with clear proportions.</p>
+            </article>
+            <article class="feature-card use-case-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 17h10"></path>
+                  <path d="M9 17V7h6v10"></path>
+                  <path d="M10.5 7V5.5h3V7"></path>
+                </svg>
+              </div>
+              <h3>Phone Stands</h3>
+              <p>Simple angled supports and desk-friendly everyday utility pieces.</p>
+            </article>
+            <article class="feature-card use-case-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z"></path>
+                  <path d="M8 10.5h8"></path>
+                  <path d="M8 13.5h5"></path>
+                </svg>
+              </div>
+              <h3>Crates</h3>
+              <p>Blocky storage forms, modular props, and game-ready container shapes.</p>
+            </article>
+            <article class="feature-card use-case-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6.5 6.5h11v11h-11z"></path>
+                  <path d="M9 6.5v11"></path>
+                  <path d="M6.5 11h11"></path>
+                </svg>
+              </div>
+              <h3>Canisters</h3>
+              <p>Rounded containers, capped vessels, and sci-fi utility pieces.</p>
+            </article>
+            <article class="feature-card use-case-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 17h10"></path>
+                  <path d="M9 17V8h6v9"></path>
+                  <path d="M10.5 8h3"></path>
+                  <path d="M7 17c0-2.2 1.7-4 4-4s4 1.8 4 4"></path>
+                </svg>
+              </div>
+              <h3>Hybrid Objects</h3>
+              <p>Functional forms combined with styling details, bevels, and surface cues.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-section" id="capabilities">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow">Capabilities</p>
+            <h2>Structured, editable geometry with clear boundaries</h2>
           </div>
           <div class="feature-grid">
             <article class="feature-card">
               <div class="feature-icon" aria-hidden="true">
                 <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 3 13.8 8.2 19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path>
+                  <path d="M12 3 6 5.5v5.8c0 4.1 2.5 7.8 6 9.7 3.5-1.9 6-5.6 6-9.7V5.5L12 3Z"></path>
+                  <path d="m9.4 12.1 1.7 1.7 3.6-3.8"></path>
                 </svg>
               </div>
-              <h3>Natural Language Modeling</h3>
-              <p>
-                Describe what you want in plain language, from enclosures and fixtures to stylized props and game-ready concepts.
-              </p>
+              <h3>Functional objects</h3>
+              <p>Brackets, enclosures, mounts, and trays with usable dimensions and controlled geometry.</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon" aria-hidden="true">
@@ -128,22 +214,19 @@
                   <path d="M12 11v10"></path>
                 </svg>
               </div>
-              <h3>Creative + Functional Geometry</h3>
-              <p>
-                Generate usable geometry for printable objects, hard-surface concepts, modular assets, and practical builds.
-              </p>
+              <h3>Compositional props</h3>
+              <p>Crates, barrels, canisters, and pedestals built from readable parts and simple forms.</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon" aria-hidden="true">
                 <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 3 6 5.5v5.8c0 4.1 2.5 7.8 6 9.7 3.5-1.9 6-5.6 6-9.7V5.5L12 3Z"></path>
-                  <path d="m9.4 12.1 1.7 1.7 3.6-3.8"></path>
+                  <path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z"></path>
+                  <path d="M8 10.5h8"></path>
+                  <path d="M8 13.5h5"></path>
                 </svg>
               </div>
-              <h3>Production-Ready Output</h3>
-              <p>
-                Surface dimensions, fit, and printability details before you spend more time refining a model in Blender.
-              </p>
+              <h3>Hybrid builds</h3>
+              <p>Combine function and detail in one model without losing structure or editability.</p>
             </article>
             <article class="feature-card">
               <div class="feature-icon" aria-hidden="true">
@@ -152,76 +235,68 @@
                   <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
                 </svg>
               </div>
-              <h3>Local, Private, Reliable</h3>
-              <p>
-                Keep the workflow on your machine with local inference and repeatable output you can trust across creative and practical work.
-              </p>
+              <h3>Style system</h3>
+              <p>Shape the output with minimal, industrial, sci-fi, low-poly, and rounded directions.</p>
+            </article>
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 4v16"></path>
+                  <path d="M7 9h10"></path>
+                  <path d="M7 15h10"></path>
+                </svg>
+              </div>
+              <h3>Edit and regenerate</h3>
+              <p>Adjust dimensions, tweak features, and regenerate instantly from the structured plan.</p>
+            </article>
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4.5" y="7" width="15" height="12" rx="2"></rect>
+                  <path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7"></path>
+                  <path d="M9 12h6"></path>
+                </svg>
+              </div>
+              <h3>Saved model workflow</h3>
+              <p>Reopen saved models, continue editing, and keep iterating over time when plan data exists.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="feature-section tech-stack-section" aria-labelledby="tech-stack-title">
+      <section class="feature-section" id="how-it-works">
         <div class="container">
           <div class="section-heading">
             <p class="eyebrow">How It Works</p>
-            <h2 id="tech-stack-title">Local by design</h2>
-            <p class="tech-stack-intro">Geomancer pairs offline-first workflow principles with a deterministic toolchain built on familiar creator tools.</p>
+            <h2>Prompt to structured model, then refine</h2>
+            <p class="tech-stack-intro">Geomancer keeps the workflow simple: describe the idea, build a deterministic plan, edit the parameters, and export when the model is ready.</p>
           </div>
-          <div class="tech-stack-groups">
-            <div class="tech-stack-group">
-              <div class="tech-stack-group-header">
-                <h3 class="tech-stack-group-title">Principles</h3>
-              </div>
-              <div class="tech-stack-grid tech-stack-grid-principles">
-                <div class="tech-stack-item">
-                  <div class="tech-stack-card">
-                    <div class="tech-stack-icon-frame">
-                      <img class="tech-stack-icon" src="assets/images/local.png" alt="" aria-hidden="true">
-                    </div>
-                    <span class="tech-stack-label">Local-first</span>
-                    <p class="tech-stack-description">Your workflow stays on your machine</p>
-                  </div>
-                </div>
-                <div class="tech-stack-item">
-                  <div class="tech-stack-card">
-                    <div class="tech-stack-icon-frame">
-                      <img class="tech-stack-icon" src="assets/images/offline.png" alt="" aria-hidden="true">
-                    </div>
-                    <span class="tech-stack-label">Works offline</span>
-                    <p class="tech-stack-description">Build even without a connection</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="tech-stack-group">
-              <div class="tech-stack-group-header">
-                <h3 class="tech-stack-group-title">Core stack</h3>
-              </div>
-              <div class="tech-stack-grid tech-stack-grid-core">
-                <a class="tech-stack-item tech-stack-card tech-stack-link" href="https://ollama.com" target="_blank" rel="noopener noreferrer">
-                  <div class="tech-stack-icon-frame">
-                    <img class="tech-stack-icon" src="assets/images/ollama.png" alt="" aria-hidden="true">
-                  </div>
-                  <span class="tech-stack-label">Ollama</span>
-                  <p class="tech-stack-description">Local language model planning</p>
-                </a>
-                <a class="tech-stack-item tech-stack-card tech-stack-link" href="https://www.blender.org" target="_blank" rel="noopener noreferrer">
-                  <div class="tech-stack-icon-frame">
-                    <img class="tech-stack-icon" src="assets/images/blender.png" alt="" aria-hidden="true">
-                  </div>
-                  <span class="tech-stack-label">Blender</span>
-                  <p class="tech-stack-description">Familiar 3D output and editing</p>
-                </a>
-                <a class="tech-stack-item tech-stack-card tech-stack-link" href="https://www.python.org" target="_blank" rel="noopener noreferrer">
-                  <div class="tech-stack-icon-frame">
-                    <img class="tech-stack-icon" src="assets/images/python.png" alt="" aria-hidden="true">
-                  </div>
-                  <span class="tech-stack-label">Python</span>
-                  <p class="tech-stack-description">Deterministic generation pipeline</p>
-                </a>
-              </div>
-            </div>
+          <div class="workflow-strip">
+            <article class="workflow-step">
+              <span class="workflow-number">1</span>
+              <h3>Describe your idea</h3>
+              <p>Write the part, prop, or hybrid object you want in plain language.</p>
+            </article>
+            <article class="workflow-step">
+              <span class="workflow-number">2</span>
+              <h3>Geomancer interprets it</h3>
+              <p>The local AI turns the request into a structured plan with usable parameters.</p>
+            </article>
+            <article class="workflow-step">
+              <span class="workflow-number">3</span>
+              <h3>The plan is validated</h3>
+              <p>Geomancer checks the structure and builds the geometry deterministically.</p>
+            </article>
+            <article class="workflow-step">
+              <span class="workflow-number">4</span>
+              <h3>Edit and refine</h3>
+              <p>Adjust the parameters in the right rail and regenerate without starting over.</p>
+            </article>
+            <article class="workflow-step">
+              <span class="workflow-number">5</span>
+              <h3>Export or continue later</h3>
+              <p>Export STL from the final artifact or reopen a saved model and keep building.</p>
+            </article>
           </div>
         </div>
       </section>
@@ -233,7 +308,7 @@
               <p class="eyebrow">Early Access</p>
               <h2>Get started with Geomancer</h2>
               <p>
-                Join the Windows alpha preview for a local-first 3D workflow that turns prompts into Blender-ready geometry for creators, builders, and curious technical minds without requiring traditional CAD experience.
+                Join the Windows alpha for a local-first 3D workflow that turns prompts into structured, editable geometry for creators, builders, and technical users.
               </p>
             </div>
             <form class="signup-form signup-form-wide" id="footer-signup" novalidate>
@@ -249,7 +324,7 @@
               <button type="submit">Request Early Access</button>
             </form>
             <p class="form-support">
-              Local workflow. Windows alpha. Blender-ready. No CAD required.
+              Local-first. Deterministic. Blender-ready. Limited to the supported object families and workflows.
             </p>
             <p class="form-message" id="footer-message" role="status" aria-live="polite"></p>
           </div>

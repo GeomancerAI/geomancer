@@ -1,4 +1,4 @@
-"""Hybrid deterministic recipe executor for Geomancer backend generation."""
+"""Deterministic recipe executor for Geomancer backend generation."""
 
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ class RecipeExecutionResult:
     warnings: list[str] = field(default_factory=list)
     unsupported_ops: list[str] = field(default_factory=list)
     unsupported_reasons: list[str] = field(default_factory=list)
-    execution_path: str = "legacy"
+    execution_path: str = "compatibility"
     fallback_reason: str = ""
     summary: str = ""
 
@@ -85,7 +85,7 @@ def execute_recipe(recipe: DeterministicRecipe) -> RecipeExecutionResult:
             warnings,
             unsupported_ops,
             unsupported_reasons,
-            "Legacy fallback required for recipe schema mismatch.",
+            "Compatibility fallback required for recipe schema mismatch.",
             fallback_reason="recipe_schema_mismatch",
         )
 
@@ -95,7 +95,7 @@ def execute_recipe(recipe: DeterministicRecipe) -> RecipeExecutionResult:
             warnings,
             unsupported_ops,
             unsupported_reasons,
-            "Legacy fallback required for unsupported recipe object type.",
+            "Compatibility fallback required for unsupported recipe object type.",
             fallback_reason="unsupported_recipe_object_type",
         )
 
@@ -114,7 +114,7 @@ def execute_recipe(recipe: DeterministicRecipe) -> RecipeExecutionResult:
             warnings + emitter.warnings,
             unsupported_ops,
             unsupported_reasons,
-            "Legacy fallback required for unsupported recipe execution details.",
+            "Compatibility fallback required for unsupported recipe execution details.",
             fallback_reason="unsupported_recipe_op",
         )
 
@@ -149,7 +149,7 @@ def _fallback_result(
         warnings=warnings,
         unsupported_ops=unsupported_ops,
         unsupported_reasons=unsupported_reasons,
-        execution_path="legacy",
+        execution_path="compatibility",
         fallback_reason=fallback_reason,
         summary=summary,
     )

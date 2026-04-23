@@ -14,17 +14,17 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 try:
-    from app.backend.classifier import classify_request as backend_classify_request
-    from app.backend.runtime import GENERATED_SCRIPT_PATH
     from app.backend.pipeline import generate_model_request as backend_generate_model_request
+    from app.backend.pipeline import interpret_prompt_to_plan as backend_interpret_prompt_to_plan
+    from app.backend.runtime import GENERATED_SCRIPT_PATH
     from app.backend.versioning import load_version as load_project_version
     from app.blender_runner import run_generated_script
     from app.llm_client import OllamaClient, OllamaClientError
     from app.state import load_state, save_state
 except ImportError:
-    from backend.classifier import classify_request as backend_classify_request
-    from backend.runtime import GENERATED_SCRIPT_PATH
     from backend.pipeline import generate_model_request as backend_generate_model_request
+    from backend.pipeline import interpret_prompt_to_plan as backend_interpret_prompt_to_plan
+    from backend.runtime import GENERATED_SCRIPT_PATH
     from backend.versioning import load_version as load_project_version
     from blender_runner import run_generated_script
     from llm_client import OllamaClient, OllamaClientError
@@ -116,9 +116,9 @@ def prompt_yes_no_default_yes(message: str) -> bool:
 
 
 def classify_request(user_request: str) -> tuple[str, str]:
-    """Backward-compatible terminal classifier wrapper."""
-    result = backend_classify_request(user_request)
-    return result.status, result.message
+    """Compatibility wrapper built on the live plan interpreter."""
+    result = backend_interpret_prompt_to_plan(user_request)
+    return result.get("status", "error"), result.get("message", "")
 
 
 def run_with_spinner(action_text: str, func, *args, **kwargs):
@@ -148,7 +148,7 @@ def generate_model_request(user_request: str, client: OllamaClient, log=print, s
     """Generate a model request and return structured results for terminal or GUI use."""
     if show_spinner:
         return run_with_spinner(
-            "Building deterministic alpha-family model...",
+            "Building deterministic plan-first model...",
             backend_generate_model_request,
             user_request,
             client,

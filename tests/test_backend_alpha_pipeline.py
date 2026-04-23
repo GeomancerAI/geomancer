@@ -34,8 +34,21 @@ class BackendAlphaPipelineTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "ready")
 
-    def test_plan_bridge_module_is_deleted(self):
+    def test_legacy_backend_modules_are_deleted(self):
+        self.assertIsNone(importlib.util.find_spec("app.backend.classifier"))
+        self.assertIsNone(importlib.util.find_spec("app.backend.families"))
+        self.assertIsNone(importlib.util.find_spec("app.backend.models"))
         self.assertIsNone(importlib.util.find_spec("app.backend.plan_bridge"))
+
+    def test_chat_agent_classification_wrapper_uses_live_interpreter(self):
+        with patch("app.chat_agent.backend_interpret_prompt_to_plan", return_value={"status": "ready", "message": "ok"}) as interpret_mock:
+            from app.chat_agent import classify_request
+
+            status, message = classify_request("make a plate")
+
+        interpret_mock.assert_called_once_with("make a plate")
+        self.assertEqual(status, "ready")
+        self.assertEqual(message, "ok")
 
     def test_pipeline_returns_desktop_compatible_result_keys(self):
         with patch("app.backend.pipeline.save_generated_script"), patch(

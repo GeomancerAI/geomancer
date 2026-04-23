@@ -85,7 +85,7 @@ Run the desktop shell:
 python -m desktop.main
 ```
 
-Legacy developer entrypoints still exist:
+Legacy terminal helpers remain for compatibility only:
 
 - `python app/chat_agent.py`
 - `python app/dev_console.py`
@@ -114,7 +114,7 @@ OLLAMA_MODEL=qwen2.5:7b
 - The new conversation rail is still compact and alpha-oriented; it does not yet support threaded clarifications, message actions, or rich plan drill-down.
 - Blender detection is still Windows-oriented.
 - Deterministic geometry coverage now includes the existing functional families, a small compositional prop foundation, bounded hybrid combinations, and a deterministic style layer, but it is still bounded and deterministic rather than freeform.
-- Viewer framing is deterministic and family-aware, but still based on lightweight heuristics rather than deep geometry analysis.
+- Viewer framing is deterministic and object-type-aware, but still based on lightweight heuristics rather than deep geometry analysis.
 - The compact telemetry strip is optimized for glanceability, so deeper inspection still belongs in later detail views rather than the main workspace chrome.
 - Viewer support placement is still a lightweight sampled heuristic from preview geometry, not a semantic understanding of real-world load-bearing faces.
 - Resting orientation is selected from a small deterministic candidate set rather than inferred from deeper mesh semantics or physics.

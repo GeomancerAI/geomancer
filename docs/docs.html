@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta
     name="description"
-    content="Beginner-friendly Geomancer documentation covering installation, your first prompt, export as STL, and core concepts for practical and creative 3D workflows."
+    content="Geomancer documentation covering the plan-first deterministic workflow, supported object families, style system, editing loop, saved models, and current limitations."
   >
   <title>Geomancer Documentation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,7 +56,7 @@
             <p class="eyebrow">Documentation</p>
             <h1 class="docs-title">Geomancer Documentation</h1>
             <p class="hero-description docs-description">
-              Learn how to install Geomancer, write your first prompt, understand the core concepts behind prompt-to-geometry workflows, and export your results with confidence.
+              Learn how Geomancer turns prompts into structured plans, builds deterministic geometry, supports editing and regeneration, and reopens saved models when plan data is available.
             </p>
           </div>
         </div>
@@ -69,34 +69,32 @@
 
             <div class="docs-nav-group">
               <p class="docs-nav-heading">Getting Started</p>
-              <a href="#install">Install</a>
-              <a href="#first-prompt">Your First Prompt</a>
-              <a href="#export-stl">Export as STL</a>
+              <a href="#system-overview">System overview</a>
+              <a href="#editing-workflow">Editing workflow</a>
+              <a href="#saved-models">Saved models</a>
             </div>
 
             <div class="docs-nav-group">
-              <p class="docs-nav-heading">Core Concepts</p>
-              <a href="#prompts">Prompts</a>
-              <a href="#dimensions">Dimensions</a>
-              <a href="#printability">Printability</a>
+              <p class="docs-nav-heading">Capabilities</p>
+              <a href="#supported-objects">Supported objects</a>
+              <a href="#style-system">Style system</a>
+              <a href="#hybrid-generation">Hybrid generation</a>
             </div>
 
             <div class="docs-nav-group">
-              <p class="docs-nav-heading">Examples</p>
-              <a href="#raspberry-pi-4-enclosure">Raspberry Pi 4 Enclosure</a>
-              <a href="#custom-gear">Custom Gear</a>
-              <a href="#basic-bracket">Basic Bracket</a>
+              <p class="docs-nav-heading">Trust And Limits</p>
+              <a href="#limitations">Limitations</a>
+              <a href="#export-stl">STL export</a>
             </div>
           </aside>
 
           <div class="docs-content">
-            <article class="feature-card docs-article" id="first-prompt">
-              <p class="eyebrow">Step 1</p>
-              <h2>Your First Prompt</h2>
-              <p class="docs-subtitle">Start by installing Geomancer, launching it locally, and opening a new prompt session for parts, props, or concept geometry.</p>
-              <h3 id="install">Step 1: Install and Launch Geomancer</h3>
+            <article class="feature-card docs-article" id="system-overview">
+              <p class="eyebrow">System Overview</p>
+              <h2>Plan-first deterministic geometry</h2>
+              <p class="docs-subtitle">Geomancer is built around structured plans, not arbitrary mesh generation.</p>
               <p>
-                Install the Windows alpha, launch the app, and open the chat-style workspace. From there, Geomancer is ready to interpret your request and guide the first model generation flow for both practical and creative geometry.
+                A prompt is interpreted locally, normalized into a plan, validated, and then built through a deterministic geometry pipeline. That keeps the output predictable, editable, and easier to export or review.
               </p>
               <div class="app-window docs-image-frame">
                 <img
@@ -107,34 +105,60 @@
               </div>
             </article>
 
-            <article class="feature-card docs-article" id="prompts">
-              <p class="eyebrow">Step 2</p>
-              <h2>Step 2: Describe the Part You Need</h2>
-              <p class="docs-subtitle">Use clear language that explains the shape, purpose, style, and key constraints of the model you want.</p>
-              <div class="example-card docs-example-card">
-                <div class="example-side example-side-prompt">
-                  <span class="example-label">Example Prompt</span>
-                  <p>"Create a stylized sci-fi container with panel seams, beveled edges, and a clean game-ready silhouette."</p>
-                </div>
+            <article class="feature-card docs-article" id="supported-objects">
+              <p class="eyebrow">Supported Objects</p>
+              <h2>Bounded object families with clear structure</h2>
+              <div class="feature-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <article class="feature-card">
+                  <h3>Functional objects</h3>
+                  <p>Brackets, enclosures, mounts, and trays that focus on dimensions, fit, and practical use.</p>
+                </article>
+                <article class="feature-card">
+                  <h3>Compositional props</h3>
+                  <p>Crates, barrels, canisters, and pedestals built from clean, readable forms.</p>
+                </article>
               </div>
+              <p id="export-stl" class="docs-subtitle">STL export is available from the final artifact when the model is ready for printing or downstream work.</p>
             </article>
 
-            <article class="feature-card docs-article" id="export-stl">
-              <p class="eyebrow">Step 3</p>
-              <h2>Step 3: Export as STL</h2>
-              <p class="docs-subtitle">Once the generated model looks right, export it as an STL for printing or open it directly in Blender for refinement, detailing, or asset iteration.</p>
+            <article class="feature-card docs-article" id="style-system">
+              <p class="eyebrow">Style System</p>
+              <h2>Deterministic style, not freeform sculpting</h2>
               <p>
-                Geomancer is built around a prompt-to-geometry workflow, so the handoff stays simple. Review the model, confirm the dimensions or printability details you need, and export when you are ready.
+                The style system steers the structured output toward minimal, industrial, sci-fi, low-poly, or rounded directions while keeping the geometry deterministic and editable.
               </p>
             </article>
 
-            <article class="feature-card docs-article docs-reference" id="dimensions">
-              <h3>Core Concepts at a Glance</h3>
-              <p id="printability"><strong>Printability:</strong> Geomancer surfaces practical checks like wall thickness and general fit when you are building real-world objects.</p>
-              <p><strong>Dimensions:</strong> Describing target sizes helps the geometry engine generate more useful parts, props, and blockouts on the first pass.</p>
-              <p id="raspberry-pi-4-enclosure"><strong>Examples:</strong> Common starting points include Raspberry Pi enclosures, stylized gears, props, and basic brackets.</p>
-              <p id="custom-gear"><strong>Prompts:</strong> The clearer your prompt is about purpose, style, and constraints, the better the generated starting model.</p>
-              <p id="basic-bracket"><strong>Export:</strong> STL export is the fastest route to slicing, while Blender is available when you want to refine, detail, or adapt the generated model.</p>
+            <article class="feature-card docs-article" id="hybrid-generation">
+              <p class="eyebrow">Hybrid Generation</p>
+              <h2>Functional forms with added detail</h2>
+              <p>
+                Hybrid builds combine a practical base with surface details, panel cues, bevels, or other stylistic features. That lets Geomancer keep the object useful while still giving it a stronger visual identity.
+              </p>
+            </article>
+
+            <article class="feature-card docs-article" id="editing-workflow">
+              <p class="eyebrow">Editing Workflow</p>
+              <h2>Edit parameters, then regenerate</h2>
+              <p class="docs-subtitle">The right rail is meant for refinement, not one-shot generation.</p>
+              <p>
+                Adjust dimensions, tweak features, and regenerate from the structured plan. In practice, that means you can refine a model without re-writing the prompt every time you want a smaller hole, a thicker wall, or a different feature layout.
+              </p>
+            </article>
+
+            <article class="feature-card docs-article" id="saved-models">
+              <p class="eyebrow">Saved Models</p>
+              <h2>Reopen and keep building</h2>
+              <p>
+                Saved models can be reopened later and edited again when the plan data is present. This keeps the workflow deterministic across sessions and makes it easier to iterate over time.
+              </p>
+            </article>
+
+            <article class="feature-card docs-article docs-reference" id="limitations">
+              <h3>Limitations</h3>
+              <p>Not every saved model is editable. Reopen-and-edit only works when truthful plan data exists.</p>
+              <p>Geomancer does not claim freeform or organic sculpting. The current product is centered on structured, bounded geometry.</p>
+              <p>Blender remains the local handoff target for previewing, refining, or extending the generated result.</p>
             </article>
           </div>
         </div>

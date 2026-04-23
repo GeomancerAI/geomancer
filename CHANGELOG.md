@@ -17,6 +17,19 @@ Use this pattern going forward:
 - Keep the stage suffix explicit while the project is pre-release, for example `0.4.0-alpha`.
 - Add a milestone label for each notable pass, for example `backend-pipeline-cleanup` or `desktop-bridge-contract-pass-1`.
 
+## 2026-04-22 - backend-legacy-quarantine-cleanup
+
+### Summary
+- [CLEAN1] Removed the retired backend classifier/family/model modules from the live tree and updated the last compatibility caller to use the live plan interpreter instead.
+- [CLEAN2] Trimmed stale backend package constants and renamed compatibility wording so the deterministic recipe path reads as plan-first rather than family-first.
+- [CLEAN3] Updated the README and changelog language to describe the live deterministic pipeline without implying the retired family/classifier architecture is still active.
+- [CLEAN4] Kept the desktop payload, saved-model reopen/edit flow, and STL export truth contract intact.
+
+### Verification
+- `python -m compileall app desktop tests`
+- `python -m unittest tests.test_backend_plan_schema tests.test_backend_alpha_pipeline tests.test_desktop_bridge`
+- `node --check desktop/ui/app.js`
+
 ## 2026-04-22 - 0.8.0-alpha - capability-expansion-release
 
 ### Summary

@@ -1,4 +1,4 @@
-"""Canonical deterministic recipe schema for Geomancer backend generation."""
+"""Deterministic recipe schema for Geomancer backend generation."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ class DeterministicRecipe:
 
 @dataclass
 class DeterministicRecipeBuildResult:
-    """Structured build result for canonical recipe generation."""
+    """Structured build result for deterministic recipe generation."""
 
     status: str
     normalized_recipe: DeterministicRecipe
